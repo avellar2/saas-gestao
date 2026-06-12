@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  STAFF
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         UserRole @default(STAFF)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("users")
+}
+
+enum CompanyStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+model Company {
+  id            String        @id @default(cuid())
+  name          String
+  tradeName     String?
+  document      String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  address       String?
+  status        CompanyStatus @default(TRIAL)
+  trialStartsAt DateTime?
+  trialEndsAt   DateTime?
+  planName      String?
+  monthlyPrice  Decimal?      @db.Decimal(10, 2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  users          User[]
+  companyModules CompanyModule[]
+  subscription   Subscription?
+  customers      Customer[]
+  quotes         Quote[]
+  serviceOrders  ServiceOrder[]
+
+  @@index([status])
+  @@map("companies")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  basePrice   Decimal  @db.Decimal(10, 2)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyModules CompanyModule[]
+
+  @@map("modules")
+}
+
+model CompanyModule {
+  id            String    @id @default(cuid())
+  companyId     String
+  moduleKey     String
+  active        Boolean   @default(false)
+  price         Decimal?  @db.Decimal(10, 2)
+  activatedAt   DateTime?
+  deactivatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  module  Module  @relation(fields: [moduleKey], references: [key])
+
+  @@unique([companyId, moduleKey])
+  @@index([companyId])
+  @@index([moduleKey])
+  @@map("company_modules")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  companyId             String             @unique
+  status                SubscriptionStatus @default(TRIAL)
+  planName              String?
+  basePrice             Decimal            @db.Decimal(10, 2) @default(49.00)
+  modulesCount          Int                @default(0)
+  monthlyPrice          Decimal            @db.Decimal(10, 2) @default(49.00)
+  trialEndsAt           DateTime?
+  currentPeriodStartsAt DateTime?
+  currentPeriodEndsAt   DateTime?
+  paymentMethod         String?
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  phone     String?
+  whatsapp  String?
+  email     String?
+  document  String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quotes        Quote[]
+  serviceOrders ServiceOrder[]
+
+  @@index([companyId])
+  @@index([name])
+  @@index([phone])
+  @@map("customers")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  companyId   String
+  customerId  String
+  number      Int
+  status      QuoteStatus @default(DRAFT)
+  description String?
+  subtotal    Decimal     @db.Decimal(10, 2) @default(0)
+  discount    Decimal     @db.Decimal(10, 2) @default(0)
+  total       Decimal     @db.Decimal(10, 2) @default(0)
+  validUntil  DateTime?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  items         QuoteItem[]
+  serviceOrders ServiceOrder[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  quoteId     String
+  description String
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+enum ServiceOrderStatus {
+  OPENED
+  IN_PROGRESS
+  WAITING_PARTS
+  FINISHED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+model ServiceOrder {
+  id                 String             @id @default(cuid())
+  companyId          String
+  customerId         String
+  quoteId            String?
+  number             Int
+  status             ServiceOrderStatus  @default(OPENED)
+  problemDescription String?
+  serviceDescription String?
+  total              Decimal            @db.Decimal(10, 2) @default(0)
+  paidAmount         Decimal            @db.Decimal(10, 2) @default(0)
+  paymentStatus      PaymentStatus      @default(PENDING)
+  openedAt           DateTime           @default(now())
+  finishedAt         DateTime?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer          @relation(fields: [customerId], references: [id])
+  quote    Quote?            @relation(fields: [quoteId], references: [id])
+  items    ServiceOrderItem[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("service_orders")
+}
+
+model ServiceOrderItem {
+  id              String   @id @default(cuid())
+  serviceOrderId  String
+  description     String
+  quantity        Decimal  @db.Decimal(10, 2)
+  unitPrice       Decimal  @db.Decimal(10, 2)
+  total           Decimal  @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceOrderId])
+  @@map("service_order_items")
+}
