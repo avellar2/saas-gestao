@@ -1,4 +1,6 @@
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import { QuoteStatus } from "@/generated/prisma/client";
 import Link from "next/link";
@@ -67,11 +69,12 @@ export default async function OrcamentosPage({
   searchParams: Promise<SearchParams>;
 }) {
   const session = await auth();
-  if (!session) {
-    return null;
-  }
+  if (!session?.user) redirect("/login");
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
+  const hasAccess = await isModuleActive(companyId, "quotes");
+  if (!hasAccess) redirect("/upgrade?module=quotes");
+
   const tenant = tenantPrisma(companyId);
 
   const params = await searchParams;

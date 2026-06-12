@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { getModuleKeyForPath, isModuleActive } from "@/lib/module-guard";
+import type { NextRequest } from "next/server";
 
-export default auth(async function middleware(req) {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Public routes — no auth needed
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
@@ -14,56 +14,20 @@ export default auth(async function middleware(req) {
     return NextResponse.next();
   }
 
-  const session = req.auth;
-  if (!session?.user) {
+  // Check for session cookie (NextAuth v5 uses authjs.session-token)
+  const hasSession =
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token") ||
+    req.cookies.has("next-auth.session-token") ||
+    req.cookies.has("__Secure-next-auth.session-token");
+
+  if (!hasSession) {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = (session.user as Record<string, unknown>).role as string;
-  const companyId = (session.user as Record<string, unknown>).companyId as string;
-
-  if (pathname.startsWith("/admin")) {
-    if (role !== "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/clientes") ||
-    pathname.startsWith("/orcamentos") ||
-    pathname.startsWith("/ordens-servico")
-  ) {
-    if (role === "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    }
-
-    const companyStatus = (session.user as Record<string, unknown>).companyStatus as string;
-    if (companyStatus === "SUSPENDED" || companyStatus === "CANCELLED") {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-
-    const moduleKey = getModuleKeyForPath(pathname);
-    if (moduleKey) {
-      const hasAccess = await isModuleActive(companyId, moduleKey);
-      if (!hasAccess) {
-        const upgradeUrl = new URL("/upgrade", req.url);
-        upgradeUrl.searchParams.set("module", moduleKey);
-        return NextResponse.redirect(upgradeUrl);
-      }
-    }
-
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/upgrade")) {
-    return NextResponse.next();
-  }
-
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [

@@ -1,4 +1,6 @@
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -22,11 +24,12 @@ export default async function ClientesPage({
   searchParams: Promise<SearchParams>;
 }) {
   const session = await auth();
-  if (!session) {
-    return null;
-  }
+  if (!session?.user) redirect("/login");
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
+  const hasAccess = await isModuleActive(companyId, "customers");
+  if (!hasAccess) redirect("/upgrade?module=customers");
+
   const tenant = tenantPrisma(companyId);
 
   const params = await searchParams;

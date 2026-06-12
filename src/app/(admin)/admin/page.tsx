@@ -1,3 +1,5 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
   Card,
@@ -7,6 +9,11 @@ import {
 } from "@/components/ui/card";
 
 export default async function AdminDashboard() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const role = (session.user as Record<string, unknown>).role as string;
+  if (role !== "SUPER_ADMIN") redirect("/dashboard");
+
   const [total, trial, active, suspended] = await Promise.all([
     prisma.company.count(),
     prisma.company.count({ where: { status: "TRIAL" } }),
