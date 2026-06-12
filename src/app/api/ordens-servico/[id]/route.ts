@@ -1,0 +1,301 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { tenantPrisma } from "@/lib/prisma";
+import { PaymentStatus } from "@/generated/prisma/client";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+  }
+
+  const companyId = (session.user as Record<string, unknown>).companyId as string;
+  const { id } = await params;
+  const tenant = tenantPrisma(companyId);
+
+  const serviceOrder = await tenant.serviceOrder.findUnique({
+    where: { id },
+    include: {
+      customer: true,
+      items: {
+        orderBy: { createdAt: "asc" },
+      },
+      quote: {
+        select: { id: true, number: true, status: true, total: true },
+      },
+    },
+  });
+
+  if (!serviceOrder) {
+    return NextResponse.json(
+      { error: "Ordem de servico nao encontrada" },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(serviceOrder);
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+  }
+
+  const companyId = (session.user as Record<string, unknown>).companyId as string;
+  const { id } = await params;
+  const tenant = tenantPrisma(companyId);
+
+  const existing = await tenant.serviceOrder.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  if (!existing) {
+    return NextResponse.json(
+      { error: "Ordem de servico nao encontrada" },
+      { status: 404 }
+    );
+  }
+
+  const body = await request.json();
+
+  // Mode 1: Status-only update
+  if (body.status && !body.paymentAmount && !body.items) {
+    const allowedTransitions: Record<string, string[]> = {
+      OPENED: ["IN_PROGRESS", "CANCELLED"],
+      IN_PROGRESS: ["FINISHED", "WAITING_PARTS", "CANCELLED"],
+      WAITING_PARTS: ["IN_PROGRESS", "CANCELLED"],
+      FINISHED: ["DELIVERED", "CANCELLED"],
+      DELIVERED: ["CANCELLED"],
+      CANCELLED: [],
+    };
+
+    const allowed = allowedTransitions[existing.status] || [];
+    if (!allowed.includes(body.status)) {
+      return NextResponse.json(
+        {
+          error: `Transicao de status nao permitida: ${existing.status} -> ${body.status}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, unknown> = { status: body.status };
+
+    // Set finishedAt when transitioning to FINISHED
+    if (body.status === "FINISHED") {
+      updateData.finishedAt = new Date();
+    }
+
+    // Update paymentStatus to CANCELLED when cancelling
+    if (body.status === "CANCELLED") {
+      updateData.paymentStatus = PaymentStatus.CANCELLED;
+    }
+
+    const updated = await tenant.serviceOrder.update({
+      where: { id },
+      data: updateData,
+      include: {
+        customer: {
+          select: { id: true, name: true, phone: true, whatsapp: true },
+        },
+        items: true,
+        quote: {
+          select: { id: true, number: true, status: true, total: true },
+        },
+      },
+    });
+
+    return NextResponse.json(updated);
+  }
+
+  // Mode 2: Payment update
+  if (body.paymentAmount !== undefined && body.paymentAmount !== null) {
+    const paymentAmount = parseFloat(body.paymentAmount);
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      return NextResponse.json(
+        { error: "Valor do pagamento invalido" },
+        { status: 400 }
+      );
+    }
+
+    const currentPaid = Number(existing.paidAmount);
+    const newPaidAmount = currentPaid + paymentAmount;
+    const total = Number(existing.total);
+
+    let newPaymentStatus: PaymentStatus;
+    if (newPaidAmount >= total) {
+      newPaymentStatus = PaymentStatus.PAID;
+    } else if (newPaidAmount > 0) {
+      newPaymentStatus = PaymentStatus.PARTIAL;
+    } else {
+      newPaymentStatus = PaymentStatus.PENDING;
+    }
+
+    const updated = await tenant.serviceOrder.update({
+      where: { id },
+      data: {
+        paidAmount: newPaidAmount,
+        paymentStatus: newPaymentStatus,
+      },
+      include: {
+        customer: {
+          select: { id: true, name: true, phone: true, whatsapp: true },
+        },
+        items: true,
+        quote: {
+          select: { id: true, number: true, status: true, total: true },
+        },
+      },
+    });
+
+    return NextResponse.json(updated);
+  }
+
+  // Mode 3: Full update with items (only if OPENED or IN_PROGRESS)
+  if (body.items) {
+    if (existing.status !== "OPENED" && existing.status !== "IN_PROGRESS") {
+      return NextResponse.json(
+        { error: "Apenas OS abertas ou em andamento podem ser editadas" },
+        { status: 400 }
+      );
+    }
+
+    const {
+      customerId,
+      quoteId,
+      problemDescription,
+      serviceDescription,
+      notes,
+      items,
+    } = body;
+
+    if (!customerId) {
+      return NextResponse.json(
+        { error: "Cliente e obrigatorio" },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: "Pelo menos um item e obrigatorio" },
+        { status: 400 }
+      );
+    }
+
+    // Verify customer exists in tenant
+    const customer = await tenant.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Cliente nao encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Recalculate total from items
+    const total = items.reduce(
+      (sum: number, item: { quantity: number; unitPrice: number }) =>
+        sum + item.quantity * item.unitPrice,
+      0
+    );
+
+    // Delete old items and create new ones
+    await tenant.serviceOrderItem.deleteMany({
+      where: { serviceOrderId: id },
+    });
+
+    // Recalculate payment status based on new total
+    const currentPaid = Number(existing.paidAmount);
+    let newPaymentStatus: PaymentStatus;
+    if (currentPaid >= total) {
+      newPaymentStatus = PaymentStatus.PAID;
+    } else if (currentPaid > 0) {
+      newPaymentStatus = PaymentStatus.PARTIAL;
+    } else {
+      newPaymentStatus = PaymentStatus.PENDING;
+    }
+
+    const updated = await tenant.serviceOrder.update({
+      where: { id },
+      data: {
+        customerId,
+        quoteId: quoteId || null,
+        problemDescription: problemDescription?.trim() || null,
+        serviceDescription: serviceDescription?.trim() || null,
+        total,
+        paymentStatus: newPaymentStatus,
+        notes: notes?.trim() || null,
+        items: {
+          create: items.map(
+            (item: { description: string; quantity: number; unitPrice: number }) => ({
+              description: item.description.trim(),
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.quantity * item.unitPrice,
+            })
+          ),
+        },
+      },
+      include: {
+        customer: {
+          select: { id: true, name: true, phone: true, whatsapp: true },
+        },
+        items: true,
+        quote: {
+          select: { id: true, number: true, status: true, total: true },
+        },
+      },
+    });
+
+    return NextResponse.json(updated);
+  }
+
+  return NextResponse.json(
+    { error: "Requisicao invalida" },
+    { status: 400 }
+  );
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+  }
+
+  const companyId = (session.user as Record<string, unknown>).companyId as string;
+  const { id } = await params;
+  const tenant = tenantPrisma(companyId);
+
+  const existing = await tenant.serviceOrder.findUnique({
+    where: { id },
+  });
+  if (!existing) {
+    return NextResponse.json(
+      { error: "Ordem de servico nao encontrada" },
+      { status: 404 }
+    );
+  }
+
+  if (existing.status !== "OPENED") {
+    return NextResponse.json(
+      { error: "Apenas OS abertas podem ser excluidas" },
+      { status: 400 }
+    );
+  }
+
+  await tenant.serviceOrder.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}
