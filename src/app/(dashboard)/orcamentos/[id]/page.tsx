@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { buildWhatsAppLink, quoteWhatsAppMessage } from "@/lib/whatsapp";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, FileDown } from "lucide-react";
 
 interface QuoteItem {
   id: string;
@@ -294,6 +294,15 @@ export default function OrcamentoDetailPage() {
               WhatsApp
             </Button>
           )}
+          <a
+            href={`/api/pdf/orcamento/${id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+          >
+            <FileDown className="size-4" />
+            Baixar PDF
+          </a>
           <Button
             variant="outline"
             onClick={() => router.push("/orcamentos")}
