@@ -1,4 +1,6 @@
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -16,7 +18,11 @@ const TENANT_MODELS = new Set([
 ]);
 
 function createPrismaClient() {
-  return new PrismaClient();
+  const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
@@ -24,6 +30,9 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyArgs = Record<string, any>;
 
 export function tenantPrisma(companyId: string) {
   return prisma.$extends({
@@ -35,27 +44,29 @@ export function tenantPrisma(companyId: string) {
             return query(args);
           }
 
+          const typedArgs = args as AnyArgs;
+
           if (operation.startsWith("find") || operation === "aggregate" || operation === "count") {
-            args.where = { ...args.where, companyId };
+            typedArgs.where = { ...typedArgs.where, companyId };
           }
 
           if (operation === "create") {
-            args.data = { ...args.data, companyId };
+            typedArgs.data = { ...typedArgs.data, companyId };
           }
 
           if (operation === "createMany") {
-            if (Array.isArray(args.data)) {
-              args.data = args.data.map((item: Record<string, unknown>) => ({
+            if (Array.isArray(typedArgs.data)) {
+              typedArgs.data = typedArgs.data.map((item: Record<string, unknown>) => ({
                 ...item,
                 companyId,
               }));
             } else {
-              args.data = { ...args.data, companyId };
+              typedArgs.data = { ...typedArgs.data, companyId };
             }
           }
 
           if (operation.startsWith("update") || operation === "delete" || operation === "deleteMany") {
-            args.where = { ...args.where, companyId };
+            typedArgs.where = { ...typedArgs.where, companyId };
           }
 
           return query(args);
