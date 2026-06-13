@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma, tenantPrisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { ModuleCard } from "@/components/layout/module-card";
 import { MODULE_KEYS } from "@/types";
 import type { ModuleKey } from "@/types";
@@ -13,22 +12,27 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { MotionContainer, MotionItem } from "@/components/ui/motion-container";
+import { motion } from "framer-motion";
 
 const MODULE_INFO: Record<
   string,
   { name: string; description: string; icon: string }
 > = {
   customers: { name: "Clientes", description: "Gerencie sua base de clientes", icon: "Users" },
-  quotes: { name: "Orçamentos", description: "Crie e envie orçamentos profissionais", icon: "FileText" },
+  quotes: { name: "Orcamentos", description: "Crie e envie orçamentos profissionais", icon: "FileText" },
   service_orders: { name: "Ordem de Serviço", description: "Controle suas ordens de serviço", icon: "ClipboardList" },
   inventory: { name: "Estoque", description: "Controle de estoque e produtos", icon: "Package" },
   scheduling: { name: "Agendamento", description: "Agenda de compromissos", icon: "Calendar" },
-  catalog: { name: "Catálogo WhatsApp", description: "Catálogo de produtos no WhatsApp", icon: "ShoppingBag" },
-  menu: { name: "Cardápio Digital", description: "Cardápio digital para restaurantes", icon: "UtensilsCrossed" },
+  catalog: { name: "Catalogo WhatsApp", description: "Catalogo de produtos no WhatsApp", icon: "ShoppingBag" },
+  menu: { name: "Cardapio Digital", description: "Cardapio digital para restaurantes", icon: "UtensilsCrossed" },
   finance: { name: "Financeiro", description: "Controle financeiro simples", icon: "BarChart3" },
-  reports: { name: "Relatórios", description: "Relatórios gerenciais", icon: "PieChart" },
-  users_permissions: { name: "Usuários e Permissões", description: "Gerencie acessos ao sistema", icon: "Shield" },
+  reports: { name: "Relatorios", description: "Relatorios gerenciais", icon: "PieChart" },
+  users_permissions: { name: "Usuarios e Permissoes", description: "Gerencie acessos ao sistema", icon: "Shield" },
 };
 
 export default async function DashboardPage() {
@@ -68,64 +72,71 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 mt-0.5">Bem-vindo de volta, {company?.name}</p>
-        </div>
+      <MotionContainer className="flex items-center justify-between">
+        <MotionItem>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">Bem-vindo de volta, {company?.name}</p>
+        </MotionItem>
         {isTrial && (
-          <Badge
-            variant="secondary"
-            className={`${isTrialExpired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"} font-medium px-3 py-1`}
-          >
-            {isTrialExpired ? "Trial Expirado" : "Trial Ativo"}
-          </Badge>
+          <MotionItem>
+            <Badge
+              variant="secondary"
+              className={`${isTrialExpired ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"} font-medium px-3 py-1 border`}
+            >
+              {isTrialExpired ? "Trial Expirado" : "Trial Ativo"}
+            </Badge>
+          </MotionItem>
         )}
-      </div>
+      </MotionContainer>
 
       {/* Trial Alert */}
       {isTrial && (
-        <div
-          className={`rounded-xl p-4 text-sm flex items-start gap-3 ${
+        <motion.div
+          initial={{ opacity: 0, y: 12, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring" as const, stiffness: 100, damping: 20, delay: 0.1 }}
+          className={`rounded-2xl p-4 text-sm flex items-start gap-3 border ${
             isTrialExpired
-              ? "bg-red-50 text-red-800 border border-red-200"
-              : "bg-amber-50 text-amber-800 border border-amber-200"
+              ? "bg-destructive/5 text-destructive border-destructive/15"
+              : "bg-amber-500/5 text-amber-700 dark:text-amber-400 border-amber-500/15"
           }`}
         >
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium">
+            <p className="font-semibold">
               {isTrialExpired
-                ? "Seu período de teste expirou"
-                : "Você está no período de teste"}
+                ? "Seu periodo de teste expirou"
+                : "Voce esta no periodo de teste"}
             </p>
             <p className="mt-0.5 opacity-80">
               {isTrialExpired
                 ? "Contate o administrador para ativar sua conta."
                 : trialEndsAt &&
-                  `Expira em ${new Date(trialEndsAt).toLocaleDateString("pt-BR")}. Contate o administrador para ativar módulos adicionais.`}
+                  `Expira em ${new Date(trialEndsAt).toLocaleDateString("pt-BR")}. Contate o administrador para ativar modulos adicionais.`}
             </p>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Metrics - Bento Grid */}
+      <MotionContainer className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard
           title="Total Clientes"
           value={customerCount}
           icon={Users}
           trend="+12%"
           trendUp={true}
-          color="indigo"
+          color="emerald"
+          delay={0}
         />
         <MetricCard
-          title="Orçamentos Pendentes"
+          title="Orcamentos Pendentes"
           value={pendingQuotes}
           icon={FileText}
           trend="3 novos"
           trendUp={true}
           color="cyan"
+          delay={0.05}
         />
         <MetricCard
           title="OS Abertas"
@@ -133,31 +144,38 @@ export default async function DashboardPage() {
           icon={ClipboardList}
           trend="2 urgentes"
           trendUp={false}
-          color="emerald"
+          color="amber"
+          delay={0.1}
         />
-      </div>
+      </MotionContainer>
 
       {/* Modules */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-slate-700" />
-          <h2 className="text-lg font-semibold text-slate-800">Módulos</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {MODULE_KEYS.map((key) => {
+        <MotionContainer className="flex items-center gap-2 mb-4">
+          <MotionItem>
+            <TrendingUp className="w-5 h-5 text-foreground/70" />
+          </MotionItem>
+          <MotionItem>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Modulos</h2>
+          </MotionItem>
+        </MotionContainer>
+
+        <MotionContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {MODULE_KEYS.map((key, index) => {
             const info = MODULE_INFO[key];
             const isActive = activeModuleMap.get(key) ?? false;
             return (
-              <ModuleCard
-                key={key}
-                moduleKey={key as ModuleKey}
-                name={info.name}
-                description={info.description}
-                active={isActive}
-              />
+              <MotionItem key={key} delay={index * 0.03}>
+                <ModuleCard
+                  moduleKey={key as ModuleKey}
+                  name={info.name}
+                  description={info.description}
+                  active={isActive}
+                />
+              </MotionItem>
             );
           })}
-        </div>
+        </MotionContainer>
       </div>
     </div>
   );
@@ -170,40 +188,49 @@ function MetricCard({
   trend,
   trendUp,
   color,
+  delay = 0,
 }: {
   title: string;
   value: number;
   icon: React.ElementType;
   trend: string;
   trendUp: boolean;
-  color: "indigo" | "cyan" | "emerald";
+  color: "emerald" | "cyan" | "amber";
+  delay?: number;
 }) {
   const colorMap = {
-    indigo: "bg-indigo-50 text-indigo-600",
-    cyan: "bg-cyan-50 text-cyan-600",
-    emerald: "bg-emerald-50 text-emerald-600",
+    emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    cyan: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+    amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   };
 
+  const TrendIcon = trendUp ? ArrowUpRight : ArrowDownRight;
+  const trendColor = trendUp
+    ? "text-emerald-600 dark:text-emerald-400"
+    : "text-amber-600 dark:text-amber-400";
+
   return (
-    <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-5">
+    <MotionItem delay={delay}>
+      <div className="rounded-[1.5rem] bg-card border border-border/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-shadow duration-300 p-5 group">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <p className="text-sm text-slate-500 font-medium">{title}</p>
-            <p className="text-3xl font-bold text-slate-900">{value}</p>
+            <p className="text-sm text-muted-foreground font-medium">{title}</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold tracking-tight text-foreground">
+                <AnimatedCounter value={value} />
+              </span>
+            </div>
           </div>
-          <div className={`p-2.5 rounded-xl ${colorMap[color]}`}>
+          <div className={`p-2.5 rounded-xl ${colorMap[color]} transition-transform duration-200 group-hover:scale-110`}>
             <Icon className="w-5 h-5" />
           </div>
         </div>
         <div className="flex items-center gap-1 mt-3">
-          <TrendingUp className={`w-3.5 h-3.5 ${trendUp ? "text-emerald-500" : "text-amber-500 rotate-180"}`} />
-          <span className={`text-xs font-medium ${trendUp ? "text-emerald-600" : "text-amber-600"}`}>
-            {trend}
-          </span>
-          <span className="text-xs text-slate-400 ml-1">este mês</span>
+          <TrendIcon className={`w-3.5 h-3.5 ${trendColor}`} />
+          <span className={`text-xs font-semibold ${trendColor}`}>{trend}</span>
+          <span className="text-xs text-muted-foreground/60 ml-1">este mes</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </MotionItem>
   );
 }

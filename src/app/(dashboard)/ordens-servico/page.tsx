@@ -5,6 +5,7 @@ import { tenantPrisma } from "@/lib/prisma";
 import { ServiceOrderStatus, PaymentStatus } from "@/generated/prisma/client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FileDown, Plus, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -15,9 +16,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { SortSelect } from "@/components/sort-select";
+import { EmptyState } from "@/components/empty-state";
 
 interface SearchParams {
   status?: string;
+  sort?: string;
 }
 
 const STATUS_TABS = [
@@ -118,6 +122,7 @@ export default async function OrdensServicoPage({
 
   const params = await searchParams;
   const statusFilter = params.status || "";
+  const sort = params.sort || "createdAt_desc";
 
   const where: Record<string, unknown> = {};
   if (
@@ -129,9 +134,12 @@ export default async function OrdensServicoPage({
     where.status = statusFilter;
   }
 
+  const [sortField, sortDir] = sort.split("_");
+  const orderBy = { [sortField]: sortDir };
+
   const serviceOrders = await tenant.serviceOrder.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy,
     include: {
       customer: {
         select: { id: true, name: true },
@@ -142,79 +150,114 @@ export default async function OrdensServicoPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ordens de Servico</h1>
-        <Link href="/ordens-servico/novo">
-          <Button>Nova OS</Button>
-        </Link>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Link
-            key={tab.value}
-            href={
-              tab.value
-                ? `/ordens-servico?status=${tab.value}`
-                : "/ordens-servico"
-            }
-          >
-            <Button
-              variant={statusFilter === tab.value ? "default" : "outline"}
-              size="sm"
-            >
-              {tab.label}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Ordens de Servico</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Gerencie ordens de servico</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a href="/api/exportar?entity=service_orders" download>
+            <Button variant="outline" className="rounded-xl">
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </a>
+          <Link href="/ordens-servico/novo">
+            <Button className="rounded-xl">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova OS
             </Button>
           </Link>
-        ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_TABS.map((tab) => (
+            <Link
+              key={tab.value}
+              href={
+                tab.value
+                  ? `/ordens-servico?status=${tab.value}`
+                  : "/ordens-servico"
+              }
+            >
+              <Button
+                variant={statusFilter === tab.value ? "default" : "outline"}
+                size="sm"
+                className="rounded-lg"
+              >
+                {tab.label}
+              </Button>
+            </Link>
+          ))}
+        </div>
+        <SortSelect
+          options={[
+            { value: "createdAt_desc", label: "Mais recentes" },
+            { value: "total_desc", label: "Maior valor" },
+            { value: "total_asc", label: "Menor valor" },
+          ]}
+          defaultValue={sort}
+        />
       </div>
 
       {serviceOrders.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {statusFilter
-            ? "Nenhuma ordem de servico encontrada com esse status."
-            : "Nenhuma ordem de servico cadastrada. Clique em 'Nova OS' para comecar."}
-        </div>
+        <EmptyState
+          title={statusFilter ? "Nenhum resultado" : "Nenhuma ordem cadastrada"}
+          description={
+            statusFilter
+              ? "Nenhuma ordem encontrada com esse status."
+              : "Crie sua primeira ordem de servico."
+          }
+          icon={ClipboardList}
+          actionLabel="Nova OS"
+          actionHref="/ordens-servico/novo"
+        />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>No</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Pagamento</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Acoes</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {serviceOrders.map((so) => (
-              <TableRow key={so.id}>
-                <TableCell className="font-medium">#{so.number}</TableCell>
-                <TableCell>{so.customer.name}</TableCell>
-                <TableCell>
-                  <Badge variant={getStatusVariant(so.status)}>
-                    {getStatusLabel(so.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatCurrency(Number(so.total))}</TableCell>
-                <TableCell>
-                  <Badge variant={getPaymentVariant(so.paymentStatus)}>
-                    {getPaymentLabel(so.paymentStatus)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatDate(so.createdAt)}</TableCell>
-                <TableCell>
-                  <Link href={`/ordens-servico/${so.id}`}>
-                    <Button variant="outline" size="sm">
-                      Ver
-                    </Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="rounded-[1.25rem] border border-border/60 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30 transition-colors">
+                  <TableHead>No</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Acoes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {serviceOrders.map((so) => (
+                  <TableRow key={so.id} className="hover:bg-muted/20 transition-colors">
+                    <TableCell className="font-medium">#{so.number}</TableCell>
+                    <TableCell>{so.customer.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(so.status)}>
+                        {getStatusLabel(so.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatCurrency(Number(so.total))}</TableCell>
+                    <TableCell>
+                      <Badge variant={getPaymentVariant(so.paymentStatus)}>
+                        {getPaymentLabel(so.paymentStatus)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(so.createdAt)}</TableCell>
+                    <TableCell>
+                      <Link href={`/ordens-servico/${so.id}`}>
+                        <Button variant="outline" size="sm" className="rounded-lg">
+                          Ver
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       )}
     </div>
   );

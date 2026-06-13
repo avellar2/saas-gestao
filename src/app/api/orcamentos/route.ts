@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { isTrialLimitReached } from "@/lib/company-limits";
-import { CompanyStatus, QuoteStatus } from "@/generated/prisma/client";
+import { logActivity } from "@/lib/activity-log";
+import { CompanyStatus } from "@/generated/prisma/client";
+import { quoteSchema } from "@/lib/validations";
+
+async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
+  const companyModule = await prisma.companyModule.findUnique({
+    where: { companyId_moduleKey: { companyId, moduleKey } },
+  });
+  return companyModule?.active ?? false;
+}
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -11,28 +20,48 @@ export async function GET(request: Request) {
   }
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
+
+  const hasAccess = await checkModuleAccess(companyId, "quotes");
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Modulo nao ativo" }, { status: 403 });
+  }
+
   const tenant = tenantPrisma(companyId);
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "20", 10);
+  const skip = (page - 1) * limit;
+  const sort = searchParams.get("sort") || "createdAt_desc";
 
   const where: Record<string, unknown> = {};
-  if (status && Object.values(QuoteStatus).includes(status as QuoteStatus)) {
+  if (status) {
     where.status = status;
   }
 
-  const quotes = await tenant.quote.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      customer: {
-        select: { id: true, name: true },
-      },
-      items: true,
-    },
-  });
+  const [sortField, sortDir] = sort.split("_");
+  const orderBy = { [sortField]: sortDir };
 
-  return NextResponse.json(quotes);
+  const [quotes, total] = await Promise.all([
+    tenant.quote.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: { customer: { select: { id: true, name: true, phone: true, whatsapp: true } } },
+    }),
+    tenant.quote.count({ where }),
+  ]);
+
+  const serialized = quotes.map((q) => ({
+    ...q,
+    subtotal: Number(q.subtotal),
+    discount: Number(q.discount),
+    total: Number(q.total),
+  }));
+
+  return NextResponse.json({ quotes: serialized, total, page, totalPages: Math.ceil(total / limit) });
 }
 
 export async function POST(request: Request) {
@@ -42,96 +71,81 @@ export async function POST(request: Request) {
   }
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
-  const companyStatus = (session.user as Record<string, unknown>)
-    .companyStatus as CompanyStatus;
+
+  const hasAccess = await checkModuleAccess(companyId, "quotes");
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Modulo nao ativo" }, { status: 403 });
+  }
+
+  const companyStatus = (session.user as Record<string, unknown>).companyStatus as CompanyStatus;
   const tenant = tenantPrisma(companyId);
 
-  // Check trial limit
   const currentCount = await tenant.quote.count();
   if (isTrialLimitReached(companyStatus, "quotes", currentCount)) {
     return NextResponse.json(
-      {
-        error:
-          "Limite de orcamentos atingido. Faca upgrade do seu plano para adicionar mais orcamentos.",
-      },
+      { error: "Limite de orcamentos atingido. Faca upgrade do seu plano para adicionar mais." },
       { status: 403 }
     );
   }
 
   const body = await request.json();
-  const { customerId, description, validUntil, discount, notes, items } = body;
 
-  if (!customerId) {
+  const result = quoteSchema.safeParse(body);
+  if (!result.success) {
     return NextResponse.json(
-      { error: "Cliente e obrigatorio" },
+      { error: result.error.issues[0]?.message || "Dados invalidos" },
       { status: 400 }
     );
   }
 
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return NextResponse.json(
-      { error: "Pelo menos um item e obrigatorio" },
-      { status: 400 }
-    );
-  }
+  const { customerId, items, discount, notes, validUntil } = result.data;
 
-  // Verify customer exists in tenant
-  const customer = await tenant.customer.findUnique({
-    where: { id: customerId },
-  });
+  const customer = await tenant.customer.findUnique({ where: { id: customerId } });
   if (!customer) {
-    return NextResponse.json(
-      { error: "Cliente nao encontrado" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Cliente nao encontrado" }, { status: 404 });
   }
 
-  // Get next sequential number for company
   const lastQuote = await tenant.quote.findFirst({
     orderBy: { number: "desc" },
     select: { number: true },
   });
   const nextNumber = lastQuote ? lastQuote.number + 1 : 1;
 
-  // Calculate subtotal from items
-  const subtotal = items.reduce(
-    (sum: number, item: { quantity: number; unitPrice: number }) =>
-      sum + item.quantity * item.unitPrice,
-    0
-  );
-
-  const discountValue = parseFloat(discount) || 0;
-  const total = subtotal - discountValue;
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const total = subtotal - (discount || 0);
 
   const quote = await tenant.quote.create({
     data: {
       companyId,
       customerId,
       number: nextNumber,
-      description: description?.trim() || null,
+      status: "DRAFT",
       subtotal,
-      discount: discountValue,
+      discount: discount || 0,
       total,
       validUntil: validUntil ? new Date(validUntil) : null,
       notes: notes?.trim() || null,
       items: {
-        create: items.map(
-          (item: { description: string; quantity: number; unitPrice: number }) => ({
-            description: item.description.trim(),
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.quantity * item.unitPrice,
-          })
-        ),
+        create: items.map((item) => ({
+          description: item.description.trim(),
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.quantity * item.unitPrice,
+        })),
       },
     },
     include: {
-      customer: {
-        select: { id: true, name: true },
-      },
+      customer: { select: { id: true, name: true, phone: true, whatsapp: true } },
       items: true,
     },
   });
 
-  return NextResponse.json(quote, { status: 201 });
+  const userId = (session.user as Record<string, unknown>).id as string;
+  const userName = (session.user as Record<string, unknown>).name as string;
+  await logActivity({ tenant, userId, userName, action: "CREATE", entity: "quote", entityId: quote.id, details: `Nº ${quote.number} - Cliente: ${customer.name}` });
+
+  return NextResponse.json(
+    { ...quote, subtotal: Number(quote.subtotal), discount: Number(quote.discount), total: Number(quote.total) },
+    { status: 201 }
+  );
 }

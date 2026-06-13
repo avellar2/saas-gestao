@@ -98,6 +98,9 @@ export default function EmpresaDetalhePage() {
   const router = useRouter();
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [errorModule, setErrorModule] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const [togglingModule, setTogglingModule] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
@@ -111,9 +114,13 @@ export default function EmpresaDetalhePage() {
         const data = await res.json();
         setCompany(data);
         setSelectedStatus(data.status);
+        setError(null);
+      } else {
+        const data = await res.json();
+        setError(data.error || "Erro ao carregar empresa");
       }
     } catch {
-      // silently fail
+      setError("Erro ao carregar empresa");
     } finally {
       setLoading(false);
     }
@@ -125,6 +132,7 @@ export default function EmpresaDetalhePage() {
 
   async function toggleModule(moduleKey: string, currentActive: boolean) {
     setTogglingModule(moduleKey);
+    setErrorModule(null);
     try {
       const res = await fetch(`/api/empresas/${id}`, {
         method: "PUT",
@@ -134,9 +142,12 @@ export default function EmpresaDetalhePage() {
 
       if (res.ok) {
         await loadCompany();
+      } else {
+        const data = await res.json();
+        setErrorModule(data.error || "Erro ao alternar modulo");
       }
     } catch {
-      // silently fail
+      setErrorModule("Erro ao alternar modulo");
     } finally {
       setTogglingModule(null);
     }
@@ -145,6 +156,7 @@ export default function EmpresaDetalhePage() {
   async function handleStatusChange() {
     if (!company || selectedStatus === company.status) return;
     setSavingStatus(true);
+    setErrorStatus(null);
     try {
       const res = await fetch(`/api/empresas/${id}`, {
         method: "PUT",
@@ -154,9 +166,12 @@ export default function EmpresaDetalhePage() {
 
       if (res.ok) {
         await loadCompany();
+      } else {
+        const data = await res.json();
+        setErrorStatus(data.error || "Erro ao alterar status");
       }
     } catch {
-      // silently fail
+      setErrorStatus("Erro ao alterar status");
     } finally {
       setSavingStatus(false);
     }
@@ -191,6 +206,24 @@ export default function EmpresaDetalhePage() {
           {STATUS_LABELS[company.status] || company.status}
         </Badge>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      {errorModule && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+          {errorModule}
+        </div>
+      )}
+
+      {errorStatus && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+          {errorStatus}
+        </div>
+      )}
 
       {/* Company Info Card */}
       <Card>
@@ -262,7 +295,7 @@ export default function EmpresaDetalhePage() {
           <div className="flex flex-wrap items-end gap-6">
             <div className="space-y-2">
               <label className="text-sm text-gray-500">Status da Empresa</label>
-              <Select value={selectedStatus} onValueChange={(value: string | null) => { if (value) setSelectedStatus(value); }}>
+              <Select value={selectedStatus} onValueChange={(value: string | null) => { if (value !== null) setSelectedStatus(value); }}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>

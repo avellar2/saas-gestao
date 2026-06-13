@@ -1,0 +1,19 @@
+-- FORCE ROW LEVEL SECURITY
+-- O owner do banco (gestor) bypassa RLS por padrão.
+-- FORCE RLS garante que até o owner respeite as políticas.
+-- Isso é crítico porque o Prisma se conecta como o mesmo usuário.
+
+ALTER TABLE users FORCE ROW LEVEL SECURITY;
+ALTER TABLE customers FORCE ROW LEVEL SECURITY;
+ALTER TABLE quotes FORCE ROW LEVEL SECURITY;
+ALTER TABLE quote_items FORCE ROW LEVEL SECURITY;
+ALTER TABLE service_orders FORCE ROW LEVEL SECURITY;
+ALTER TABLE service_order_items FORCE ROW LEVEL SECURITY;
+ALTER TABLE company_modules FORCE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions FORCE ROW LEVEL SECURITY;
+ALTER TABLE products FORCE ROW LEVEL SECURITY;
+ALTER TABLE financial_transactions FORCE ROW LEVEL SECURITY;
+ALTER TABLE appointments FORCE ROW LEVEL SECURITY;
+ALTER TABLE catalog_items FORCE ROW LEVEL SECURITY;
+ALTER TABLE menu_items FORCE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs FORCE ROW LEVEL SECURITY;

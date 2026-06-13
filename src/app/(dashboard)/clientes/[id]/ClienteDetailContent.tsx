@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { ClientForm, type ClientFormData } from "@/components/modules/client-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { DetailSkeleton } from "@/components/ui/detail-skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 interface QuoteHistory {
   id: string;
@@ -107,27 +110,17 @@ export default function ClienteDetailContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Carregando...
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!customer) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          {error || "Cliente nao encontrado"}
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/clientes")}
-        >
-          Voltar
-        </Button>
-      </div>
+      <EmptyState
+        title="Cliente nao encontrado"
+        description={error || "O cliente solicitado nao existe ou foi removido."}
+        actionLabel="Voltar para Clientes"
+        actionHref="/clientes"
+      />
     );
   }
 
@@ -151,9 +144,13 @@ export default function ClienteDetailContent() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
       {editing ? (
@@ -221,9 +218,11 @@ export default function ClienteDetailContent() {
         </CardHeader>
         <CardContent>
           {customer.quotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum orcamento para este cliente.
-            </p>
+            <div className="py-8">
+              <p className="text-sm text-muted-foreground text-center">
+                Nenhum orcamento para este cliente.
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -259,9 +258,11 @@ export default function ClienteDetailContent() {
         </CardHeader>
         <CardContent>
           {customer.serviceOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma ordem de servico para este cliente.
-            </p>
+            <div className="py-8">
+              <p className="text-sm text-muted-foreground text-center">
+                Nenhuma ordem de servico para este cliente.
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader>

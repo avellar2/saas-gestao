@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
@@ -155,14 +156,13 @@ export function QuoteForm({
 
           <div className="space-y-2">
             <Label htmlFor="description">Descricao</Label>
-            <textarea
+            <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
               readOnly={readOnly}
               placeholder="Descricao do orcamento"
               rows={3}
-              className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
             />
           </div>
         </CardContent>
@@ -301,13 +301,12 @@ export function QuoteForm({
           <CardTitle>Observacoes</CardTitle>
         </CardHeader>
         <CardContent>
-          <textarea
+          <Textarea
             value={formData.notes}
             onChange={(e) => handleChange("notes", e.target.value)}
             readOnly={readOnly}
             placeholder="Observacoes adicionais"
             rows={3}
-            className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
           />
         </CardContent>
       </Card>

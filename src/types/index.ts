@@ -28,4 +28,11 @@ export const MODULE_ROUTES: Record<string, string> = {
   customers: "/clientes",
   quotes: "/orcamentos",
   service_orders: "/ordens-servico",
+  inventory: "/estoque",
+  scheduling: "/agendamento",
+  catalog: "/catalogo",
+  menu: "/cardapio",
+  finance: "/financeiro",
+  reports: "/relatorios",
+  users_permissions: "/usuarios",
 };

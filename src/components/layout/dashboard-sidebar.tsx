@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -14,11 +16,15 @@ import {
   BarChart3,
   PieChart,
   Shield,
+  History,
   LogOut,
   Building2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const MODULE_ICONS: Record<string, typeof Building2> = {
   customers: Users,
@@ -39,17 +45,24 @@ const MODULE_LABELS: Record<string, string> = {
   service_orders: "Ordens de Serviço",
   inventory: "Estoque",
   scheduling: "Agendamento",
-  catalog: "Catálogo WhatsApp",
-  menu: "Cardápio Digital",
+  catalog: "Catalogo WhatsApp",
+  menu: "Cardapio Digital",
   finance: "Financeiro",
-  reports: "Relatórios",
-  users_permissions: "Usuários",
+  reports: "Relatorios",
+  users_permissions: "Usuarios",
 };
 
 const MODULE_ROUTES: Record<string, string> = {
   customers: "/clientes",
   quotes: "/orcamentos",
   service_orders: "/ordens-servico",
+  inventory: "/estoque",
+  scheduling: "/agendamento",
+  catalog: "/catalogo",
+  menu: "/cardapio",
+  finance: "/financeiro",
+  reports: "/relatorios",
+  users_permissions: "/usuarios",
 };
 
 interface DashboardSidebarProps {
@@ -59,6 +72,9 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const email = (user.email as string) || "";
   const name = (user.name as string) || "";
   const initials = name
@@ -68,15 +84,19 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
     .toUpperCase()
     .slice(0, 2) || email.slice(0, 2).toUpperCase();
 
-  const isActive = (href: string) => {
-    if (href === "/dashboard") {
-      return pathname === "/dashboard";
-    }
-    return pathname.startsWith(href);
-  };
+  const isActive = useCallback(
+    (href: string) => {
+      if (href === "/dashboard") {
+        return pathname === "/dashboard";
+      }
+      return pathname.startsWith(href);
+    },
+    [pathname]
+  );
 
   const navItems = [
     { key: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { key: "atividades", label: "Atividades", href: "/atividades", icon: History },
   ];
 
   for (const [key, href] of Object.entries(MODULE_ROUTES)) {
@@ -90,69 +110,193 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
     }
   }
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 fixed h-full z-40">
+  const sidebarContent = (
+    <>
       {/* Header */}
-      <div className="p-5 border-b border-slate-800">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-white leading-tight">Gestor Local</h1>
-            <p className="text-[11px] text-slate-400 leading-tight">Painel da Empresa</p>
-          </div>
+      <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
+          <motion.div
+            className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0"
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          >
+            <Building2 className="w-5 h-5 text-primary-foreground" />
+          </motion.div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                <h1 className="text-sm font-bold text-sidebar-foreground leading-tight tracking-tight">Gestor Local</h1>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Link>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+        >
+          {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems.map((item, i) => {
           const active = isActive(item.href);
           const Icon = item.icon;
           return (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${active
-                  ? "bg-indigo-600/15 text-indigo-400"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                }
-              `}
-            >
-              <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-indigo-400" : ""}`} />
-              <span>{item.label}</span>
-              {active && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
-              )}
+            <Link key={item.key} href={item.href}>
+              <motion.div
+                initial={false}
+                className={`
+                  relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-160 ease-out
+                  ${active
+                    ? "text-primary"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  }
+                `}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.1 }}
+              >
+                {/* Active indicator */}
+                {active && (
+                  <motion.div
+                    layoutId="activeIndicator"
+                    className="absolute inset-0 rounded-xl bg-primary/10"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <Icon className={`w-[18px] h-[18px] shrink-0 relative z-10 ${active ? "text-primary" : ""}`} />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                      className="relative z-10 overflow-hidden whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                {active && !collapsed && (
+                  <motion.div
+                    layoutId="activeDot"
+                    className="ml-auto w-1.5 h-1.5 rounded-full bg-primary relative z-10"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </motion.div>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-3 border-t border-sidebar-border space-y-1">
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <Avatar className="w-8 h-8 bg-indigo-600">
-            <AvatarFallback className="text-xs font-semibold text-white bg-indigo-600">
+          <Avatar className="w-8 h-8 bg-primary shrink-0">
+            <AvatarFallback className="text-xs font-semibold text-primary-foreground bg-primary">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">{name || "Usuário"}</p>
-            <p className="text-xs text-slate-500 truncate">{email}</p>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                className="min-w-0 overflow-hidden"
+              >
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{name || "Usuario"}</p>
+                <p className="text-xs text-sidebar-foreground/50 truncate">{email}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-160"
+          >
+            <LogOut className="w-[18px] h-[18px] shrink-0" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                  className="overflow-hidden whitespace-nowrap"
+                >
+                  Sair
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+          <div className="shrink-0">
+            <ThemeToggle />
           </div>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-        >
-          <LogOut className="w-[18px] h-[18px]" />
-          <span>Sair</span>
-        </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile toggle */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="fixed top-3.5 left-4 z-50 lg:hidden w-9 h-9 rounded-xl bg-sidebar text-sidebar-foreground flex items-center justify-center shadow-lg"
+      >
+        <PanelLeftOpen className="w-4 h-4" />
+      </button>
+
+      {/* Sidebar */}
+      <motion.aside
+        className={`
+          fixed lg:sticky top-0 left-0 z-40 h-[100dvh] bg-sidebar text-sidebar-foreground flex flex-col shrink-0
+          border-r border-sidebar-border
+          ${collapsed ? "w-20" : "w-64"}
+        `}
+        initial={false}
+        animate={{
+          x: mobileOpen ? 0 : 0,
+          width: collapsed ? 80 : 256,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+        }}
+        style={{
+          width: collapsed ? 80 : 256,
+        }}
+      >
+        {sidebarContent}
+      </motion.aside>
+    </>
   );
 }

@@ -39,6 +39,12 @@ export default async function AdminLayout({
           >
             Empresas
           </Link>
+          <Link
+            href="/admin/modulos"
+            className="block px-4 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          >
+            Módulos
+          </Link>
         </nav>
         <div className="p-4 border-t border-gray-700">
           <p className="text-xs text-gray-500 truncate">

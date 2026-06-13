@@ -141,8 +141,8 @@ export default async function UpgradePage({
       </Link>
 
       <div className="flex items-center gap-4">
-        <div className="size-12 rounded-full bg-gray-100 flex items-center justify-center">
-          <Lock className="size-6 text-gray-400" />
+        <div className="size-12 rounded-2xl bg-muted border border-border flex items-center justify-center">
+          <Lock className="size-6 text-muted-foreground" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">{moduleInfo.name}</h1>

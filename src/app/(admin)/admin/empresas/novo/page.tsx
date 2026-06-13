@@ -19,12 +19,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+interface FormFields {
+  name: string;
+  tradeName: string;
+  document: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+}
+
 export default function NovaEmpresaPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("TRIAL");
   const [trialDays, setTrialDays] = useState("15");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormFields>({
     name: "",
     tradeName: "",
     document: "",
@@ -34,13 +45,18 @@ export default function NovaEmpresaPage() {
     address: "",
   });
 
-  function handleChange(field: string, value: string) {
+  function handleChange(field: keyof FormFields, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    setError(null);
+
+    if (!form.name.trim()) {
+      setError("O nome da empresa e obrigatorio");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -58,10 +74,10 @@ export default function NovaEmpresaPage() {
         router.push("/admin/empresas");
       } else {
         const data = await res.json();
-        alert(data.error || "Erro ao criar empresa");
+        setError(data.error || "Erro ao criar empresa");
       }
     } catch {
-      alert("Erro ao criar empresa");
+      setError("Erro ao criar empresa");
     } finally {
       setLoading(false);
     }
@@ -77,6 +93,12 @@ export default function NovaEmpresaPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome *</Label>
@@ -142,7 +164,7 @@ export default function NovaEmpresaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={status} onValueChange={(value: string | null) => { if (value) setStatus(value); }}>
+                <Select value={status} onValueChange={(value: string | null) => { if (value !== null) setStatus(value); }}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>

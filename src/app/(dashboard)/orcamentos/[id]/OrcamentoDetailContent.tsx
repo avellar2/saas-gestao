@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { buildWhatsAppLink, quoteWhatsAppMessage } from "@/lib/whatsapp";
 import { MessageCircle, FileDown } from "lucide-react";
+import { DetailSkeleton } from "@/components/ui/detail-skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 interface QuoteItem {
   id: string;
@@ -220,27 +223,17 @@ export default function OrcamentoDetailContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Carregando...
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!quote) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          {error || "Orcamento nao encontrado"}
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/orcamentos")}
-        >
-          Voltar
-        </Button>
-      </div>
+      <EmptyState
+        title="Orcamento nao encontrado"
+        description={error || "O orcamento solicitado nao existe ou foi removido."}
+        actionLabel="Voltar para Orcamentos"
+        actionHref="/orcamentos"
+      />
     );
   }
 
@@ -286,13 +279,15 @@ export default function OrcamentoDetailContent() {
             </Button>
           )}
           {getWhatsAppLink() && (
-            <Button
-              variant="outline"
-              render={<a href={getWhatsAppLink()!} target="_blank" rel="noopener noreferrer" />}
+            <a
+              href={getWhatsAppLink()!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
             >
               <MessageCircle className="size-4 mr-1" />
               WhatsApp
-            </Button>
+            </a>
           )}
           <a
             href={`/api/pdf/orcamento/${id}`}
@@ -313,9 +308,13 @@ export default function OrcamentoDetailContent() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
       {editing && quote.status === "DRAFT" ? (

@@ -25,8 +25,25 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  passwordResetTokens PasswordResetToken[]
+
   @@index([companyId])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [email], references: [email])
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
 }
 
 enum CompanyStatus {
@@ -59,6 +76,12 @@ model Company {
   customers      Customer[]
   quotes         Quote[]
   serviceOrders  ServiceOrder[]
+  products       Product[]
+  financialTransactions FinancialTransaction[]
+  appointments          Appointment[]
+  catalogItems          CatalogItem[]
+  menuItems             MenuItem[]
+  activityLogs          ActivityLog[]
 
   @@index([status])
   @@map("companies")
@@ -107,6 +130,25 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+model ActivityLog {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  userName  String
+  action    String   // CREATE, UPDATE, DELETE
+  entity    String   // customer, quote, service_order, product, financial, appointment, catalog, menu, user
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
 model Subscription {
   id                    String             @id @default(cuid())
   companyId             String             @unique
@@ -144,11 +186,118 @@ model Customer {
   company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   quotes        Quote[]
   serviceOrders ServiceOrder[]
+  financialTransactions FinancialTransaction[]
+  appointments         Appointment[]
 
   @@index([companyId])
   @@index([name])
   @@index([phone])
   @@map("customers")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  sku         String?
+  category    String?
+  quantity    Decimal  @db.Decimal(10, 2) @default(0)
+  minStock    Decimal  @db.Decimal(10, 2) @default(0)
+  costPrice   Decimal? @db.Decimal(10, 2)
+  salePrice   Decimal  @db.Decimal(10, 2) @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([name])
+  @@map("products")
+}
+
+model FinancialTransaction {
+  id          String   @id @default(cuid())
+  companyId   String
+  type        String   // RECEIVABLE or PAYABLE
+  description String
+  category    String?
+  amount      Decimal  @db.Decimal(10, 2)
+  dueDate     DateTime?
+  paidAt      DateTime?
+  status      String   @default("PENDING") // PENDING, PAID, OVERDUE, CANCELLED
+  customerId  String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([status])
+  @@map("financial_transactions")
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  companyId   String
+  customerId  String?
+  title       String
+  description String?
+  dateTime    DateTime
+  duration    Int      @default(60)
+  status      String   @default("SCHEDULED") // SCHEDULED, CONFIRMED, CANCELLED, COMPLETED
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([companyId])
+  @@index([dateTime])
+  @@map("appointments")
+}
+
+model CatalogItem {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  category    String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("catalog_items")
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  category    String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([category])
+  @@map("menu_items")
 }
 
 enum QuoteStatus {

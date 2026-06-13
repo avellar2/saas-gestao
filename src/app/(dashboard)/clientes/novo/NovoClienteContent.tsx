@@ -31,7 +31,7 @@ export default function NovoClienteContent() {
       <h1 className="text-2xl font-bold">Novo Cliente</h1>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
           {error}
         </div>
       )}

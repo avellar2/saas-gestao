@@ -5,6 +5,13 @@ const MODULE_ROUTE_MAP: Record<string, ModuleKey> = {
   "/clientes": "customers",
   "/orcamentos": "quotes",
   "/ordens-servico": "service_orders",
+  "/estoque": "inventory",
+  "/agendamento": "scheduling",
+  "/catalogo": "catalog",
+  "/cardapio": "menu",
+  "/financeiro": "finance",
+  "/relatorios": "reports",
+  "/usuarios": "users_permissions",
 };
 
 export function getModuleKeyForPath(pathname: string): ModuleKey | null {

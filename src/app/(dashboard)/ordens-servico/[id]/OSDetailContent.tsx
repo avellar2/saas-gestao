@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   ServiceOrderForm,
   type ServiceOrderFormData,
@@ -18,6 +19,8 @@ import {
   serviceOrderDeliveredMessage,
 } from "@/lib/whatsapp";
 import { MessageCircle, FileDown } from "lucide-react";
+import { DetailSkeleton } from "@/components/ui/detail-skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 interface ServiceOrderItem {
   id: string;
@@ -331,27 +334,17 @@ export default function OSDetailContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        Carregando...
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!so) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          {error || "Ordem de servico nao encontrada"}
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/ordens-servico")}
-        >
-          Voltar
-        </Button>
-      </div>
+      <EmptyState
+        title="Ordem nao encontrada"
+        description={error || "A ordem de servico solicitada nao existe ou foi removida."}
+        actionLabel="Voltar para Ordens"
+        actionHref="/ordens-servico"
+      />
     );
   }
 
@@ -460,9 +453,13 @@ export default function OSDetailContent() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
       {editing && canEdit ? (
@@ -559,8 +556,8 @@ export default function OSDetailContent() {
             </CardContent>
           </Card>
 
-          {/* Payment section */}
-          {so.status !== "CANCELLED" && so.paymentStatus !== "PAID" && (
+          {/* Payment section — only show for PENDING status */}
+          {so.status !== "CANCELLED" && so.paymentStatus === "PENDING" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">

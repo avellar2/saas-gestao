@@ -15,6 +15,13 @@ const TENANT_MODELS = new Set([
   "ServiceOrderItem",
   "CompanyModule",
   "Subscription",
+  "Product",
+  "FinancialTransaction",
+  "Appointment",
+  "CatalogItem",
+  "MenuItem",
+  "ActivityLog",
+  "PasswordResetToken",
 ]);
 
 function createPrismaClient() {
@@ -40,6 +47,14 @@ export function tenantPrisma(companyId: string) {
     query: {
       $allModels: {
         async $allOperations({ args, model, operation, query }) {
+          // Set RLS session variable before each operation.
+          // This runs on the same connection as the subsequent query()
+          // because Prisma uses a single connection per query pipeline.
+          await prisma.$executeRawUnsafe(
+            `SELECT set_config('app.current_company_id', $1, true)`,
+            companyId
+          );
+
           if (!TENANT_MODELS.has(model)) {
             return query(args);
           }
