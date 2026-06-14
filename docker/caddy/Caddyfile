@@ -1,0 +1,36 @@
+# Gestor Local - Caddyfile
+# SSL automático via Let's Encrypt
+# Substituir DOMINIO pelo domínio real quando estiver pronto
+
+# ─── Modo desenvolvimento (sem domínio) ──────────────────────────
+http://86.48.24.70 {
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    log {
+        output file /data/logs/access.log
+    }
+}
+
+# ─── Modo produção (com domínio) ────────────────────────────────
+# Descomentar quando o domínio estiver apontado:
+#
+# avgestao.com.br, www.avgestao.com.br {
+#     reverse_proxy app:3000 {
+#         header_up Host {host}
+#         header_up X-Real-IP {remote_host}
+#         header_up X-Forwarded-For {remote_host}
+#         header_up X-Forwarded-Proto {scheme}
+#     }
+#
+#     # Redirecionar www para sem www
+#     redir www.avgestao.com.br avgestao.com.br permanent
+#
+#     log {
+#         output file /data/logs/access.log
+#     }
+# }

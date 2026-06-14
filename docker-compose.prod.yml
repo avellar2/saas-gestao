@@ -1,0 +1,80 @@
+# Gestor Local - Produção (VPS Contabo)
+# Uso: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestor_postgres
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: gestor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gestor_prod_123}
+      POSTGRES_DB: gestor_local
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - gestor-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestor -d gestor_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # NÃO expor porta 5432 publicamente
+    # Apenas a rede interna do Docker acessa
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: gestor_app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Gestor Local}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_BASIC_PRICE_ID: ${STRIPE_BASIC_PRICE_ID}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gestor-net
+    labels:
+      - "traefik.enable=false"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: gestor_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - gestor-net
+
+volumes:
+  pgdata_prod:
+    name: gestor_pgdata
+  caddy_data:
+    name: gestor_caddy_data
+  caddy_config:
+    name: gestor_caddy_config
+
+networks:
+  gestor-net:
+    name: gestor_network
+    driver: bridge
