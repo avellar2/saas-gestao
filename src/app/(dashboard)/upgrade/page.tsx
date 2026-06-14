@@ -1,7 +1,9 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,32 +108,77 @@ const MODULE_DESCRIPTIONS: Record<
   },
 };
 
-export default async function UpgradePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ module?: string }>;
-}) {
-  const session = await auth();
+const PLANS = [
+  {
+    key: "basic",
+    name: "Básico",
+    price: "R$ 49",
+    period: "/mês",
+    description: "Para começar",
+    modules: 3,
+    features: [
+      "Até 3 módulos",
+      "Até 50 clientes",
+      "Suporte por email",
+    ],
+  },
+  {
+    key: "pro",
+    name: "Profissional",
+    price: "R$ 99",
+    period: "/mês",
+    description: "Para negócios completos",
+    modules: 10,
+    popular: true,
+    features: [
+      "Todos os módulos",
+      "Clientes ilimitados",
+      "Suporte prioritário",
+      "Upload de imagens",
+    ],
+  },
+];
 
-  if (!session) {
-    redirect("/login");
-  }
+export default function UpgradePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const moduleKey = searchParams.get("module") as ModuleKey | undefined;
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const params = await searchParams;
-  const moduleKey = params.module as ModuleKey | undefined;
+  const moduleInfo = moduleKey && MODULE_KEYS.includes(moduleKey)
+    ? MODULE_DESCRIPTIONS[moduleKey]
+    : null;
 
-  if (!moduleKey || !MODULE_KEYS.includes(moduleKey)) {
-    redirect("/dashboard");
-  }
+  async function handleCheckout(plan: string) {
+    setLoading(plan);
+    setError("");
 
-  const moduleInfo = MODULE_DESCRIPTIONS[moduleKey];
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, moduleKey: moduleKey || "" }),
+      });
 
-  if (!moduleInfo) {
-    redirect("/dashboard");
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erro ao iniciar pagamento");
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setError("Erro de conexão. Tente novamente.");
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -140,51 +187,88 @@ export default async function UpgradePage({
         Voltar
       </Link>
 
-      <div className="flex items-center gap-4">
-        <div className="size-12 rounded-2xl bg-muted border border-border flex items-center justify-center">
-          <Lock className="size-6 text-muted-foreground" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">{moduleInfo.name}</h1>
-          <p className="text-muted-foreground">{moduleInfo.description}</p>
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="p-6 space-y-4">
+      {moduleInfo && (
+        <div className="flex items-center gap-4">
+          <div className="size-12 rounded-2xl bg-muted border border-border flex items-center justify-center">
+            <Lock className="size-6 text-muted-foreground" />
+          </div>
           <div>
-            <Badge variant="outline" className="mb-3">
-              Módulo Bloqueado
-            </Badge>
-            <h2 className="text-lg font-semibold">Benefícios deste módulo</h2>
+            <h1 className="text-2xl font-bold">{moduleInfo.name}</h1>
+            <p className="text-muted-foreground">{moduleInfo.description}</p>
           </div>
+        </div>
+      )}
 
-          <ul className="space-y-2">
-            {moduleInfo.benefits.map((benefit, index) => (
-              <li key={index} className="flex items-center gap-2 text-sm">
-                <span className="size-1.5 rounded-full bg-muted-foreground shrink-0" />
-                {benefit}
-              </li>
-            ))}
-          </ul>
+      {!moduleInfo && (
+        <div>
+          <h1 className="text-2xl font-bold">Upgrade do Plano</h1>
+          <p className="text-muted-foreground">
+            Escolha o plano ideal para seu negócio
+          </p>
+        </div>
+      )}
 
-          <div className="pt-4 border-t">
-            <p className="text-2xl font-bold">
-              A partir de{" "}
-              <span className="text-primary">R$50/mês</span>
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Contate o administrador para ativar este módulo.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {error && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      <div className="flex gap-3">
-        <Button>Solicitar Ativação</Button>
-        <Link href="/dashboard">
-          <Button variant="outline">Voltar</Button>
-        </Link>
+      <div className="grid md:grid-cols-2 gap-6">
+        {PLANS.map((plan) => (
+          <Card
+            key={plan.key}
+            className={`relative ${
+              plan.popular
+                ? "border-primary/50 shadow-lg shadow-primary/10"
+                : ""
+            }`}
+          >
+            {plan.popular && (
+              <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
+                Mais popular
+              </Badge>
+            )}
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold">{plan.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {plan.description}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-3xl font-bold">{plan.price}</span>
+                <span className="text-muted-foreground">{plan.period}</span>
+              </div>
+
+              <ul className="space-y-2">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <Check className="size-4 text-primary shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                className="w-full"
+                variant={plan.popular ? "default" : "outline"}
+                onClick={() => handleCheckout(plan.key)}
+                disabled={loading !== null}
+              >
+                {loading === plan.key ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" />
+                    Redirecionando...
+                  </span>
+                ) : (
+                  `Assinar ${plan.name}`
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

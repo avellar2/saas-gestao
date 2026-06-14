@@ -54,21 +54,22 @@ enum CompanyStatus {
 }
 
 model Company {
-  id            String        @id @default(cuid())
-  name          String
-  tradeName     String?
-  document      String?
-  phone         String?
-  whatsapp      String?
-  email         String?
-  address       String?
-  status        CompanyStatus @default(TRIAL)
-  trialStartsAt DateTime?
-  trialEndsAt   DateTime?
-  planName      String?
-  monthlyPrice  Decimal?      @db.Decimal(10, 2)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  name             String
+  tradeName        String?
+  document         String?
+  phone            String?
+  whatsapp         String?
+  email            String?
+  address          String?
+  status           CompanyStatus @default(TRIAL)
+  trialStartsAt    DateTime?
+  trialEndsAt      DateTime?
+  planName         String?
+  monthlyPrice     Decimal?      @db.Decimal(10, 2)
+  stripeCustomerId String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   users          User[]
   companyModules CompanyModule[]
@@ -160,6 +161,8 @@ model Subscription {
   trialEndsAt           DateTime?
   currentPeriodStartsAt DateTime?
   currentPeriodEndsAt   DateTime?
+  stripeSubscriptionId  String?            @unique
+  stripePriceId         String?
   paymentMethod         String?
   notes                 String?
   createdAt             DateTime           @default(now())
