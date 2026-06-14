@@ -43,4 +43,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry wrapper (only if DSN is configured)
+let config = nextConfig;
+try {
+  const { withSentryConfig } = require("@sentry/nextjs");
+  if (process.env.SENTRY_DSN) {
+    config = withSentryConfig(config, {
+      org: process.env.SENTRY_ORG || "",
+      project: process.env.SENTRY_PROJECT || "gestor-local",
+      silent: true,
+      hideSourceMaps: true,
+      widenClientFileUpload: true,
+    });
+  }
+} catch {
+  // Sentry not configured, use plain config
+}
+
+export default config;
