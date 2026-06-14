@@ -2,7 +2,7 @@
 set -e
 
 echo "⏳ Running Prisma migrations..."
-npx prisma migrate deploy --schema=prisma/schema.prisma
+npx -y prisma@7 migrate deploy
 
 echo "🚀 Starting Next.js..."
 exec node server.js
