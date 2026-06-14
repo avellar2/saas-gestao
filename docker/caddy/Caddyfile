@@ -1,17 +1,7 @@
-# Gestor Local - Caddyfile
-# SSL automático via Let's Encrypt
+avgestao.com.br {
+    reverse_proxy app:3000
+}
 
-avgestao.com.br, www.avgestao.com.br {
-    reverse_proxy app:3000 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-    }
-
-    redir www.avgestao.com.br https://avgestao.com.br permanent
-
-    log {
-        output file /data/logs/access.log
-    }
+www.avgestao.com.br {
+    redir https://avgestao.com.br{uri} permanent
 }
