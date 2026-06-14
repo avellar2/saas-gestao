@@ -20,8 +20,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # NÃO expor porta 5432 publicamente
-    # Apenas a rede interna do Docker acessa
 
   app:
     build:
@@ -32,16 +30,6 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      AUTH_SECRET: ${AUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Gestor Local}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_BASIC_PRICE_ID: ${STRIPE_BASIC_PRICE_ID}
-      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
     volumes:
       - uploads:/app/uploads
     depends_on:
