@@ -6,7 +6,8 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "npx tsx prisma/seed.ts",
   },
-  datasource: {
-    url: env("DATABASE_URL"),
+  async adapter() {
+    const { PrismaPg } = await import("@prisma/adapter-pg");
+    return new PrismaPg({ connectionString: env("DATABASE_URL") });
   },
 });
