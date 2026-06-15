@@ -4,6 +4,7 @@ import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { QuoteStatus } from "@/generated/prisma/client";
 import { quoteUpdateSchema } from "@/lib/validations";
+import { sendBudgetApprovedEmail } from "@/lib/email";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -87,8 +88,19 @@ export async function PUT(
     const updated = await tenant.quote.update({
       where: { id },
       data: { status: body.status },
-      include: { customer: { select: { id: true, name: true, phone: true, whatsapp: true } }, items: true },
+      include: { customer: { select: { id: true, name: true, phone: true, whatsapp: true, email: true } }, items: true },
     });
+
+    // Send email notification when quote is approved
+    if (body.status === "APPROVED" && updated.customer?.email) {
+      const company = await prisma.company.findUnique({ where: { id: companyId } });
+      sendBudgetApprovedEmail(
+        updated.customer.email,
+        updated.customer.name,
+        `Nº ${updated.number}`,
+        Number(updated.total)
+      ).catch((err) => console.error("Failed to send budget approved email:", err));
+    }
 
     const userId = (session.user as Record<string, unknown>).id as string;
     const userName = (session.user as Record<string, unknown>).name as string;

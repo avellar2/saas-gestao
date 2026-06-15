@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { PaymentStatus } from "@/generated/prisma/client";
+import { sendOSCompletedEmail } from "@/lib/email";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -123,7 +124,7 @@ export async function PUT(
       data: updateData,
       include: {
         customer: {
-          select: { id: true, name: true, phone: true, whatsapp: true },
+          select: { id: true, name: true, phone: true, whatsapp: true, email: true },
         },
         items: true,
         quote: {
@@ -131,6 +132,15 @@ export async function PUT(
         },
       },
     });
+
+    // Send email notification when OS is finished or delivered
+    if ((body.status === "FINISHED" || body.status === "DELIVERED") && updated.customer?.email) {
+      sendOSCompletedEmail(
+        updated.customer.email,
+        updated.customer.name,
+        `Nº ${updated.number}`
+      ).catch((err) => console.error("Failed to send OS completed email:", err));
+    }
 
     const userId = (session.user as Record<string, unknown>).id as string;
     const userName = (session.user as Record<string, unknown>).name as string;

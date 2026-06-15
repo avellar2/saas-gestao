@@ -105,26 +105,23 @@
 
 ### Checklist
 
-- [ ] Integração Stripe/PagSeguro
-  - [ ] Webhook de pagamento
-  - [ ] Ativação automática de módulos após pagamento
-  - [ ] Cancelamento e upgrade de plano
-- [ ] Upload de imagens (S3/R2)
-  - [ ] Endpoint de upload presigned URL
-  - [ ] Componente de upload com preview
-  - [ ] Integrar em Catálogo e Cardápio
-- [ ] Notificações por email
-  - [ ] Trial expirando (3 dias antes)
-  - [ ] Orçamento aprovado
-  - [ ] OS concluída
-  - [ ] Reset de senha
-- [ ] Monitoramento Sentry
-  - [ ] Captura de erros em produção
-  - [ ] Alertas no Discord/Slack
-- [ ] CI/CD GitHub Actions
-  - [ ] Build + Type check em PR
+- [x] Integração Stripe/PagSeguro
+  - [x] Webhook de pagamento
+  - [x] Ativação automática de módulos após pagamento
+  - [x] Cancelamento e upgrade de plano
+- [ ] Upload de imagens (S3/R2) — adiado para Fase 6 junto com reformulação do Cardápio
+- [x] Notificações por email
+  - [x] Trial expirando (3 dias antes)
+  - [x] Orçamento aprovado
+  - [x] OS concluída
+  - [x] Reset de senha
+- [x] Monitoramento Sentry
+  - [x] Captura de erros em produção
+  - [ ] Alertas no Discord/Slack (configurar no painel Sentry)
+- [x] CI/CD GitHub Actions
+  - [x] Build + Type check em PR
   - [ ] Testes automatizados
-  - [ ] Deploy automático na main
+  - [x] Deploy automático na main
 
 ---
 
@@ -161,6 +158,11 @@
 
 ### Checklist
 
+- [ ] Remover módulo Catálogo WhatsApp (descontinuado)
+- [ ] Reformular Cardápio Digital com novas funcionalidades
+  - [ ] Upload de imagens com S3/R2 (presigned URL)
+  - [ ] Componente ImageUpload integrado no formulário
+  - [ ] Melhorias visuais e funcionais a definir
 - [ ] PWA (manifest.json, service worker, offline)
 - [ ] Gráficos nos relatórios (Recharts)
 - [ ] Onboarding/tutorial interativo
