@@ -214,7 +214,7 @@ export async function sendPasswordResetEmail(
   email: string,
   token: string
 ): Promise<{ success: boolean; error?: string }> {
-  const resetUrl = `${appUrl}/auth/reset-password?token=${token}`;
+  const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
   const html = `
     <!DOCTYPE html>
