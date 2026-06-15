@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
-import { ServiceOrderStatus, PaymentStatus } from "@/generated/prisma/client";
+import { ServiceOrderStatus } from "@/generated/prisma/client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FileDown, Plus, ClipboardList } from "lucide-react";
@@ -18,6 +18,11 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { SortSelect } from "@/components/sort-select";
 import { EmptyState } from "@/components/empty-state";
+import {
+  getStatusLabel, getStatusVariant,
+  getPriorityLabel, getPriorityVariant,
+  getPaymentStatusLabel, getPaymentStatusVariant,
+} from "@/lib/os-status";
 
 interface SearchParams {
   status?: string;
@@ -26,85 +31,14 @@ interface SearchParams {
 
 const STATUS_TABS = [
   { label: "Todas", value: "" },
-  { label: "Aberta", value: "OPENED" },
-  { label: "Em Andamento", value: "IN_PROGRESS" },
-  { label: "Aguardando Pecas", value: "WAITING_PARTS" },
-  { label: "Finalizada", value: "FINISHED" },
+  { label: "Recebida", value: "RECEIVED" },
+  { label: "Em Diagnóstico", value: "DIAGNOSIS" },
+  { label: "Aguardando Peças", value: "WAITING_PARTS" },
+  { label: "Em Execução", value: "IN_PROGRESS" },
+  { label: "Pronta", value: "READY" },
   { label: "Entregue", value: "DELIVERED" },
   { label: "Cancelada", value: "CANCELLED" },
 ];
-
-function getStatusVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "OPENED":
-      return "secondary";
-    case "IN_PROGRESS":
-      return "outline";
-    case "WAITING_PARTS":
-      return "outline";
-    case "FINISHED":
-      return "default";
-    case "DELIVERED":
-      return "default";
-    case "CANCELLED":
-      return "destructive";
-    default:
-      return "secondary";
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "OPENED":
-      return "Aberta";
-    case "IN_PROGRESS":
-      return "Em Andamento";
-    case "WAITING_PARTS":
-      return "Aguardando Pecas";
-    case "FINISHED":
-      return "Finalizada";
-    case "DELIVERED":
-      return "Entregue";
-    case "CANCELLED":
-      return "Cancelada";
-    default:
-      return status;
-  }
-}
-
-function getPaymentVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "PAID":
-      return "default";
-    case "PARTIAL":
-      return "outline";
-    case "PENDING":
-      return "secondary";
-    case "CANCELLED":
-      return "destructive";
-    default:
-      return "secondary";
-  }
-}
-
-function getPaymentLabel(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "Pendente";
-    case "PARTIAL":
-      return "Parcial";
-    case "PAID":
-      return "Pago";
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return status;
-  }
-}
 
 export default async function OrdensServicoPage({
   searchParams,
@@ -219,8 +153,10 @@ export default async function OrdensServicoPage({
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30 transition-colors">
-                  <TableHead>No</TableHead>
+                  <TableHead>OS</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Equipamento</TableHead>
+                  <TableHead>Prioridade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Pagamento</TableHead>
@@ -231,18 +167,32 @@ export default async function OrdensServicoPage({
               <TableBody>
                 {serviceOrders.map((so) => (
                   <TableRow key={so.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-medium">#{so.number}</TableCell>
+                    <TableCell className="font-medium">{so.code || `#${so.number}`}</TableCell>
                     <TableCell>{so.customer.name}</TableCell>
                     <TableCell>
-                      <Badge variant={getStatusVariant(so.status)}>
+                      {so.equipmentName ? (
+                        <span className="text-sm">{so.equipmentName}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {so.priority && (
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPriorityVariant(so.priority)}`}>
+                          {getPriorityLabel(so.priority)}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status)}`}>
                         {getStatusLabel(so.status)}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell>{formatCurrency(Number(so.total))}</TableCell>
                     <TableCell>
-                      <Badge variant={getPaymentVariant(so.paymentStatus)}>
-                        {getPaymentLabel(so.paymentStatus)}
-                      </Badge>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPaymentStatusVariant(so.paymentStatus)}`}>
+                        {getPaymentStatusLabel(so.paymentStatus)}
+                      </span>
                     </TableCell>
                     <TableCell>{formatDate(so.createdAt)}</TableCell>
                     <TableCell>

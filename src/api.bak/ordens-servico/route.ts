@@ -149,7 +149,7 @@ export async function POST(request: Request) {
       customerId,
       quoteId: quoteId || null,
       number: nextNumber,
-      status: "OPENED",
+      status: "RECEIVED",
       problemDescription: problemDescription?.trim() || null,
       serviceDescription: serviceDescription?.trim() || null,
       total,

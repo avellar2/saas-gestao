@@ -25,7 +25,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  passwordResetTokens PasswordResetToken[]
+  passwordResetTokens  PasswordResetToken[]
+  assignedServiceOrders ServiceOrder[]     @relation("ServiceOrderTechnician")
 
   @@index([companyId])
   @@map("users")
@@ -355,12 +356,30 @@ model QuoteItem {
 }
 
 enum ServiceOrderStatus {
-  OPENED
-  IN_PROGRESS
+  RECEIVED
+  DIAGNOSIS
+  WAITING_APPROVAL
   WAITING_PARTS
-  FINISHED
+  IN_PROGRESS
+  READY
   DELIVERED
+  COMPLETED
   CANCELLED
+}
+
+enum ServiceOrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+  TRANSFER
+  OTHER
 }
 
 enum PaymentStatus {
@@ -371,32 +390,55 @@ enum PaymentStatus {
 }
 
 model ServiceOrder {
-  id                 String             @id @default(cuid())
-  companyId          String
-  customerId         String
-  quoteId            String?
-  number             Int
-  status             ServiceOrderStatus  @default(OPENED)
-  problemDescription String?
-  serviceDescription String?
-  total              Decimal            @db.Decimal(10, 2) @default(0)
-  paidAmount         Decimal            @db.Decimal(10, 2) @default(0)
-  paymentStatus      PaymentStatus      @default(PENDING)
-  openedAt           DateTime           @default(now())
-  finishedAt         DateTime?
-  notes              String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                  String                @id @default(cuid())
+  companyId           String
+  customerId          String
+  quoteId             String?
+  number              Int
+  code                String?
+  status              ServiceOrderStatus    @default(RECEIVED)
+  priority            ServiceOrderPriority  @default(NORMAL)
+  problemDescription  String?
+  serviceDescription  String?
+  equipmentName       String?
+  equipmentBrand      String?
+  equipmentModel      String?
+  serialNumber        String?
+  accessories         String?
+  technicianId        String?
+  total               Decimal               @db.Decimal(10, 2) @default(0)
+  finalAmount         Decimal?              @db.Decimal(10, 2)
+  paidAmount          Decimal               @db.Decimal(10, 2) @default(0)
+  paymentStatus       PaymentStatus         @default(PENDING)
+  paymentMethod       PaymentMethod?
+  receivedAt          DateTime?
+  expectedDeliveryDate DateTime?
+  completedAt         DateTime?
+  warrantyEnabled     Boolean               @default(false)
+  warrantyStartDate   DateTime?
+  warrantyEndDate     DateTime?
+  warrantyTerms       String?
+  internalNotes       String?
+  customerNotes       String?
+  publicToken         String?               @unique
+  notes               String?
+  openedAt            DateTime              @default(now())
+  finishedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
-  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer Customer          @relation(fields: [customerId], references: [id])
-  quote    Quote?            @relation(fields: [quoteId], references: [id])
-  items    ServiceOrderItem[]
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer    Customer           @relation(fields: [customerId], references: [id])
+  quote       Quote?             @relation(fields: [quoteId], references: [id])
+  technician  User?              @relation("ServiceOrderTechnician", fields: [technicianId], references: [id])
+  items       ServiceOrderItem[]
 
   @@unique([companyId, number])
+  @@unique([companyId, code])
   @@index([companyId])
   @@index([customerId])
   @@index([status])
+  @@index([technicianId])
   @@map("service_orders")
 }
 

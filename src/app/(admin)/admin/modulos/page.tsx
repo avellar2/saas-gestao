@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pencil, Save, X, Loader2 } from "lucide-react";
+import { getModuleConfig, isCoreModule } from "@/lib/modules";
 
 interface ModuleItem {
   id: string;
@@ -40,6 +41,19 @@ interface EditingState {
     sortOrder: number;
   };
 }
+
+const TYPE_LABELS: Record<string, string> = {
+  core: "Core",
+  common: "Common",
+  premium: "Premium",
+  addon: "Addon",
+};
+
+const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  active: { label: "Ativo", variant: "default" },
+  coming_soon: { label: "Em breve", variant: "secondary" },
+  legacy: { label: "Legado", variant: "outline" },
+};
 
 export default function ModulosPage() {
   const [modules, setModules] = useState<ModuleItem[]>([]);
@@ -143,9 +157,9 @@ export default function ModulosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Modulos</h1>
+          <h1 className="text-2xl font-bold">Módulos</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Gerencie os modulos disponiveis no sistema
+            Gerencie os módulos disponíveis no sistema
           </p>
         </div>
         <Button variant="outline" onClick={loadModules}>
@@ -161,7 +175,7 @@ export default function ModulosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Modulos do Sistema</CardTitle>
+          <CardTitle>Módulos do Sistema</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -169,23 +183,30 @@ export default function ModulosPage() {
               <TableRow>
                 <TableHead className="w-12">Ordem</TableHead>
                 <TableHead>Chave</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Nome</TableHead>
-                <TableHead className="hidden md:table-cell">Descricao</TableHead>
-                <TableHead>Preco Base</TableHead>
+                <TableHead className="hidden md:table-cell">Descrição</TableHead>
+                <TableHead>Preço Base</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Ativo</TableHead>
-                <TableHead className="w-20">Acoes</TableHead>
+                <TableHead className="w-20">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {modules.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-400">
-                    Nenhum modulo encontrado
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-400">
+                    Nenhum módulo encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 modules.map((mod) => {
                   const isEditing = editing[mod.id];
+                  const config = getModuleConfig(mod.key);
+                  const isCore = isCoreModule(mod.key);
+                  const typeLabel = config ? TYPE_LABELS[config.type] || config.type : mod.key;
+                  const statusInfo = config ? STATUS_LABELS[config.status] || { label: config.status, variant: "secondary" as const } : { label: "-", variant: "secondary" as const };
+
                   return (
                     <TableRow key={mod.id}>
                       <TableCell>
@@ -206,6 +227,11 @@ export default function ModulosPage() {
                         <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
                           {mod.key}
                         </code>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {typeLabel}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {isEditing ? (
@@ -249,6 +275,11 @@ export default function ModulosPage() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <Badge variant={statusInfo.variant}>
+                          {statusInfo.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {isEditing ? (
                           <Button
                             variant={isEditing.active ? "default" : "outline"}
@@ -256,17 +287,20 @@ export default function ModulosPage() {
                             onClick={() =>
                               handleEditChange(mod.id, "active", !isEditing.active)
                             }
+                            disabled={isCore}
                           >
-                            {isEditing.active ? "Sim" : "Nao"}
+                            {isEditing.active ? "Sim" : "Não"}
                           </Button>
                         ) : (
                           <Badge variant={mod.active ? "default" : "secondary"}>
-                            {mod.active ? "Ativo" : "Inativo"}
+                            {isCore ? "Sempre" : mod.active ? "Ativo" : "Inativo"}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        {isEditing ? (
+                        {isCore ? (
+                          <span className="text-xs text-muted-foreground">Core</span>
+                        ) : isEditing ? (
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateMonthlyPrice } from "@/lib/pricing";
+import { isCoreModule } from "@/lib/modules";
 import type { CompanyStatus, SubscriptionStatus } from "@/generated/prisma/client";
 
 export async function GET(
@@ -43,10 +44,10 @@ export async function GET(
     );
   }
 
-  const activeModulesCount = company.companyModules.filter(
-    (cm) => cm.active
-  ).length;
-  const calculatedPrice = calculateMonthlyPrice(activeModulesCount);
+  const activeModuleKeys = company.companyModules
+    .filter((cm) => cm.active)
+    .map((cm) => cm.moduleKey);
+  const calculatedPrice = calculateMonthlyPrice(activeModuleKeys);
 
   return NextResponse.json({
     ...company,
@@ -83,6 +84,14 @@ export async function PUT(
 
   // Handle module toggle
   if (moduleKey !== undefined) {
+    // Prevent toggling core modules
+    if (isCoreModule(moduleKey)) {
+      return NextResponse.json(
+        { error: "Nao e possivel desativar modulo core" },
+        { status: 400 }
+      );
+    }
+
     const now = new Date();
     await prisma.companyModule.update({
       where: { companyId_moduleKey: { companyId: id, moduleKey } },
@@ -95,10 +104,13 @@ export async function PUT(
     });
 
     // Recalculate active modules and subscription price
-    const activeModules = await prisma.companyModule.count({
+    const activeCompanyModules = await prisma.companyModule.findMany({
       where: { companyId: id, active: true },
+      select: { moduleKey: true },
     });
-    const newPrice = calculateMonthlyPrice(activeModules);
+    const activeModuleKeysList = activeCompanyModules.map((m) => m.moduleKey);
+    const activeModulesCount = activeModuleKeysList.length;
+    const newPrice = calculateMonthlyPrice(activeModuleKeysList);
 
     await prisma.company.update({
       where: { id },
@@ -114,7 +126,7 @@ export async function PUT(
       await prisma.subscription.update({
         where: { companyId: id },
         data: {
-          modulesCount: activeModules,
+          modulesCount: activeModulesCount,
           monthlyPrice: newPrice,
         },
       });

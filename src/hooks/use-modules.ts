@@ -1,22 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-export interface ModuleInfo {
-  key: string;
-  name: string;
-  description: string | null;
-  basePrice: string;
-  active: boolean;
-  sortOrder: number;
-}
+import { MODULES, isCoreModule, type ModuleConfig } from "@/lib/modules";
 
 interface ActiveModule {
   moduleKey: string;
 }
 
 interface UseModulesReturn {
-  modules: ModuleInfo[];
+  modules: ModuleConfig[];
   activeModules: string[];
   isModuleActive: (key: string) => boolean;
   loading: boolean;
@@ -25,24 +17,16 @@ interface UseModulesReturn {
 }
 
 export function useModules(companyId?: string): UseModulesReturn {
-  const [modules, setModules] = useState<ModuleInfo[]>([]);
+  // Módulos vêm da config central, não da API
+  const [modules] = useState<ModuleConfig[]>(MODULES);
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await fetch("/api/modulos");
-      if (res.ok) {
-        const data = await res.json();
-        setModules(data);
-      }
-    } catch {
-      setError("Erro ao carregar modulos");
-    } finally {
-      setLoading(false);
-    }
+    // Módulos já estão disponíveis via config, não precisa buscar da API
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -59,6 +43,14 @@ export function useModules(companyId?: string): UseModulesReturn {
           const active = (data.companyModules || [])
             .filter((cm: ActiveModule) => cm.moduleKey)
             .map((cm: ActiveModule) => cm.moduleKey);
+
+          // Garantir que módulos core sempre estejam ativos
+          for (const mod of MODULES) {
+            if (mod.type === "core" && !active.includes(mod.key)) {
+              active.push(mod.key);
+            }
+          }
+
           setActiveModules(active);
         }
       } catch {
@@ -69,6 +61,7 @@ export function useModules(companyId?: string): UseModulesReturn {
   }, [companyId]);
 
   function isModuleActive(key: string): boolean {
+    if (isCoreModule(key)) return true;
     return activeModules.includes(key);
   }
 

@@ -4,6 +4,8 @@ import { tenantPrisma, prisma } from "@/lib/prisma";
 import { isTrialLimitReached } from "@/lib/company-limits";
 import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus, ServiceOrderStatus } from "@/generated/prisma/client";
+import { generateOSCode } from "@/lib/os-status";
+import crypto from "crypto";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -88,8 +90,12 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { customerId, quoteId, problemDescription, serviceDescription, notes, items } =
-    body;
+  const {
+    customerId, quoteId, problemDescription, serviceDescription, notes, items,
+    equipmentName, equipmentBrand, equipmentModel, serialNumber, accessories,
+    priority, expectedDeliveryDate, warrantyEnabled, warrantyTerms,
+    internalNotes, customerNotes,
+  } = body;
 
   if (!customerId) {
     return NextResponse.json(
@@ -149,13 +155,27 @@ export async function POST(request: Request) {
       customerId,
       quoteId: quoteId || null,
       number: nextNumber,
-      status: "OPENED",
+      code: generateOSCode(nextNumber),
+      status: "RECEIVED",
+      priority: priority || "NORMAL",
       problemDescription: problemDescription?.trim() || null,
       serviceDescription: serviceDescription?.trim() || null,
+      equipmentName: equipmentName?.trim() || null,
+      equipmentBrand: equipmentBrand?.trim() || null,
+      equipmentModel: equipmentModel?.trim() || null,
+      serialNumber: serialNumber?.trim() || null,
+      accessories: accessories?.trim() || null,
       total,
       paidAmount: 0,
       paymentStatus: "PENDING",
+      receivedAt: new Date(),
       openedAt: new Date(),
+      expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
+      warrantyEnabled: warrantyEnabled || false,
+      warrantyTerms: warrantyTerms?.trim() || null,
+      internalNotes: internalNotes?.trim() || null,
+      customerNotes: customerNotes?.trim() || null,
+      publicToken: crypto.randomUUID(),
       notes: notes?.trim() || null,
       items: {
         create: items.map(

@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma, tenantPrisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { ModuleCard } from "@/components/layout/module-card";
-import { MODULE_KEYS } from "@/types";
-import type { ModuleKey } from "@/types";
+import { MODULES } from "@/lib/modules";
+import type { ModuleKey } from "@/lib/modules";
 import {
   Users,
   FileText,
@@ -18,22 +18,6 @@ import {
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { MotionContainer, MotionItem } from "@/components/ui/motion-container";
 import { motion } from "framer-motion";
-
-const MODULE_INFO: Record<
-  string,
-  { name: string; description: string; icon: string }
-> = {
-  customers: { name: "Clientes", description: "Gerencie sua base de clientes", icon: "Users" },
-  quotes: { name: "Orcamentos", description: "Crie e envie orçamentos profissionais", icon: "FileText" },
-  service_orders: { name: "Ordem de Serviço", description: "Controle suas ordens de serviço", icon: "ClipboardList" },
-  inventory: { name: "Estoque", description: "Controle de estoque e produtos", icon: "Package" },
-  scheduling: { name: "Agendamento", description: "Agenda de compromissos", icon: "Calendar" },
-  catalog: { name: "Catalogo WhatsApp", description: "Catalogo de produtos no WhatsApp", icon: "ShoppingBag" },
-  menu: { name: "Cardapio Digital", description: "Cardapio digital para restaurantes", icon: "UtensilsCrossed" },
-  finance: { name: "Financeiro", description: "Controle financeiro simples", icon: "BarChart3" },
-  reports: { name: "Relatorios", description: "Relatorios gerenciais", icon: "PieChart" },
-  users_permissions: { name: "Usuarios e Permissoes", description: "Gerencie acessos ao sistema", icon: "Shield" },
-};
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -61,7 +45,7 @@ export default async function DashboardPage() {
     tenant.customer.count(),
     tenant.quote.count({ where: { status: "DRAFT" } }),
     tenant.serviceOrder.count({
-      where: { status: { in: ["OPENED", "IN_PROGRESS", "WAITING_PARTS"] } },
+      where: { status: { in: ["RECEIVED", "DIAGNOSIS", "IN_PROGRESS", "WAITING_APPROVAL", "WAITING_PARTS"] } },
     }),
   ]);
 
@@ -161,15 +145,14 @@ export default async function DashboardPage() {
         </MotionContainer>
 
         <MotionContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {MODULE_KEYS.map((key, index) => {
-            const info = MODULE_INFO[key];
-            const isActive = activeModuleMap.get(key) ?? false;
+          {MODULES.filter(m => m.status !== "legacy").map((mod, index) => {
+            const isActive = activeModuleMap.get(mod.key) ?? false;
             return (
-              <MotionItem key={key} delay={index * 0.03}>
+              <MotionItem key={mod.key} delay={index * 0.03}>
                 <ModuleCard
-                  moduleKey={key as ModuleKey}
-                  name={info.name}
-                  description={info.description}
+                  moduleKey={mod.key as ModuleKey}
+                  name={mod.name}
+                  description={mod.description}
                   active={isActive}
                 />
               </MotionItem>

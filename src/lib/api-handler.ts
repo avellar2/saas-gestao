@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { checkRateLimit, getRateLimitKey, rateLimitResponse, type RateLimitConfig } from "@/lib/rate-limit";
 import { ZodSchema, ZodError } from "zod";
+import { isCoreModule } from "./modules";
 
 interface SessionUser {
   id: string;
@@ -24,6 +25,9 @@ async function getSessionUser(): Promise<SessionUser | null> {
 }
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
+  // Módulos core são sempre acessíveis
+  if (isCoreModule(moduleKey)) return true;
+
   const companyModule = await prisma.companyModule.findUnique({
     where: { companyId_moduleKey: { companyId, moduleKey } },
   });

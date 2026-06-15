@@ -31,15 +31,33 @@ interface ServiceOrderItemData {
 
 interface ServiceOrderData {
   number: number;
+  code?: string | null;
   status: string;
+  priority?: string;
   problemDescription?: string | null;
   serviceDescription?: string | null;
+  equipmentName?: string | null;
+  equipmentBrand?: string | null;
+  equipmentModel?: string | null;
+  serialNumber?: string | null;
+  accessories?: string | null;
   total: number;
+  finalAmount?: number | null;
   paidAmount: number;
   paymentStatus: string;
+  paymentMethod?: string | null;
+  receivedAt?: string | null;
+  expectedDeliveryDate?: string | null;
+  completedAt?: string | null;
+  warrantyEnabled?: boolean;
+  warrantyEndDate?: string | null;
+  warrantyTerms?: string | null;
+  internalNotes?: string | null;
+  customerNotes?: string | null;
   openedAt: string;
   finishedAt?: string | null;
   notes?: string | null;
+  technicianName?: string | null;
 }
 
 interface ServiceOrderPDFProps {
@@ -59,6 +77,7 @@ function formatCurrencyPDF(value: number): string {
 
 function formatDatePDF(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -67,37 +86,49 @@ function formatDatePDF(date: string | Date): string {
 }
 
 function getStatusLabel(status: string): string {
-  switch (status) {
-    case "OPENED":
-      return "Aberta";
-    case "IN_PROGRESS":
-      return "Em Andamento";
-    case "WAITING_PARTS":
-      return "Aguardando Pecas";
-    case "FINISHED":
-      return "Finalizada";
-    case "DELIVERED":
-      return "Entregue";
-    case "CANCELLED":
-      return "Cancelada";
-    default:
-      return status;
-  }
+  const map: Record<string, string> = {
+    RECEIVED: "Recebida",
+    DIAGNOSIS: "Em Diagnóstico",
+    WAITING_APPROVAL: "Aguardando Aprovação",
+    WAITING_PARTS: "Aguardando Peças",
+    IN_PROGRESS: "Em Execução",
+    READY: "Pronta",
+    DELIVERED: "Entregue",
+    COMPLETED: "Concluída",
+    CANCELLED: "Cancelada",
+  };
+  return map[status] || status;
+}
+
+function getPriorityLabel(priority: string): string {
+  const map: Record<string, string> = {
+    LOW: "Baixa",
+    NORMAL: "Normal",
+    HIGH: "Alta",
+    URGENT: "Urgente",
+  };
+  return map[priority] || priority;
 }
 
 function getPaymentLabel(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "Pendente";
-    case "PARTIAL":
-      return "Parcial";
-    case "PAID":
-      return "Pago";
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return status;
-  }
+  const map: Record<string, string> = {
+    PENDING: "Pendente",
+    PARTIAL: "Parcial",
+    PAID: "Pago",
+    CANCELLED: "Cancelado",
+  };
+  return map[status] || status;
+}
+
+function getPaymentMethodLabel(method: string): string {
+  const map: Record<string, string> = {
+    CASH: "Dinheiro",
+    PIX: "PIX",
+    CARD: "Cartão",
+    TRANSFER: "Transferência",
+    OTHER: "Outro",
+  };
+  return map[method] || method;
 }
 
 const styles = StyleSheet.create({
@@ -107,7 +138,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#1a1a1a",
   },
-  // Header
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -144,7 +174,6 @@ const styles = StyleSheet.create({
     color: "#059669",
     marginBottom: 4,
   },
-  // Sections
   sectionTitle: {
     fontSize: 11,
     fontFamily: "Helvetica-Bold",
@@ -157,7 +186,6 @@ const styles = StyleSheet.create({
   sectionContainer: {
     marginBottom: 16,
   },
-  // Info grid
   infoGrid: {
     flexDirection: "row",
     gap: 20,
@@ -180,7 +208,6 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     flex: 1,
   },
-  // Items table
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#f3f4f6",
@@ -222,7 +249,6 @@ const styles = StyleSheet.create({
   tableRowAlt: {
     backgroundColor: "#fafbfc",
   },
-  // Totals
   totalsContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -264,13 +290,11 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: "#059669",
   },
-  // Description blocks
   descriptionText: {
     fontSize: 9,
     color: "#4b5563",
     lineHeight: 1.5,
   },
-  // Payment section
   paymentBox: {
     backgroundColor: "#f0fdf4",
     borderWidth: 1,
@@ -292,13 +316,25 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     fontFamily: "Helvetica-Bold",
   },
-  // Notes
+  notesBox: {
+    backgroundColor: "#fafafa",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 4,
+    padding: 10,
+  },
+  warrantyBox: {
+    backgroundColor: "#fffbeb",
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    borderRadius: 4,
+    padding: 10,
+  },
   notesText: {
     fontSize: 9,
     color: "#4b5563",
     lineHeight: 1.5,
   },
-  // Footer
   footer: {
     position: "absolute",
     bottom: 30,
@@ -315,7 +351,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#9ca3af",
   },
-  // Watermark
   watermark: {
     position: "absolute",
     top: "40%",
@@ -338,11 +373,11 @@ export function ServiceOrderPDF({
   isTrial,
 }: ServiceOrderPDFProps) {
   const remaining = Number(serviceOrder.total) - Number(serviceOrder.paidAmount);
+  const showWarranty = serviceOrder.warrantyEnabled;
 
   return (
     <Document title={`OS #${serviceOrder.number}`} author={company.name}>
       <Page size="A4" style={styles.page}>
-        {/* Trial Watermark */}
         {isTrial && (
           <View style={styles.watermark} fixed>
             <Text style={styles.watermarkText}>PLANO TRIAL</Text>
@@ -366,7 +401,7 @@ export function ServiceOrderPDF({
           <View style={styles.headerRight}>
             <Text style={styles.headerDocTitle}>ORDEM DE SERVICO</Text>
             <Text style={{ fontSize: 10, color: "#6b7280" }}>
-              #{String(serviceOrder.number).padStart(4, "0")}
+              {serviceOrder.code || `#${String(serviceOrder.number).padStart(4, "0")}`}
             </Text>
           </View>
         </View>
@@ -377,21 +412,37 @@ export function ServiceOrderPDF({
           <View style={styles.infoGrid}>
             <View style={styles.infoColumn}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Numero:</Text>
-                <Text style={styles.infoValue}>#{String(serviceOrder.number).padStart(4, "0")}</Text>
+                <Text style={styles.infoLabel}>Codigo:</Text>
+                <Text style={styles.infoValue}>{serviceOrder.code || `#${String(serviceOrder.number).padStart(4, "0")}`}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Status:</Text>
                 <Text style={styles.infoValue}>{getStatusLabel(serviceOrder.status)}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Data de Abertura:</Text>
-                <Text style={styles.infoValue}>{formatDatePDF(serviceOrder.openedAt)}</Text>
+                <Text style={styles.infoLabel}>Prioridade:</Text>
+                <Text style={styles.infoValue}>{serviceOrder.priority ? getPriorityLabel(serviceOrder.priority) : "-"}</Text>
               </View>
-              {serviceOrder.finishedAt && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Data de Entrada:</Text>
+                <Text style={styles.infoValue}>{serviceOrder.receivedAt ? formatDatePDF(serviceOrder.receivedAt) : formatDatePDF(serviceOrder.openedAt)}</Text>
+              </View>
+              {serviceOrder.expectedDeliveryDate && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Data de Finalizacao:</Text>
-                  <Text style={styles.infoValue}>{formatDatePDF(serviceOrder.finishedAt)}</Text>
+                  <Text style={styles.infoLabel}>Previsao de Entrega:</Text>
+                  <Text style={styles.infoValue}>{formatDatePDF(serviceOrder.expectedDeliveryDate)}</Text>
+                </View>
+              )}
+              {serviceOrder.completedAt && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Concluida em:</Text>
+                  <Text style={styles.infoValue}>{formatDatePDF(serviceOrder.completedAt)}</Text>
+                </View>
+              )}
+              {serviceOrder.technicianName && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tecnico:</Text>
+                  <Text style={styles.infoValue}>{serviceOrder.technicianName}</Text>
                 </View>
               )}
             </View>
@@ -419,6 +470,47 @@ export function ServiceOrderPDF({
           </View>
         </View>
 
+        {/* Equipment Section */}
+        {(serviceOrder.equipmentName || serviceOrder.equipmentBrand || serviceOrder.equipmentModel || serviceOrder.serialNumber || serviceOrder.accessories) && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Equipamento</Text>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoColumn}>
+                {serviceOrder.equipmentName && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Equipamento:</Text>
+                    <Text style={styles.infoValue}>{serviceOrder.equipmentName}</Text>
+                  </View>
+                )}
+                {serviceOrder.equipmentBrand && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Marca:</Text>
+                    <Text style={styles.infoValue}>{serviceOrder.equipmentBrand}</Text>
+                  </View>
+                )}
+                {serviceOrder.equipmentModel && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Modelo:</Text>
+                    <Text style={styles.infoValue}>{serviceOrder.equipmentModel}</Text>
+                  </View>
+                )}
+                {serviceOrder.serialNumber && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>N/S:</Text>
+                    <Text style={styles.infoValue}>{serviceOrder.serialNumber}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            {serviceOrder.accessories && (
+              <View style={{ marginTop: 4 }}>
+                <Text style={styles.infoLabel}>Acessorios:</Text>
+                <Text style={{ ...styles.descriptionText, marginTop: 2 }}>{serviceOrder.accessories}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Problem Description */}
         {serviceOrder.problemDescription && (
           <View style={styles.sectionContainer}>
@@ -438,14 +530,12 @@ export function ServiceOrderPDF({
         {/* Items Table */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Itens</Text>
-          {/* Table Header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, styles.colDesc]}>Descricao</Text>
             <Text style={[styles.tableHeaderCell, styles.colQty]}>Qtd</Text>
             <Text style={[styles.tableHeaderCell, styles.colPrice]}>Preco Unit.</Text>
             <Text style={[styles.tableHeaderCell, styles.colTotal]}>Total</Text>
           </View>
-          {/* Table Rows */}
           {items.map((item, index) => (
             <View
               key={index}
@@ -473,6 +563,12 @@ export function ServiceOrderPDF({
               <Text style={styles.totalLabelFinal}>Total:</Text>
               <Text style={styles.totalValueFinal}>{formatCurrencyPDF(Number(serviceOrder.total))}</Text>
             </View>
+            {serviceOrder.finalAmount !== null && serviceOrder.finalAmount !== undefined && Number(serviceOrder.finalAmount) !== Number(serviceOrder.total) && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Valor Final:</Text>
+                <Text style={styles.totalValue}>{formatCurrencyPDF(Number(serviceOrder.finalAmount))}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -481,9 +577,15 @@ export function ServiceOrderPDF({
           <Text style={styles.sectionTitle}>Pagamento</Text>
           <View style={styles.paymentBox}>
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Status do Pagamento:</Text>
+              <Text style={styles.paymentLabel}>Status:</Text>
               <Text style={styles.paymentValue}>{getPaymentLabel(serviceOrder.paymentStatus)}</Text>
             </View>
+            {serviceOrder.paymentMethod && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Metodo:</Text>
+                <Text style={styles.paymentValue}>{getPaymentMethodLabel(serviceOrder.paymentMethod)}</Text>
+              </View>
+            )}
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Valor Total:</Text>
               <Text style={styles.paymentValue}>{formatCurrencyPDF(Number(serviceOrder.total))}</Text>
@@ -492,7 +594,7 @@ export function ServiceOrderPDF({
               <Text style={styles.paymentLabel}>Valor Pago:</Text>
               <Text style={styles.paymentValue}>{formatCurrencyPDF(Number(serviceOrder.paidAmount))}</Text>
             </View>
-            {remaining > 0 && (
+            {remaining > 0 && serviceOrder.paymentStatus !== "CANCELLED" && (
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Valor Restante:</Text>
                 <Text style={styles.paymentValue}>{formatCurrencyPDF(remaining)}</Text>
@@ -501,11 +603,41 @@ export function ServiceOrderPDF({
           </View>
         </View>
 
+        {/* Warranty Section */}
+        {showWarranty && (
+          <View style={[styles.sectionContainer, { marginTop: 16 }]}>
+            <Text style={styles.sectionTitle}>Garantia</Text>
+            <View style={styles.warrantyBox}>
+              {serviceOrder.warrantyEndDate && (
+                <View style={styles.paymentRow}>
+                  <Text style={styles.paymentLabel}>Validade:</Text>
+                  <Text style={styles.paymentValue}>{formatDatePDF(serviceOrder.warrantyEndDate)}</Text>
+                </View>
+              )}
+              {serviceOrder.warrantyTerms && (
+                <Text style={{ ...styles.notesText, marginTop: 4 }}>{serviceOrder.warrantyTerms}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Customer Notes */}
+        {serviceOrder.customerNotes && (
+          <View style={[styles.sectionContainer, { marginTop: 16 }]}>
+            <Text style={styles.sectionTitle}>Observacoes para o Cliente</Text>
+            <View style={styles.notesBox}>
+              <Text style={styles.notesText}>{serviceOrder.customerNotes}</Text>
+            </View>
+          </View>
+        )}
+
         {/* Notes */}
         {serviceOrder.notes && (
           <View style={[styles.sectionContainer, { marginTop: 16 }]}>
             <Text style={styles.sectionTitle}>Observacoes</Text>
-            <Text style={styles.notesText}>{serviceOrder.notes}</Text>
+            <View style={styles.notesBox}>
+              <Text style={styles.notesText}>{serviceOrder.notes}</Text>
+            </View>
           </View>
         )}
 

@@ -2,6 +2,7 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import bcryptjs from "bcryptjs";
+import { MODULES } from "../src/lib/modules";
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -18,31 +19,11 @@ async function main() {
   // ── 1. Modules ────────────────────────────────────────────────────────
   console.log("Creating modules...");
 
-  const moduleData = [
-    { key: "customers", name: "Clientes", description: "Cadastro e gestao de clientes", basePrice: 50, sortOrder: 1 },
-    { key: "quotes", name: "Orcamentos", description: "Criacao e acompanhamento de orcamentos", basePrice: 30, sortOrder: 2 },
-    { key: "service_orders", name: "Ordens de Servico", description: "Gestao de ordens de servico", basePrice: 25, sortOrder: 3 },
-    { key: "inventory", name: "Estoque", description: "Controle de estoque e pecas", basePrice: 20, sortOrder: 4 },
-    { key: "scheduling", name: "Agendamento", description: "Agenda e agendamentos", basePrice: 20, sortOrder: 5 },
-    { key: "catalog", name: "Catalogo", description: "Catalogo de produtos e servicos", basePrice: 20, sortOrder: 6 },
-    { key: "menu", name: "Cardapio", description: "Cardapio digital para restaurantes", basePrice: 20, sortOrder: 7 },
-    { key: "finance", name: "Financeiro", description: "Controle financeiro e fluxo de caixa", basePrice: 20, sortOrder: 8 },
-    { key: "reports", name: "Relatorios", description: "Relatorios e metricas", basePrice: 20, sortOrder: 9 },
-    { key: "users_permissions", name: "Usuarios e Permissoes", description: "Gestao de usuarios e permissoes", basePrice: 20, sortOrder: 10 },
-  ];
-
-  for (const mod of moduleData) {
+  for (const mod of MODULES) {
     await prisma.module.upsert({
       where: { key: mod.key },
-      update: {},
-      create: {
-        key: mod.key,
-        name: mod.name,
-        description: mod.description,
-        basePrice: mod.basePrice,
-        sortOrder: mod.sortOrder,
-        active: true,
-      },
+      update: { name: mod.name, description: mod.description, basePrice: mod.monthlyPrice, sortOrder: mod.order },
+      create: { key: mod.key, name: mod.name, description: mod.description, basePrice: mod.monthlyPrice, sortOrder: mod.order, active: mod.status === "active" },
     });
   }
 
@@ -295,10 +276,19 @@ async function main() {
       customerId: customers[0].id,
       quoteId: quote1.id,
       number: 1,
+      code: "OS-0001",
       status: "IN_PROGRESS",
+      priority: "HIGH",
       problemDescription: "Carro fazendo barulho no motor",
+      equipmentName: "Fiat Uno",
+      equipmentBrand: "Fiat",
+      equipmentModel: "Uno 1.0",
+      serialNumber: "9BD27846T00123456",
+      accessories: "Chave reserva, manual do proprietario",
       total: 250.0,
       paymentStatus: "PENDING",
+      receivedAt: now,
+      openedAt: now,
       items: {
         create: [
           { description: "Troca de oleo", quantity: 1, unitPrice: 150, total: 150 },

@@ -43,10 +43,10 @@ export async function GET(
     );
   }
 
-  const activeModulesCount = company.companyModules.filter(
-    (cm) => cm.active
-  ).length;
-  const calculatedPrice = calculateMonthlyPrice(activeModulesCount);
+  const activeModuleKeys = company.companyModules
+    .filter((cm) => cm.active)
+    .map((cm) => cm.moduleKey);
+  const calculatedPrice = calculateMonthlyPrice(activeModuleKeys);
 
   return NextResponse.json({
     ...company,
@@ -95,10 +95,12 @@ export async function PUT(
     });
 
     // Recalculate active modules and subscription price
-    const activeModules = await prisma.companyModule.count({
+    const activeCompanyModules = await prisma.companyModule.findMany({
       where: { companyId: id, active: true },
+      select: { moduleKey: true },
     });
-    const newPrice = calculateMonthlyPrice(activeModules);
+    const activeModuleKeysList = activeCompanyModules.map((m) => m.moduleKey);
+    const newPrice = calculateMonthlyPrice(activeModuleKeysList);
 
     await prisma.company.update({
       where: { id },
@@ -114,7 +116,7 @@ export async function PUT(
       await prisma.subscription.update({
         where: { companyId: id },
         data: {
-          modulesCount: activeModules,
+          modulesCount: activeModuleKeysList.length,
           monthlyPrice: newPrice,
         },
       });

@@ -88,10 +88,12 @@ export async function PUT(
   // Mode 1: Status-only update
   if (body.status && !body.paymentAmount && !body.items) {
     const allowedTransitions: Record<string, string[]> = {
-      OPENED: ["IN_PROGRESS", "CANCELLED"],
-      IN_PROGRESS: ["FINISHED", "WAITING_PARTS", "CANCELLED"],
+      RECEIVED: ["DIAGNOSIS", "IN_PROGRESS", "CANCELLED"],
+      DIAGNOSIS: ["WAITING_APPROVAL", "IN_PROGRESS", "CANCELLED"],
+      WAITING_APPROVAL: ["IN_PROGRESS", "CANCELLED"],
       WAITING_PARTS: ["IN_PROGRESS", "CANCELLED"],
-      FINISHED: ["DELIVERED", "CANCELLED"],
+      IN_PROGRESS: ["READY", "WAITING_PARTS", "CANCELLED"],
+      READY: ["DELIVERED", "CANCELLED"],
       DELIVERED: ["CANCELLED"],
       CANCELLED: [],
     };
@@ -109,7 +111,7 @@ export async function PUT(
     const updateData: Record<string, unknown> = { status: body.status };
 
     // Set finishedAt when transitioning to FINISHED
-    if (body.status === "FINISHED") {
+    if (body.status === "READY") {
       updateData.finishedAt = new Date();
     }
 
@@ -204,7 +206,7 @@ export async function PUT(
 
   // Mode 3: Full update with items (only if OPENED or IN_PROGRESS)
   if (body.items) {
-    if (existing.status !== "OPENED" && existing.status !== "IN_PROGRESS") {
+    if (existing.status !== "RECEIVED" && existing.status !== "IN_PROGRESS") {
       return NextResponse.json(
         { error: "Apenas OS abertas ou em andamento podem ser editadas" },
         { status: 400 }
@@ -350,7 +352,7 @@ export async function DELETE(
     );
   }
 
-  if (existing.status !== "OPENED") {
+  if (existing.status !== "RECEIVED") {
     return NextResponse.json(
       { error: "Apenas OS abertas podem ser excluidas" },
       { status: 400 }

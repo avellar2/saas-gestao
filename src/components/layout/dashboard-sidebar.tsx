@@ -25,44 +25,21 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MODULES, isActiveModule } from "@/lib/modules";
+import type { LucideIcon } from "lucide-react";
 
-const MODULE_ICONS: Record<string, typeof Building2> = {
-  customers: Users,
-  quotes: FileText,
-  service_orders: ClipboardList,
-  inventory: Package,
-  scheduling: Calendar,
-  catalog: ShoppingBag,
-  menu: UtensilsCrossed,
-  finance: BarChart3,
-  reports: PieChart,
-  users_permissions: Shield,
-};
-
-const MODULE_LABELS: Record<string, string> = {
-  customers: "Clientes",
-  quotes: "Orçamentos",
-  service_orders: "Ordens de Serviço",
-  inventory: "Estoque",
-  scheduling: "Agendamento",
-  catalog: "Catalogo WhatsApp",
-  menu: "Cardapio Digital",
-  finance: "Financeiro",
-  reports: "Relatorios",
-  users_permissions: "Usuarios",
-};
-
-const MODULE_ROUTES: Record<string, string> = {
-  customers: "/clientes",
-  quotes: "/orcamentos",
-  service_orders: "/ordens-servico",
-  inventory: "/estoque",
-  scheduling: "/agendamento",
-  catalog: "/catalogo",
-  menu: "/cardapio",
-  finance: "/financeiro",
-  reports: "/relatorios",
-  users_permissions: "/usuarios",
+// Mapa de ícones — a única duplicação necessária (React precisa de componentes)
+const ICON_MAP: Record<string, LucideIcon> = {
+  Users,
+  FileText,
+  ClipboardList,
+  Package,
+  Calendar,
+  ShoppingBag,
+  UtensilsCrossed,
+  BarChart3,
+  PieChart,
+  Shield,
 };
 
 interface DashboardSidebarProps {
@@ -99,13 +76,13 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
     { key: "atividades", label: "Atividades", href: "/atividades", icon: History },
   ];
 
-  for (const [key, href] of Object.entries(MODULE_ROUTES)) {
-    if (activeModules.has(key)) {
+  for (const mod of MODULES) {
+    if (activeModules.has(mod.key) && isActiveModule(mod.key)) {
       navItems.push({
-        key,
-        label: MODULE_LABELS[key] || key,
-        href,
-        icon: MODULE_ICONS[key] || Building2,
+        key: mod.key,
+        label: mod.name,
+        href: mod.routes[0],
+        icon: ICON_MAP[mod.icon] || Building2,
       });
     }
   }

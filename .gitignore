@@ -47,3 +47,13 @@ next-env.d.ts
 # deploy
 /backups/
 
+# test artifacts
+/test-results/
+/playwright-report/
+
+# scripts with credentials
+/scripts/
+
+# stray
+/nul
+

@@ -41,6 +41,9 @@ export async function GET(
       quote: {
         select: { id: true, number: true, status: true, total: true },
       },
+      technician: {
+        select: { id: true, name: true },
+      },
     },
   });
 
@@ -89,11 +92,14 @@ export async function PUT(
   // Mode 1: Status-only update
   if (body.status && !body.paymentAmount && !body.items) {
     const allowedTransitions: Record<string, string[]> = {
-      OPENED: ["IN_PROGRESS", "CANCELLED"],
-      IN_PROGRESS: ["FINISHED", "WAITING_PARTS", "CANCELLED"],
+      RECEIVED: ["DIAGNOSIS", "IN_PROGRESS", "CANCELLED"],
+      DIAGNOSIS: ["WAITING_APPROVAL", "IN_PROGRESS", "CANCELLED"],
+      WAITING_APPROVAL: ["IN_PROGRESS", "CANCELLED"],
       WAITING_PARTS: ["IN_PROGRESS", "CANCELLED"],
-      FINISHED: ["DELIVERED", "CANCELLED"],
-      DELIVERED: ["CANCELLED"],
+      IN_PROGRESS: ["READY", "WAITING_PARTS", "CANCELLED"],
+      READY: ["DELIVERED", "CANCELLED"],
+      DELIVERED: ["COMPLETED", "CANCELLED"],
+      COMPLETED: [],
       CANCELLED: [],
     };
 
@@ -109,9 +115,15 @@ export async function PUT(
 
     const updateData: Record<string, unknown> = { status: body.status };
 
-    // Set finishedAt when transitioning to FINISHED
-    if (body.status === "FINISHED") {
+    // Set completedAt when transitioning to READY
+    if (body.status === "READY") {
+      updateData.completedAt = new Date();
       updateData.finishedAt = new Date();
+    }
+
+    // Set completedAt when transitioning to DELIVERED
+    if (body.status === "DELIVERED") {
+      updateData.completedAt = new Date();
     }
 
     // Update paymentStatus to CANCELLED when cancelling
@@ -134,11 +146,11 @@ export async function PUT(
     });
 
     // Send email notification when OS is finished or delivered
-    if ((body.status === "FINISHED" || body.status === "DELIVERED") && updated.customer?.email) {
+    if ((body.status === "READY" || body.status === "DELIVERED") && updated.customer?.email) {
       sendOSCompletedEmail(
         updated.customer.email,
         updated.customer.name,
-        `Nº ${updated.number}`
+        updated.code || `Nº ${updated.number}`
       ).catch((err) => console.error("Failed to send OS completed email:", err));
     }
 
@@ -212,9 +224,9 @@ export async function PUT(
     return NextResponse.json(updated);
   }
 
-  // Mode 3: Full update with items (only if OPENED or IN_PROGRESS)
+  // Mode 3: Full update with items (only if RECEIVED, DIAGNOSIS, WAITING_APPROVAL, IN_PROGRESS, or WAITING_PARTS)
   if (body.items) {
-    if (existing.status !== "OPENED" && existing.status !== "IN_PROGRESS") {
+    if (!["RECEIVED", "DIAGNOSIS", "WAITING_APPROVAL", "IN_PROGRESS", "WAITING_PARTS"].includes(existing.status)) {
       return NextResponse.json(
         { error: "Apenas OS abertas ou em andamento podem ser editadas" },
         { status: 400 }
@@ -228,6 +240,9 @@ export async function PUT(
       serviceDescription,
       notes,
       items,
+      equipmentName, equipmentBrand, equipmentModel, serialNumber, accessories,
+      priority, expectedDeliveryDate, warrantyEnabled, warrantyTerms,
+      internalNotes, customerNotes, paymentMethod, finalAmount,
     } = body;
 
     if (!customerId) {
@@ -285,6 +300,19 @@ export async function PUT(
         quoteId: quoteId || null,
         problemDescription: problemDescription?.trim() || null,
         serviceDescription: serviceDescription?.trim() || null,
+        equipmentName: equipmentName?.trim() || null,
+        equipmentBrand: equipmentBrand?.trim() || null,
+        equipmentModel: equipmentModel?.trim() || null,
+        serialNumber: serialNumber?.trim() || null,
+        accessories: accessories?.trim() || null,
+        priority: priority || undefined,
+        expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
+        warrantyEnabled: warrantyEnabled ?? undefined,
+        warrantyTerms: warrantyTerms?.trim() || null,
+        internalNotes: internalNotes?.trim() || null,
+        customerNotes: customerNotes?.trim() || null,
+        paymentMethod: paymentMethod || undefined,
+        finalAmount: finalAmount !== undefined ? parseFloat(finalAmount) : undefined,
         total,
         paymentStatus: newPaymentStatus,
         notes: notes?.trim() || null,
@@ -360,9 +388,9 @@ export async function DELETE(
     );
   }
 
-  if (existing.status !== "OPENED") {
+  if (existing.status !== "RECEIVED") {
     return NextResponse.json(
-      { error: "Apenas OS abertas podem ser excluidas" },
+      { error: "Apenas OS recebidas podem ser excluidas" },
       { status: 400 }
     );
   }

@@ -21,6 +21,16 @@ import {
 import { MessageCircle, FileDown } from "lucide-react";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
+import {
+  getStatusLabel, getStatusVariant,
+  getPriorityLabel, getPriorityVariant,
+  getPaymentStatusLabel, getPaymentStatusVariant,
+  getPaymentMethodLabel,
+  getWarrantyStatus,
+  SERVICE_ORDER_PRIORITY,
+  PAYMENT_METHOD,
+  STATUS_TRANSITIONS,
+} from "@/lib/os-status";
 
 interface ServiceOrderItem {
   id: string;
@@ -45,15 +55,39 @@ interface LinkedQuote {
   total: number;
 }
 
+interface TechnicianDetail {
+  id: string;
+  name: string;
+}
+
 interface ServiceOrderDetail {
   id: string;
   number: number;
+  code: string | null;
   status: string;
+  priority: string;
   problemDescription: string | null;
   serviceDescription: string | null;
+  equipmentName: string | null;
+  equipmentBrand: string | null;
+  equipmentModel: string | null;
+  serialNumber: string | null;
+  accessories: string | null;
+  technician: TechnicianDetail | null;
   total: number;
+  finalAmount: number | null;
   paidAmount: number;
   paymentStatus: string;
+  paymentMethod: string | null;
+  receivedAt: string | null;
+  expectedDeliveryDate: string | null;
+  completedAt: string | null;
+  warrantyEnabled: boolean;
+  warrantyStartDate: string | null;
+  warrantyEndDate: string | null;
+  warrantyTerms: string | null;
+  internalNotes: string | null;
+  customerNotes: string | null;
   openedAt: string;
   finishedAt: string | null;
   notes: string | null;
@@ -75,78 +109,6 @@ interface QuoteOption {
   id: string;
   number: number;
   customerName: string;
-}
-
-function getStatusVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "OPENED":
-      return "secondary";
-    case "IN_PROGRESS":
-      return "outline";
-    case "WAITING_PARTS":
-      return "outline";
-    case "FINISHED":
-      return "default";
-    case "DELIVERED":
-      return "default";
-    case "CANCELLED":
-      return "destructive";
-    default:
-      return "secondary";
-  }
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case "OPENED":
-      return "Aberta";
-    case "IN_PROGRESS":
-      return "Em Andamento";
-    case "WAITING_PARTS":
-      return "Aguardando Pecas";
-    case "FINISHED":
-      return "Finalizada";
-    case "DELIVERED":
-      return "Entregue";
-    case "CANCELLED":
-      return "Cancelada";
-    default:
-      return status;
-  }
-}
-
-function getPaymentVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "PAID":
-      return "default";
-    case "PARTIAL":
-      return "outline";
-    case "PENDING":
-      return "secondary";
-    case "CANCELLED":
-      return "destructive";
-    default:
-      return "secondary";
-  }
-}
-
-function getPaymentLabel(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "Pendente";
-    case "PARTIAL":
-      return "Parcial";
-    case "PAID":
-      return "Pago";
-    case "CANCELLED":
-      return "Cancelado";
-    default:
-      return status;
-  }
 }
 
 export default function OSDetailContent() {
@@ -225,6 +187,11 @@ export default function OSDetailContent() {
     }
     loadQuotes();
   }, []);
+
+  function getAvailableTransitions(): string[] {
+    if (!so) return [];
+    return STATUS_TRANSITIONS[so.status as keyof typeof STATUS_TRANSITIONS] || [];
+  }
 
   async function handleStatusChange(newStatus: string) {
     if (!so) return;
@@ -348,107 +315,137 @@ export default function OSDetailContent() {
     );
   }
 
-  const canEdit = so.status === "OPENED" || so.status === "IN_PROGRESS";
-  const canDelete = so.status === "OPENED";
+  const canEdit = ["RECEIVED", "DIAGNOSIS", "WAITING_APPROVAL", "IN_PROGRESS", "WAITING_PARTS"].includes(so.status);
+  const canDelete = so.status === "RECEIVED";
+  const transitions = getAvailableTransitions();
+  const priorityInfo = SERVICE_ORDER_PRIORITY.find(p => p.value === so.priority);
+
+  // Action buttons based on status
+  function renderActionButtons() {
+    const buttons: React.ReactNode[] = [];
+
+    if (canEdit && !editing) {
+      buttons.push(
+        <Button key="edit" variant="outline" onClick={() => setEditing(true)}>
+          Editar
+        </Button>
+      );
+    }
+
+    if (canDelete && !editing) {
+      buttons.push(
+        <Button key="delete" variant="destructive" onClick={handleDelete}>
+          Excluir
+        </Button>
+      );
+    }
+
+    // Status transition buttons
+    transitions.forEach((nextStatus) => {
+      if (nextStatus === "CANCELLED") return; // Handle cancel separately
+      const label = getStatusLabel(nextStatus as any);
+      buttons.push(
+        <Button
+          key={nextStatus}
+          variant={nextStatus === "DELIVERED" ? "default" : "outline"}
+          onClick={() => handleStatusChange(nextStatus)}
+        >
+          {label}
+        </Button>
+      );
+    });
+
+    // WhatsApp buttons
+    if (so!.status === "READY" && getWhatsAppLinkFinished()) {
+      buttons.push(
+        <a
+          key="wpp-ready"
+          href={getWhatsAppLinkFinished()!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+        >
+          <MessageCircle className="size-4" />
+          WhatsApp
+        </a>
+      );
+    }
+
+    if (so!.status === "DELIVERED" && getWhatsAppLinkDelivered()) {
+      buttons.push(
+        <a
+          key="wpp-delivered"
+          href={getWhatsAppLinkDelivered()!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+        >
+          <MessageCircle className="size-4" />
+          WhatsApp
+        </a>
+      );
+    }
+
+    // Cancel button
+    if (transitions.includes("CANCELLED" as never) && so!.status !== "CANCELLED") {
+      buttons.push(
+        <Button
+          key="cancel"
+          variant="destructive"
+          size="sm"
+          onClick={() => handleStatusChange("CANCELLED")}
+        >
+          Cancelar
+        </Button>
+      );
+    }
+
+    // PDF button
+    buttons.push(
+      <a
+        key="pdf"
+        href={`/api/pdf/os/${id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+      >
+        <FileDown className="size-4" />
+        Baixar PDF
+      </a>
+    );
+
+    buttons.push(
+      <Button
+        key="back"
+        variant="outline"
+        onClick={() => router.push("/ordens-servico")}
+      >
+        Voltar
+      </Button>
+    );
+
+    return buttons;
+  }
+
+  const warrantyInfo = getWarrantyStatus(so.warrantyEnabled, so.warrantyEndDate ? new Date(so.warrantyEndDate) : null);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">OS #{so.number}</h1>
-          <Badge variant={getStatusVariant(so.status)}>
-            {getStatusLabel(so.status)}
-          </Badge>
+          <h1 className="text-2xl font-bold">{so.code || `OS #${so.number}`}</h1>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status as any)}`}>
+            {getStatusLabel(so.status as any)}
+          </span>
+          {priorityInfo && (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityInfo.variant}`}>
+              {priorityInfo.label}
+            </span>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          {so.status === "OPENED" && !editing && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => handleStatusChange("IN_PROGRESS")}
-              >
-                Iniciar
-              </Button>
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                Editar
-              </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                Excluir
-              </Button>
-            </>
-          )}
-          {so.status === "IN_PROGRESS" && !editing && (
-            <>
-              <Button onClick={() => handleStatusChange("FINISHED")}>
-                Finalizar
-              </Button>
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                Editar
-              </Button>
-            </>
-          )}
-          {so.status === "WAITING_PARTS" && (
-            <Button onClick={() => handleStatusChange("IN_PROGRESS")}>
-              Retomar
-            </Button>
-          )}
-          {so.status === "FINISHED" && (
-            <>
-              <Button onClick={() => handleStatusChange("DELIVERED")}>
-                Marcar Entregue
-              </Button>
-              {getWhatsAppLinkFinished() && (
-                <a
-                  href={getWhatsAppLinkFinished()!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-                >
-                  <MessageCircle className="size-4" />
-                  WhatsApp
-                </a>
-              )}
-            </>
-          )}
-          {so.status === "DELIVERED" && (
-            <>
-              {getWhatsAppLinkDelivered() && (
-                <a
-                  href={getWhatsAppLinkDelivered()!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-                >
-                  <MessageCircle className="size-4" />
-                  WhatsApp
-                </a>
-              )}
-            </>
-          )}
-          {so.status !== "CANCELLED" && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleStatusChange("CANCELLED")}
-            >
-              Cancelar
-            </Button>
-          )}
-          <a
-            href={`/api/pdf/os/${id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-          >
-            <FileDown className="size-4" />
-            Baixar PDF
-          </a>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/ordens-servico")}
-          >
-            Voltar
-          </Button>
+          {renderActionButtons()}
         </div>
       </div>
 
@@ -471,6 +468,17 @@ export default function OSDetailContent() {
             quoteId: so.quoteId || "",
             problemDescription: so.problemDescription || "",
             serviceDescription: so.serviceDescription || "",
+            equipmentName: so.equipmentName || "",
+            equipmentBrand: so.equipmentBrand || "",
+            equipmentModel: so.equipmentModel || "",
+            serialNumber: so.serialNumber || "",
+            accessories: so.accessories || "",
+            priority: so.priority,
+            expectedDeliveryDate: so.expectedDeliveryDate ? so.expectedDeliveryDate.split("T")[0] : "",
+            warrantyEnabled: so.warrantyEnabled,
+            warrantyTerms: so.warrantyTerms || "",
+            internalNotes: so.internalNotes || "",
+            customerNotes: so.customerNotes || "",
             notes: so.notes || "",
             items: so.items.map((item) => ({
               description: item.description,
@@ -481,14 +489,18 @@ export default function OSDetailContent() {
           onSubmit={handleUpdate}
           submitLabel="Salvar Alteracoes"
           paymentStatus={so.paymentStatus}
+          paymentMethod={so.paymentMethod || undefined}
           paidAmount={Number(so.paidAmount)}
           total={Number(so.total)}
+          warrantyEnabled={so.warrantyEnabled}
+          warrantyEndDate={so.warrantyEndDate}
         />
       ) : (
         <>
+          {/* Customer + OS Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Informacoes da Ordem de Servico</CardTitle>
+              <CardTitle>Informacoes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -496,183 +508,148 @@ export default function OSDetailContent() {
                   <span className="text-muted-foreground">Cliente:</span>{" "}
                   <span className="font-medium">{so.customer.name}</span>
                 </div>
+                {so.customer.phone && (
+                  <div>
+                    <span className="text-muted-foreground">Telefone:</span>{" "}
+                    <span>{so.customer.phone}</span>
+                  </div>
+                )}
+                {so.customer.email && (
+                  <div>
+                    <span className="text-muted-foreground">E-mail:</span>{" "}
+                    <span>{so.customer.email}</span>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">Status:</span>{" "}
-                  <Badge variant={getStatusVariant(so.status)}>
-                    {getStatusLabel(so.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Pagamento:</span>{" "}
-                  <Badge variant={getPaymentVariant(so.paymentStatus)}>
-                    {getPaymentLabel(so.paymentStatus)}
-                  </Badge>
-                  <span className="ml-2">
-                    {formatCurrency(Number(so.paidAmount))} /{" "}
-                    {formatCurrency(Number(so.total))}
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status as any)}`}>
+                    {getStatusLabel(so.status as any)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Data de Abertura:</span>{" "}
-                  <span>{formatDate(so.openedAt)}</span>
+                  <span className="text-muted-foreground">Prioridade:</span>{" "}
+                  {priorityInfo && (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityInfo.variant}`}>
+                      {priorityInfo.label}
+                    </span>
+                  )}
                 </div>
-                {so.finishedAt && (
+                {so.technician && (
                   <div>
-                    <span className="text-muted-foreground">
-                      Data de Finalizacao:
-                    </span>{" "}
-                    <span>{formatDate(so.finishedAt)}</span>
+                    <span className="text-muted-foreground">Tecnico:</span>{" "}
+                    <span className="font-medium">{so.technician.name}</span>
                   </div>
                 )}
                 {so.quote && (
                   <div>
-                    <span className="text-muted-foreground">
-                      Orcamento Vinculado:
-                    </span>{" "}
+                    <span className="text-muted-foreground">Orcamento Vinculado:</span>{" "}
                     <span className="font-medium">#{so.quote.number}</span>
-                  </div>
-                )}
-                {so.problemDescription && (
-                  <div className="md:col-span-2">
-                    <span className="text-muted-foreground">
-                      Descricao do Problema:
-                    </span>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {so.problemDescription}
-                    </p>
-                  </div>
-                )}
-                {so.serviceDescription && (
-                  <div className="md:col-span-2">
-                    <span className="text-muted-foreground">
-                      Descricao do Servico:
-                    </span>
-                    <p className="mt-1 whitespace-pre-wrap">
-                      {so.serviceDescription}
-                    </p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Payment section — only show for PENDING status */}
-          {so.status !== "CANCELLED" && so.paymentStatus === "PENDING" && (
+          {/* Equipment Section */}
+          {(so.equipmentName || so.equipmentBrand || so.equipmentModel || so.serialNumber || so.accessories) && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Pagamento
-                  {!showPayment && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowPayment(true)}
-                    >
-                      Registrar Pagamento
-                    </Button>
-                  )}
-                </CardTitle>
+                <CardTitle>Equipamento</CardTitle>
               </CardHeader>
-              {showPayment && (
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">Total:</span>
-                    <span className="font-medium">
-                      {formatCurrency(Number(so.total))}
-                    </span>
-                    <span className="text-muted-foreground ml-4">
-                      Pago:
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(Number(so.paidAmount))}
-                    </span>
-                    <span className="text-muted-foreground ml-4">
-                      Restante:
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(
-                        Number(so.total) - Number(so.paidAmount)
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-end gap-3">
-                    <div className="space-y-2 flex-1 max-w-xs">
-                      <Label htmlFor="paymentAmount">Valor do Pagamento</Label>
-                      <Input
-                        id="paymentAmount"
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        placeholder="0.00"
-                      />
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  {so.equipmentName && (
+                    <div>
+                      <span className="text-muted-foreground">Equipamento:</span>{" "}
+                      <span className="font-medium">{so.equipmentName}</span>
                     </div>
-                    <Button onClick={handlePayment}>Registrar</Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowPayment(false);
-                        setPaymentAmount("");
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </CardContent>
-              )}
+                  )}
+                  {so.equipmentBrand && (
+                    <div>
+                      <span className="text-muted-foreground">Marca:</span>{" "}
+                      <span>{so.equipmentBrand}</span>
+                    </div>
+                  )}
+                  {so.equipmentModel && (
+                    <div>
+                      <span className="text-muted-foreground">Modelo:</span>{" "}
+                      <span>{so.equipmentModel}</span>
+                    </div>
+                  )}
+                  {so.serialNumber && (
+                    <div>
+                      <span className="text-muted-foreground">N/S:</span>{" "}
+                      <span>{so.serialNumber}</span>
+                    </div>
+                  )}
+                  {so.accessories && (
+                    <div className="md:col-span-2">
+                      <span className="text-muted-foreground">Acessorios:</span>
+                      <p className="mt-1 whitespace-pre-wrap">{so.accessories}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           )}
 
-          {/* Paid status display */}
-          {(so.paymentStatus === "PAID" || so.paymentStatus === "PARTIAL") &&
-            !showPayment && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pagamento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">Total:</span>
-                    <span className="font-medium">
-                      {formatCurrency(Number(so.total))}
-                    </span>
-                    <span className="text-muted-foreground ml-4">Pago:</span>
-                    <span className="font-medium">
-                      {formatCurrency(Number(so.paidAmount))}
-                    </span>
-                    {so.paymentStatus === "PAID" && (
-                      <Badge variant="default" className="ml-2">
-                        Pago
-                      </Badge>
-                    )}
-                    {so.paymentStatus === "PARTIAL" && (
-                      <>
-                        <Badge variant="outline" className="ml-2">
-                          Parcial
-                        </Badge>
-                        <span className="text-muted-foreground ml-4">
-                          Restante:
-                        </span>
-                        <span className="font-medium">
-                          {formatCurrency(
-                            Number(so.total) - Number(so.paidAmount)
-                          )}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowPayment(true)}
-                        >
-                          Registrar Pagamento
-                        </Button>
-                      </>
-                    )}
+          {/* Problem + Service Description */}
+          {(so.problemDescription || so.serviceDescription) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Descricao</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {so.problemDescription && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Problema Relatado:</span>
+                    <p className="mt-1 text-sm whitespace-pre-wrap">{so.problemDescription}</p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+                {so.serviceDescription && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Servico Realizado:</span>
+                    <p className="mt-1 text-sm whitespace-pre-wrap">{so.serviceDescription}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
+          {/* Dates */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Prazos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Data de Entrada:</span>{" "}
+                  <span>{so.receivedAt ? formatDate(so.receivedAt) : formatDate(so.openedAt)}</span>
+                </div>
+                {so.expectedDeliveryDate && (
+                  <div>
+                    <span className="text-muted-foreground">Previsao de Entrega:</span>{" "}
+                    <span>{formatDate(so.expectedDeliveryDate)}</span>
+                  </div>
+                )}
+                {so.completedAt && (
+                  <div>
+                    <span className="text-muted-foreground">Concluida em:</span>{" "}
+                    <span>{formatDate(so.completedAt)}</span>
+                  </div>
+                )}
+                {so.finishedAt && !so.completedAt && (
+                  <div>
+                    <span className="text-muted-foreground">Finalizada em:</span>{" "}
+                    <span>{formatDate(so.finishedAt)}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Items */}
           <Card>
             <CardHeader>
               <CardTitle>Itens</CardTitle>
@@ -681,9 +658,9 @@ export default function OSDetailContent() {
               <div className="space-y-3">
                 <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground pb-2 border-b">
                   <div className="col-span-5">Descricao</div>
-                  <div className="col-span-2">Qtd</div>
-                  <div className="col-span-2">Preco Unit.</div>
-                  <div className="col-span-2 text-right">Total</div>
+                  <div className="col-span-2 text-center">Qtd</div>
+                  <div className="col-span-2 text-right">Preco Unit.</div>
+                  <div className="col-span-3 text-right">Total</div>
                 </div>
                 {so.items.map((item) => (
                   <div
@@ -691,11 +668,11 @@ export default function OSDetailContent() {
                     className="grid grid-cols-12 gap-2 text-sm py-1"
                   >
                     <div className="col-span-5">{item.description}</div>
-                    <div className="col-span-2">{Number(item.quantity)}</div>
-                    <div className="col-span-2">
+                    <div className="col-span-2 text-center">{Number(item.quantity)}</div>
+                    <div className="col-span-2 text-right">
                       {formatCurrency(Number(item.unitPrice))}
                     </div>
-                    <div className="col-span-2 text-right font-medium">
+                    <div className="col-span-3 text-right font-medium">
                       {formatCurrency(Number(item.total))}
                     </div>
                   </div>
@@ -707,10 +684,142 @@ export default function OSDetailContent() {
                   <span>Total:</span>
                   <span>{formatCurrency(Number(so.total))}</span>
                 </div>
+                {so.finalAmount !== null && so.finalAmount !== undefined && Number(so.finalAmount) !== Number(so.total) && (
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-muted-foreground">Valor Final:</span>
+                    <span className="font-semibold">{formatCurrency(Number(so.finalAmount))}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
+          {/* Payment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Pagamento
+                {so.status !== "CANCELLED" && so.paymentStatus === "PENDING" && !showPayment && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPayment(true)}
+                  >
+                    Registrar Pagamento
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 text-sm flex-wrap">
+                <span className="text-muted-foreground">Status:</span>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPaymentStatusVariant(so.paymentStatus as any)}`}>
+                  {getPaymentStatusLabel(so.paymentStatus as any)}
+                </span>
+                {so.paymentMethod && (
+                  <>
+                    <span className="text-muted-foreground">Metodo:</span>
+                    <span className="font-medium">{getPaymentMethodLabel(so.paymentMethod as any)}</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-sm mt-3">
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-medium">{formatCurrency(Number(so.total))}</span>
+                <span className="text-muted-foreground ml-4">Pago:</span>
+                <span className="font-medium">{formatCurrency(Number(so.paidAmount))}</span>
+                <span className="text-muted-foreground ml-4">Restante:</span>
+                <span className="font-medium">{formatCurrency(Number(so.total) - Number(so.paidAmount))}</span>
+              </div>
+
+              {showPayment && (
+                <div className="flex items-end gap-3 mt-4">
+                  <div className="space-y-2 flex-1 max-w-xs">
+                    <Label htmlFor="paymentAmount">Valor do Pagamento</Label>
+                    <Input
+                      id="paymentAmount"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <Button onClick={handlePayment}>Registrar</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowPayment(false);
+                      setPaymentAmount("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Warranty */}
+          {so.warrantyEnabled && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Garantia</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${warrantyInfo.variant}`}>
+                    {warrantyInfo.label}
+                  </span>
+                </div>
+                {so.warrantyStartDate && (
+                  <div>
+                    <span className="text-muted-foreground">Inicio:</span>{" "}
+                    <span>{formatDate(so.warrantyStartDate)}</span>
+                  </div>
+                )}
+                {so.warrantyEndDate && (
+                  <div>
+                    <span className="text-muted-foreground">Validade:</span>{" "}
+                    <span>{formatDate(so.warrantyEndDate)}</span>
+                  </div>
+                )}
+                {so.warrantyTerms && (
+                  <div>
+                    <span className="text-muted-foreground">Termos:</span>
+                    <p className="mt-1 whitespace-pre-wrap">{so.warrantyTerms}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Internal Notes */}
+          {so.internalNotes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Observacoes Internas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap">{so.internalNotes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Customer Notes */}
+          {so.customerNotes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Observacoes para o Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap">{so.customerNotes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* General Notes */}
           {so.notes && (
             <Card>
               <CardHeader>

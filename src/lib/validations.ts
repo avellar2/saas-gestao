@@ -29,6 +29,9 @@ export const quoteSchema = z.object({
 export const quoteUpdateSchema = quoteSchema.partial();
 
 // ─── Ordens de Serviço ─────────────────────────────────────────────
+export const serviceOrderPrioritySchema = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
+export const paymentMethodSchema = z.enum(["CASH", "PIX", "CARD", "TRANSFER", "OTHER"]);
+
 export const osItemSchema = z.object({
   description: z.string().min(1, "Descrição é obrigatória"),
   quantity: z.coerce.number().positive("Quantidade deve ser positiva"),
@@ -38,10 +41,20 @@ export const osItemSchema = z.object({
 export const osSchema = z.object({
   customerId: z.string().min(1, "Cliente é obrigatório"),
   quoteId: z.string().optional().or(z.literal("")),
-  problemDescription: z.string().min(1, "Descrição do problema é obrigatória"),
+  problemDescription: z.string().optional().or(z.literal("")),
   serviceDescription: z.string().optional().or(z.literal("")),
+  equipmentName: z.string().optional().or(z.literal("")),
+  equipmentBrand: z.string().optional().or(z.literal("")),
+  equipmentModel: z.string().optional().or(z.literal("")),
+  serialNumber: z.string().optional().or(z.literal("")),
+  accessories: z.string().optional().or(z.literal("")),
+  priority: serviceOrderPrioritySchema.optional().default("NORMAL"),
+  expectedDeliveryDate: z.string().optional().or(z.literal("")),
+  warrantyEnabled: z.coerce.boolean().optional().default(false),
+  warrantyTerms: z.string().optional().or(z.literal("")),
+  internalNotes: z.string().optional().or(z.literal("")),
+  customerNotes: z.string().optional().or(z.literal("")),
   items: z.array(osItemSchema).optional().default([]),
-  status: z.enum(["OPEN", "IN_PROGRESS", "FINISHED", "DELIVERED", "CANCELLED"]).optional(),
   notes: z.string().optional().or(z.literal("")),
 });
 

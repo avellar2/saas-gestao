@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       planName: "Inicial",
       basePrice: 49.0,
       modulesCount: 0,
-      monthlyPrice: calculateMonthlyPrice(0),
+      monthlyPrice: calculateMonthlyPrice([]),
       trialEndsAt: trialEndsAt,
     },
   });

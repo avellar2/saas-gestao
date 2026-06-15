@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { CORE_MODULES } from "@/lib/modules";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -124,9 +125,12 @@ export async function POST(request: Request) {
           data: { status: "CANCELLED" },
         });
 
-        // Deactivate all modules
+        // Deactivate all modules EXCEPT core (customers must always be active)
         await prisma.companyModule.updateMany({
-          where: { companyId: deletedCompany.id },
+          where: {
+            companyId: deletedCompany.id,
+            moduleKey: { notIn: CORE_MODULES.map((m) => m.key) },
+          },
           data: { active: false, deactivatedAt: new Date() },
         });
 

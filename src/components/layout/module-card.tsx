@@ -10,41 +10,31 @@ import {
   Package,
   Calendar,
   ShoppingBag,
-  UtensilsCrossed,
   BarChart3,
   PieChart,
   Shield,
+  UtensilsCrossed,
   Lock,
   ArrowRight,
   Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ModuleKey } from "@/types";
+import { getModuleConfig, getModuleRoute, isActiveModule } from "@/lib/modules";
+import type { ModuleKey } from "@/lib/modules";
+import type { LucideIcon } from "lucide-react";
 
-const MODULE_ICON_MAP: Record<string, React.ElementType> = {
-  customers: Users,
-  quotes: FileText,
-  service_orders: ClipboardList,
-  inventory: Package,
-  scheduling: Calendar,
-  catalog: ShoppingBag,
-  menu: UtensilsCrossed,
-  finance: BarChart3,
-  reports: PieChart,
-  users_permissions: Shield,
-};
-
-const ACTIVE_COLORS: Record<string, string> = {
-  customers: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
-  quotes: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
-  service_orders: "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/30 dark:text-cyan-400",
-  inventory: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
-  scheduling: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
-  catalog: "bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400",
-  menu: "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
-  finance: "bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400",
-  reports: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
-  users_permissions: "bg-slate-50 text-slate-600 dark:bg-slate-950/30 dark:text-slate-400",
+// Mapa de ícones — a única duplicação necessária (React precisa de componentes)
+const ICON_MAP: Record<string, LucideIcon> = {
+  Users,
+  FileText,
+  ClipboardList,
+  Package,
+  Calendar,
+  ShoppingBag,
+  UtensilsCrossed,
+  BarChart3,
+  PieChart,
+  Shield,
 };
 
 interface ModuleCardProps {
@@ -55,6 +45,13 @@ interface ModuleCardProps {
 }
 
 export function ModuleCard({ moduleKey, name, description, active }: ModuleCardProps) {
+  const config = getModuleConfig(moduleKey);
+  const Icon = ICON_MAP[config?.icon || ""] || Zap;
+  const colorClass = config?.color || "bg-muted text-muted-foreground";
+  const displayName = config?.name || name;
+  const displayDesc = config?.description || description;
+  const isComingSoon = config?.status === "coming_soon";
+
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -77,12 +74,9 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
     return () => card.removeEventListener("mousemove", handleMouseMove);
   }, [isHovered]);
 
-  const Icon = MODULE_ICON_MAP[moduleKey] || Zap;
-  const colorClass = ACTIVE_COLORS[moduleKey] || "bg-muted text-muted-foreground";
-
   if (active) {
     return (
-      <Link href={getRoute(moduleKey)} className="block group">
+      <Link href={getModuleRoute(moduleKey)} className="block group">
         <motion.div
           ref={cardRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -112,9 +106,9 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
             </motion.div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors duration-200">
-                {name}
+                {displayName}
               </h3>
-              <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+              <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{displayDesc}</p>
             </div>
             <motion.div
               className="shrink-0 mt-1"
@@ -129,40 +123,31 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
     );
   }
 
+  // Inactive module — link to upgrade (or show coming soon badge)
   return (
-    <Link href={`/upgrade?module=${moduleKey}`} className="block group">
+    <Link href={isComingSoon ? "#" : `/upgrade?module=${moduleKey}`} className="block group" onClick={isComingSoon ? (e) => e.preventDefault() : undefined}>
       <motion.div
-        whileTap={{ scale: 0.97 }}
+        whileTap={isComingSoon ? undefined : { scale: 0.97 }}
         transition={{ duration: 0.1 }}
-        className="h-full rounded-[1.5rem] bg-muted/40 border border-border/40 opacity-60 hover:opacity-80 transition-opacity duration-300 cursor-pointer"
+        className="h-full rounded-[1.5rem] bg-muted/40 border border-border/40 opacity-60 hover:opacity-80 transition-opacity duration-300 cursor-pointer relative"
       >
         <CardContent className="p-5 flex items-start gap-4">
           <div className="shrink-0 w-11 h-11 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm text-muted-foreground">{name}</h3>
-            <p className="text-sm text-muted-foreground/70 mt-0.5 leading-relaxed">{description}</p>
+            <h3 className="font-medium text-sm text-muted-foreground">{displayName}</h3>
+            <p className="text-sm text-muted-foreground/70 mt-0.5 leading-relaxed">{displayDesc}</p>
           </div>
-          <Lock className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1" />
+          {isComingSoon ? (
+            <span className="shrink-0 mt-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+              Em breve
+            </span>
+          ) : (
+            <Lock className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1" />
+          )}
         </CardContent>
       </motion.div>
     </Link>
   );
-}
-
-function getRoute(key: string): string {
-  const map: Record<string, string> = {
-    customers: "/clientes",
-    quotes: "/orcamentos",
-    service_orders: "/ordens-servico",
-    inventory: "/estoque",
-    scheduling: "/agendamento",
-    catalog: "/catalogo",
-    menu: "/cardapio",
-    finance: "/financeiro",
-    reports: "/relatorios",
-    users_permissions: "/usuarios",
-  };
-  return map[key] || "/dashboard";
 }

@@ -33,6 +33,9 @@ export async function GET(
           total: true,
         },
       },
+      technician: {
+        select: { id: true, name: true },
+      },
     },
   });
 
@@ -75,15 +78,33 @@ export async function GET(
 
   const serviceOrderData = {
     number: serviceOrder.number,
+    code: serviceOrder.code,
     status: serviceOrder.status,
+    priority: serviceOrder.priority,
     problemDescription: serviceOrder.problemDescription,
     serviceDescription: serviceOrder.serviceDescription,
+    equipmentName: serviceOrder.equipmentName,
+    equipmentBrand: serviceOrder.equipmentBrand,
+    equipmentModel: serviceOrder.equipmentModel,
+    serialNumber: serviceOrder.serialNumber,
+    accessories: serviceOrder.accessories,
     total: Number(serviceOrder.total),
+    finalAmount: serviceOrder.finalAmount ? Number(serviceOrder.finalAmount) : null,
     paidAmount: Number(serviceOrder.paidAmount),
     paymentStatus: serviceOrder.paymentStatus,
+    paymentMethod: serviceOrder.paymentMethod,
+    receivedAt: serviceOrder.receivedAt?.toISOString() || null,
+    expectedDeliveryDate: serviceOrder.expectedDeliveryDate?.toISOString() || null,
+    completedAt: serviceOrder.completedAt?.toISOString() || null,
+    warrantyEnabled: serviceOrder.warrantyEnabled,
+    warrantyEndDate: serviceOrder.warrantyEndDate?.toISOString() || null,
+    warrantyTerms: serviceOrder.warrantyTerms,
+    customerNotes: serviceOrder.customerNotes,
+    internalNotes: serviceOrder.internalNotes,
     openedAt: serviceOrder.openedAt.toISOString(),
-    finishedAt: serviceOrder.finishedAt?.toISOString(),
+    finishedAt: serviceOrder.finishedAt?.toISOString() || null,
     notes: serviceOrder.notes,
+    technicianName: serviceOrder.technician?.name || null,
   };
 
   const itemsData = serviceOrder.items.map((item) => ({

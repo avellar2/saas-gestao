@@ -1,4 +1,5 @@
 import { CompanyStatus } from "@/generated/prisma/client";
+import type { ModuleKey } from "./modules";
 
 export interface CompanyLimits {
   customers: number;

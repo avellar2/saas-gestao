@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tenantPrisma } from "@/lib/prisma";
 import { isModuleActive } from "@/lib/module-guard";
-import type { ModuleKey } from "@/types";
+import type { ModuleKey } from "@/lib/modules";
 import { toCsv } from "@/lib/csv-export";
 
 const ENTITY_MODULE_MAP: Record<string, ModuleKey> = {

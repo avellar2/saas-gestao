@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateMonthlyPrice } from "@/lib/pricing";
-import { MODULE_KEYS } from "@/types";
-import type { ModuleKey } from "@/types";
+import { MODULE_KEYS } from "@/lib/modules";
+import type { ModuleKey } from "@/lib/modules";
 
 export async function GET() {
   const session = await auth();
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       planName: "Inicial",
       basePrice: 49.0,
       modulesCount: 0,
-      monthlyPrice: calculateMonthlyPrice(0),
+      monthlyPrice: calculateMonthlyPrice([]),
       trialEndsAt: trialEndsAt,
     },
   });

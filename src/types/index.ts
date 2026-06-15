@@ -9,30 +9,6 @@ export interface SessionUser {
   companyStatus: CompanyStatus;
 }
 
-export const MODULE_KEYS = [
-  "customers",
-  "quotes",
-  "service_orders",
-  "inventory",
-  "scheduling",
-  "catalog",
-  "menu",
-  "finance",
-  "reports",
-  "users_permissions",
-] as const;
-
-export type ModuleKey = (typeof MODULE_KEYS)[number];
-
-export const MODULE_ROUTES: Record<string, string> = {
-  customers: "/clientes",
-  quotes: "/orcamentos",
-  service_orders: "/ordens-servico",
-  inventory: "/estoque",
-  scheduling: "/agendamento",
-  catalog: "/catalogo",
-  menu: "/cardapio",
-  finance: "/financeiro",
-  reports: "/relatorios",
-  users_permissions: "/usuarios",
-};
+// Re-export from modules.ts for compatibility
+export type { ModuleKey } from "@/lib/modules";
+export { MODULE_KEYS } from "@/lib/modules";

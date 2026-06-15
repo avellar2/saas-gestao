@@ -148,7 +148,7 @@ export async function PUT(
         customerId: existing.customerId,
         quoteId: existing.id,
         number: nextNumber,
-        status: "OPENED",
+        status: "RECEIVED",
         problemDescription: existing.description,
         serviceDescription: existing.description,
         total: existing.total,

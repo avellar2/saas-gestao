@@ -15,6 +15,10 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
+/**
+ * @legacy Planos fixos Basic/Pro — manter até checkout modular estar validado.
+ * Depois da transição, remover PLANS e usar calculateMonthlyPrice de pricing.ts.
+ */
 export const PLANS = {
   basic: {
     name: "Básico",
