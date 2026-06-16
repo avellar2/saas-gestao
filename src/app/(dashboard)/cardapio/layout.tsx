@@ -2,13 +2,14 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { UtensilsCrossed, QrCode, ChefHat, ClipboardList, Settings } from "lucide-react";
+import { UtensilsCrossed, QrCode, ChefHat, ClipboardList, DollarSign, Settings } from "lucide-react";
 
 const TABS = [
   { href: "/cardapio", label: "Itens do Cardápio", icon: UtensilsCrossed, exact: true },
   { href: "/cardapio/mesas", label: "Mesas / QR Code", icon: QrCode, exact: false },
   { href: "/cardapio/cozinha", label: "Cozinha", icon: ChefHat, exact: false },
   { href: "/cardapio/pedidos", label: "Pedidos", icon: ClipboardList, exact: false },
+  { href: "/cardapio/caixa", label: "Caixa", icon: DollarSign, exact: false },
   { href: "/cardapio/config", label: "Configurar", icon: Settings, exact: false },
 ];
 

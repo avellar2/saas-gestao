@@ -213,7 +213,7 @@ export const MODULES: ModuleConfig[] = [
     monthlyPrice: 35,
     includedInCore: false,
     hasClientPortal: true,
-    routes: ["/cardapio", "/cardapio/mesas", "/cardapio/cozinha", "/cardapio/pedidos", "/cardapio/config"],
+    routes: ["/cardapio", "/cardapio/mesas", "/cardapio/cozinha", "/cardapio/pedidos", "/cardapio/caixa", "/cardapio/config"],
     icon: "UtensilsCrossed",
     order: 8,
     color: "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",

@@ -1,6 +1,17 @@
 import { randomBytes } from "crypto";
 
 /**
+ * Labels amigáveis para formas de pagamento.
+ */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH: "Dinheiro",
+  PIX: "PIX",
+  CARD: "Cartão",
+  TRANSFER: "Transferência",
+  OTHER: "Outro",
+};
+
+/**
  * Gera um token opaco para mesa (cuid-like, 25 chars).
  */
 export function generateTableToken(): string {

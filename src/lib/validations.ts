@@ -198,6 +198,7 @@ export const createMenuOrderSchema = z.object({
 
 export const updateMenuOrderStatusSchema = z.object({
   status: z.enum(["RECEIVED", "PREPARING", "READY", "DELIVERED", "CANCELLED"]),
+  paymentMethod: paymentMethodSchema.optional(),
 });
 
 // ─── Cardápio: Slug ──────────────────────────────────────────────────

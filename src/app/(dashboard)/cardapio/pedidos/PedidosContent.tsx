@@ -2,9 +2,18 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils";
+import { PAYMENT_METHOD_LABELS } from "@/lib/menu-helpers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UtensilsCrossed, Store, Search, X, DollarSign } from "lucide-react";
+import { UtensilsCrossed, Store, Search, X, DollarSign, Banknote, Smartphone, CreditCard, ArrowLeftRight, HelpCircle } from "lucide-react";
+
+const PAYMENT_ICONS: Record<string, React.ElementType> = {
+  CASH: Banknote,
+  PIX: Smartphone,
+  CARD: CreditCard,
+  TRANSFER: ArrowLeftRight,
+  OTHER: HelpCircle,
+};
 
 interface OrderItem {
   id: string;
@@ -36,6 +45,8 @@ interface Order {
   customerName: string | null;
   customerPhone: string | null;
   createdAt: string;
+  paymentMethod: string | null;
+  paidAt: string | null;
   table: { name: string } | null;
   items: OrderItem[];
   transactions?: FinancialTransaction[];
@@ -224,6 +235,25 @@ export function PedidosContent() {
                       <p className="text-sm text-muted-foreground italic">
                         Obs: {order.notes}
                       </p>
+                    )}
+
+                    {/* Forma de pagamento */}
+                    {order.paymentMethod && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Pagamento:</span>
+                        <div className="flex items-center gap-1.5">
+                          {(() => {
+                            const Icon = PAYMENT_ICONS[order.paymentMethod!] || HelpCircle;
+                            return <Icon className="h-3.5 w-3.5 text-muted-foreground" />;
+                          })()}
+                          <span>{PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod}</span>
+                        </div>
+                        {order.paidAt && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(order.paidAt).toLocaleString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
                     )}
 
                     {/* Badge financeiro */}

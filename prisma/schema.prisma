@@ -355,10 +355,12 @@ model MenuOrder {
   customerName String?
   customerPhone String?
   orderType    MenuOrderType
-  status       MenuOrderStatus @default(RECEIVED)
-  total        Decimal         @db.Decimal(10, 2)
-  notes        String?
-  orderNumber  Int
+  status         MenuOrderStatus @default(RECEIVED)
+  paymentMethod  PaymentMethod?
+  paidAt         DateTime?
+  total          Decimal         @db.Decimal(10, 2)
+  notes          String?
+  orderNumber    Int
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { updateMenuOrderStatusSchema } from "@/lib/validations";
+import { PAYMENT_METHOD_LABELS } from "@/lib/menu-helpers";
 
 // Transições de status permitidas
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -80,9 +81,23 @@ export async function PATCH(
     );
   }
 
+  // Exige forma de pagamento ao entregar
+  if (newStatus === "DELIVERED" && !parsed.data.paymentMethod) {
+    return NextResponse.json(
+      { error: "Forma de pagamento é obrigatória ao entregar o pedido" },
+      { status: 400 }
+    );
+  }
+
+  const updateData: Record<string, unknown> = { status: newStatus };
+  if (newStatus === "DELIVERED") {
+    updateData.paymentMethod = parsed.data.paymentMethod;
+    updateData.paidAt = new Date();
+  }
+
   const updated = await tenant.menuOrder.update({
     where: { id },
-    data: { status: newStatus },
+    data: updateData,
     include: {
       items: true,
       table: { select: { name: true } },
@@ -102,6 +117,20 @@ export async function PATCH(
     details: `Pedido #${existing.orderNumber}: ${currentStatus} → ${newStatus}`,
   });
 
+  // Log de pagamento quando entregue
+  if (newStatus === "DELIVERED" && parsed.data.paymentMethod) {
+    const paymentLabel = PAYMENT_METHOD_LABELS[parsed.data.paymentMethod] || parsed.data.paymentMethod;
+    await logActivity({
+      tenant,
+      userId,
+      userName,
+      action: "UPDATE",
+      entity: "menu_order",
+      entityId: id,
+      details: `Pagamento registrado no Pedido #${existing.orderNumber}: ${paymentLabel}`,
+    });
+  }
+
   // ── Integração Financeira (best-effort) ──────────────────────────────
   if (financeActive) {
     try {
@@ -113,6 +142,9 @@ export async function PATCH(
 
         const now = new Date();
         const tableName = existing.table?.name || null;
+        const paymentLabel = parsed.data.paymentMethod
+          ? PAYMENT_METHOD_LABELS[parsed.data.paymentMethod] || parsed.data.paymentMethod
+          : "Não informado";
         const orderTypeLabel = existing.orderType === "TABLE"
           ? `Mesa ${tableName}`
           : "Para viagem";
@@ -125,7 +157,7 @@ export async function PATCH(
           category: "Cardápio",
           paidAt: now,
           dueDate: now,
-          notes: `Pedido #${existing.orderNumber} - ${orderTypeLabel}`,
+          notes: `Pedido #${existing.orderNumber} - ${orderTypeLabel} - Pagamento: ${paymentLabel}`,
           menuOrderId: id,
           companyId,
         };
@@ -160,6 +192,16 @@ export async function PATCH(
             details: `Receita financeira criada a partir do Pedido #${existing.orderNumber}`,
           });
         }
+
+        await logActivity({
+          tenant,
+          userId,
+          userName,
+          action: "UPDATE",
+          entity: "menu_order",
+          entityId: id,
+          details: `Pedido #${existing.orderNumber} entregue e lançado no caixa`,
+        });
       } else if (newStatus === "CANCELLED") {
         // Se cancelar pedido que já foi entregue, marcar transação como CANCELLED
         const existingTx = await tenant.financialTransaction.findFirst({

@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils";
+import { PAYMENT_METHOD_LABELS } from "@/lib/menu-helpers";
 import { Button } from "@/components/ui/button";
-import { Clock, UtensilsCrossed, Store, ChevronRight, XCircle } from "lucide-react";
+import { Clock, UtensilsCrossed, Store, ChevronRight, XCircle, Banknote, Smartphone, CreditCard, ArrowLeftRight, HelpCircle } from "lucide-react";
+
+const PAYMENT_ICONS: Record<string, React.ElementType> = {
+  CASH: Banknote,
+  PIX: Smartphone,
+  CARD: CreditCard,
+  TRANSFER: ArrowLeftRight,
+  OTHER: HelpCircle,
+};
 
 interface OrderItem {
   id: string;
@@ -62,6 +71,12 @@ function timeAgo(dateStr: string): string {
 export function CozinhaContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentDialog, setPaymentDialog] = useState<{
+    orderId: string;
+    orderNumber: number;
+  } | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -86,11 +101,28 @@ export function CozinhaContent() {
   }, [loadOrders]);
 
   async function handleStatusChange(orderId: string, newStatus: string) {
+    // Se for DELIVERED, abre dialog de pagamento
+    if (newStatus === "DELIVERED") {
+      const order = orders.find((o) => o.id === orderId);
+      if (order) {
+        setPaymentDialog({ orderId, orderNumber: order.orderNumber });
+        setSelectedPayment("");
+      }
+      return;
+    }
+
+    await sendStatusChange(orderId, newStatus);
+  }
+
+  async function sendStatusChange(orderId: string, newStatus: string, paymentMethod?: string) {
     try {
+      const body: Record<string, unknown> = { status: newStatus };
+      if (paymentMethod) body.paymentMethod = paymentMethod;
+
       const res = await fetch(`/api/cardapio/pedidos/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -99,6 +131,15 @@ export function CozinhaContent() {
     } catch {
       // silently fail
     }
+  }
+
+  async function handleConfirmPayment() {
+    if (!paymentDialog || !selectedPayment) return;
+    setSubmitting(true);
+    await sendStatusChange(paymentDialog.orderId, "DELIVERED", selectedPayment);
+    setSubmitting(false);
+    setPaymentDialog(null);
+    setSelectedPayment("");
   }
 
   const getOrdersByStatus = (status: string) =>
@@ -154,6 +195,61 @@ export function CozinhaContent() {
           );
         })}
       </div>
+
+      {/* Dialog de pagamento */}
+      {paymentDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-xl shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
+            <h3 className="text-lg font-bold">
+              Pagamento — Pedido #{paymentDialog.orderNumber}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Selecione a forma de pagamento:
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([method, label]) => {
+                const Icon = PAYMENT_ICONS[method] || HelpCircle;
+                return (
+                  <button
+                    key={method}
+                    onClick={() => setSelectedPayment(method)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-sm font-medium transition-colors ${
+                      selectedPayment === method
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setPaymentDialog(null);
+                  setSelectedPayment("");
+                }}
+                disabled={submitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleConfirmPayment}
+                disabled={!selectedPayment || submitting}
+              >
+                {submitting ? "Confirmando..." : "Confirmar Entrega"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
