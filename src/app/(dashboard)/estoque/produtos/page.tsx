@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
-import { DashboardContent } from "./DashboardContent";
+import { ProdutosContent } from "./ProdutosContent";
 
-export default async function EstoquePage() {
+export default async function ProdutosPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -11,5 +11,5 @@ export default async function EstoquePage() {
   const hasAccess = await isModuleActive(companyId, "inventory");
   if (!hasAccess) redirect("/upgrade?module=inventory");
 
-  return <DashboardContent />;
+  return <ProdutosContent />;
 }
