@@ -19,7 +19,7 @@ import {
   serviceOrderFinishedMessage,
   serviceOrderDeliveredMessage,
 } from "@/lib/whatsapp";
-import { MessageCircle, FileDown, PackageCheck } from "lucide-react";
+import { MessageCircle, FileDown, PackageCheck, ExternalLink, Copy } from "lucide-react";
 import Link from "next/link";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
@@ -114,6 +114,7 @@ interface ServiceOrderDetail {
   items: ServiceOrderItem[];
   createdAt: string;
   updatedAt: string;
+  publicToken: string | null;
   financeActive?: boolean;
   inventoryActive?: boolean;
   stockMovements?: StockMovementDetail[];
@@ -165,6 +166,7 @@ export default function OSDetailContent() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [copiedPortal, setCopiedPortal] = useState(false);
 
   async function loadServiceOrder() {
     try {
@@ -269,8 +271,9 @@ export default function OSDetailContent() {
     });
 
     if (!res.ok) {
-      const body = await res.json();
-      setError(body.error || "Erro ao atualizar status");
+      let errorMsg = "Erro ao atualizar status";
+      try { const body = await res.json(); errorMsg = body.error || errorMsg; } catch {}
+      setError(errorMsg);
       return;
     }
 
@@ -295,8 +298,9 @@ export default function OSDetailContent() {
     });
 
     if (!res.ok) {
-      const body = await res.json();
-      setError(body.error || "Erro ao registrar pagamento");
+      let errorMsg = "Erro ao registrar pagamento";
+      try { const body = await res.json(); errorMsg = body.error || errorMsg; } catch {}
+      setError(errorMsg);
       return;
     }
 
@@ -315,8 +319,12 @@ export default function OSDetailContent() {
     });
 
     if (!res.ok) {
-      const body = await res.json();
-      setError(body.error || "Erro ao atualizar ordem de servico");
+      let errorMsg = "Erro ao atualizar ordem de servico";
+      try {
+        const body = await res.json();
+        errorMsg = body.error || errorMsg;
+      } catch {}
+      setError(errorMsg);
       return;
     }
 
@@ -332,8 +340,9 @@ export default function OSDetailContent() {
       method: "DELETE",
     });
     if (!res.ok) {
-      const body = await res.json();
-      setError(body.error || "Erro ao excluir ordem de servico");
+      let errorMsg = "Erro ao excluir ordem de servico";
+      try { const body = await res.json(); errorMsg = body.error || errorMsg; } catch {}
+      setError(errorMsg);
       return;
     }
     router.push("/ordens-servico");
@@ -485,6 +494,40 @@ export default function OSDetailContent() {
         </Button>
       );
     }
+
+    // Portal link button — always show, generates token if missing
+    const portalUrl = so!.publicToken
+      ? `${window.location.origin}/portal/os/${so!.publicToken}`
+      : null;
+    buttons.push(
+      <Button
+        key="portal"
+        variant="outline"
+        onClick={async () => {
+          if (so!.publicToken) {
+            navigator.clipboard.writeText(portalUrl!);
+            setCopiedPortal(true);
+            setTimeout(() => setCopiedPortal(false), 2000);
+          } else {
+            // Generate token via PATCH
+            try {
+              const res = await fetch(`/api/ordens-servico/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ generatePublicToken: true }),
+              });
+              if (res.ok) {
+                const updated = await res.json();
+                setSo({ ...so!, publicToken: updated.publicToken });
+              }
+            } catch {}
+          }
+        }}
+      >
+        {copiedPortal ? <Copy className="size-4 mr-1" /> : <ExternalLink className="size-4 mr-1" />}
+        {copiedPortal ? "Link copiado!" : so!.publicToken ? "Link do Portal" : "Gerar Link do Portal"}
+      </Button>
+    );
 
     // PDF button
     buttons.push(

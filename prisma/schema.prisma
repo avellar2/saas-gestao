@@ -402,11 +402,12 @@ enum QuoteStatus {
 }
 
 model Quote {
-  id          String      @id @default(cuid())
-  companyId   String
-  customerId  String
-  number      Int
-  status      QuoteStatus @default(DRAFT)
+  id           String      @id @default(cuid())
+  companyId    String
+  customerId   String
+  number       Int
+  publicToken  String?     @unique
+  status       QuoteStatus @default(DRAFT)
   description String?
   subtotal    Decimal     @db.Decimal(10, 2) @default(0)
   discount    Decimal     @db.Decimal(10, 2) @default(0)

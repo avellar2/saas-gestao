@@ -130,6 +130,17 @@ export async function PUT(
 
   const body = await request.json();
 
+  // Generate public token for portal access
+  if (body.generatePublicToken && !existing.publicToken) {
+    const crypto = await import("crypto");
+    const token = crypto.randomBytes(16).toString("base64url");
+    const updated = await tenant.serviceOrder.update({
+      where: { id },
+      data: { publicToken: token },
+    });
+    return NextResponse.json({ publicToken: updated.publicToken });
+  }
+
   // Mode 1: Status-only update
   if (body.status && !body.paymentAmount && !body.items) {
     const allowedTransitions: Record<string, string[]> = {

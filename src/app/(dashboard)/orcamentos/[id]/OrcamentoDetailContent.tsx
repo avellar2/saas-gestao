@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { buildWhatsAppLink, quoteWhatsAppMessage } from "@/lib/whatsapp";
-import { MessageCircle, FileDown } from "lucide-react";
+import { MessageCircle, FileDown, ExternalLink, Copy } from "lucide-react";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
 

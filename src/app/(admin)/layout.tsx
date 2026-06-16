@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
+import { SignOutButton } from "@/components/layout/sign-out-button";
 
 export default async function AdminLayout({
   children,
@@ -46,10 +47,11 @@ export default async function AdminLayout({
             Módulos
           </Link>
         </nav>
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-gray-700 space-y-2">
           <p className="text-xs text-gray-500 truncate">
             {session.user?.email}
           </p>
+          <SignOutButton />
         </div>
       </aside>
       <main className="flex-1 bg-gray-50 overflow-auto">
