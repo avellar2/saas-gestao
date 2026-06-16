@@ -230,15 +230,25 @@ export function CloseServiceOrderDialog({
         body: JSON.stringify(payload),
       });
 
+      const body = await res.json();
+
       if (!res.ok) {
-        const body = await res.json();
-        setError(body.error || "Erro ao finalizar OS");
+        if (body.insufficientStock && body.details) {
+          const detailMessages = body.details.map(
+            (d: { productName: string; available: number; required: number }) =>
+              `• "${d.productName}": necessário ${d.required}, disponível ${d.available}`
+          );
+          setError(
+            `Estoque insuficiente para finalizar a OS:\n${detailMessages.join("\n")}\n\nAbasteça o estoque ou remova os itens antes de finalizar.`
+          );
+        } else {
+          setError(body.error || "Erro ao finalizar OS");
+        }
         setSubmitting(false);
         return;
       }
 
-      const updated = await res.json();
-      onSuccess(updated);
+      onSuccess(body);
       onOpenChange(false);
     } catch {
       setError("Erro de conexão ao finalizar OS");
@@ -450,7 +460,7 @@ export function CloseServiceOrderDialog({
 
           {/* Error message */}
           {error && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive whitespace-pre-wrap">
               {error}
             </div>
           )}

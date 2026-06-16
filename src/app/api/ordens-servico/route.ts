@@ -179,11 +179,12 @@ export async function POST(request: Request) {
       notes: notes?.trim() || null,
       items: {
         create: items.map(
-          (item: { description: string; quantity: number; unitPrice: number }) => ({
+          (item: { description: string; quantity: number; unitPrice: number; productId?: string }) => ({
             description: item.description.trim(),
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             total: item.quantity * item.unitPrice,
+            productId: item.productId || null,
           })
         ),
       },

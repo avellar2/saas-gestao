@@ -19,7 +19,7 @@ import {
   serviceOrderFinishedMessage,
   serviceOrderDeliveredMessage,
 } from "@/lib/whatsapp";
-import { MessageCircle, FileDown } from "lucide-react";
+import { MessageCircle, FileDown, PackageCheck } from "lucide-react";
 import Link from "next/link";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
@@ -41,6 +41,8 @@ interface ServiceOrderItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  productId?: string | null;
+  product?: { id: string; name: string; quantity: number } | null;
 }
 
 interface CustomerDetail {
@@ -61,6 +63,16 @@ interface LinkedQuote {
 interface TechnicianDetail {
   id: string;
   name: string;
+}
+
+interface StockMovementDetail {
+  id: string;
+  productId: string;
+  quantity: number;
+  previousQuantity: number;
+  newQuantity: number;
+  createdAt: string;
+  product: { id: string; name: string };
 }
 
 interface ServiceOrderDetail {
@@ -91,6 +103,7 @@ interface ServiceOrderDetail {
   warrantyTerms: string | null;
   internalNotes: string | null;
   customerNotes: string | null;
+  inventoryDeductedAt?: string | null;
   openedAt: string;
   finishedAt: string | null;
   notes: string | null;
@@ -102,6 +115,8 @@ interface ServiceOrderDetail {
   createdAt: string;
   updatedAt: string;
   financeActive?: boolean;
+  inventoryActive?: boolean;
+  stockMovements?: StockMovementDetail[];
   transactions?: {
     id: string;
     type: string;
@@ -128,6 +143,13 @@ interface QuoteOption {
   customerName: string;
 }
 
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+}
+
 export default function OSDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -139,6 +161,7 @@ export default function OSDetailContent() {
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [quotes, setQuotes] = useState<QuoteOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -204,6 +227,30 @@ export default function OSDetailContent() {
       }
     }
     loadQuotes();
+  }, []);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/estoque?limit=500");
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(
+            (data.products || []).map(
+              (p: { id: string; name: string; salePrice: number; quantity: number }) => ({
+                id: p.id,
+                name: p.name,
+                salePrice: p.salePrice,
+                quantity: p.quantity,
+              })
+            )
+          );
+        }
+      } catch {
+        // silently fail — inventory inactive
+      }
+    }
+    loadProducts();
   }, []);
 
   function getAvailableTransitions(): string[] {
@@ -318,6 +365,11 @@ export default function OSDetailContent() {
     );
   }
 
+  // ── Estoque helpers ──
+  const itemsWithProduct = so?.items.filter((item) => item.productId) || [];
+  const hasStockDeducted = !!so?.inventoryDeductedAt;
+  const stockMovements = so?.stockMovements || [];
+
   if (loading) {
     return <DetailSkeleton />;
   }
@@ -375,8 +427,8 @@ export default function OSDetailContent() {
     // Status transition buttons (exclude transitions handled by close dialog)
     const closeTransitions = ALLOWED_CLOSE_TRANSITIONS[so!.status] || [];
     transitions.forEach((nextStatus) => {
-      if (nextStatus === "CANCELLED") return; // Handle cancel separately
-      if (closeTransitions.includes(nextStatus)) return; // Handled by close dialog
+      if (nextStatus === "CANCELLED") return;
+      if (closeTransitions.includes(nextStatus)) return;
       const label = getStatusLabel(nextStatus as any);
       buttons.push(
         <Button
@@ -497,6 +549,8 @@ export default function OSDetailContent() {
         <ServiceOrderForm
           customers={customers}
           quotes={quotes}
+          products={products}
+          inventoryActive={so.inventoryActive}
           initialData={{
             customerId: so.customerId,
             quoteId: so.quoteId || "",
@@ -518,6 +572,7 @@ export default function OSDetailContent() {
               description: item.description,
               quantity: Number(item.quantity),
               unitPrice: Number(item.unitPrice),
+              productId: item.productId || undefined,
             })),
           }}
           onSubmit={handleUpdate}
@@ -701,7 +756,14 @@ export default function OSDetailContent() {
                     key={item.id}
                     className="grid grid-cols-12 gap-2 text-sm py-1"
                   >
-                    <div className="col-span-5">{item.description}</div>
+                    <div className="col-span-5">
+                      {item.description}
+                      {item.product && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({item.product.name})
+                        </span>
+                      )}
+                    </div>
                     <div className="col-span-2 text-center">{Number(item.quantity)}</div>
                     <div className="col-span-2 text-right">
                       {formatCurrency(Number(item.unitPrice))}
@@ -794,6 +856,76 @@ export default function OSDetailContent() {
               )}
             </CardContent>
           </Card>
+
+          {/* ── Stock Card (Etapa 6) ── */}
+          {so.inventoryActive && itemsWithProduct.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PackageCheck className="size-4" />
+                  Estoque
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {hasStockDeducted ? (
+                  <>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                      ✅ Produtos baixados do estoque em{" "}
+                      {so.inventoryDeductedAt
+                        ? formatDate(so.inventoryDeductedAt)
+                        : "—"}
+                    </p>
+                    <div className="space-y-2">
+                      {stockMovements.map((sm) => (
+                        <div
+                          key={sm.id}
+                          className="flex items-center justify-between text-sm border-b pb-2 last:border-0 last:pb-0"
+                        >
+                          <span className="font-medium">{sm.product.name}</span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-muted-foreground">
+                              Qtd: {sm.quantity}
+                            </span>
+                            <span className="text-muted-foreground">
+                              Antes: {sm.previousQuantity} → {sm.newQuantity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      ℹ️ O estoque será baixado automaticamente ao finalizar a Ordem de Serviço.
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      {itemsWithProduct.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                        >
+                          <span className="font-medium">
+                            {item.product?.name || item.description}
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-muted-foreground">
+                              Qtd: {Number(item.quantity)}
+                            </span>
+                            {item.product && (
+                              <span className="text-muted-foreground">
+                                Disponível: {Number(item.product.quantity)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Finance Integration (Etapa 5) */}
           {so.status !== "CANCELLED" && !so.financeActive && (
@@ -940,7 +1072,8 @@ export default function OSDetailContent() {
         onOpenChange={setCloseDialogOpen}
         serviceOrder={so}
         onSuccess={(updated) => {
-          setSo({ ...so, ...updated });
+          // Reload OS to get fresh data (stockMovements, etc.)
+          loadServiceOrder();
           setCloseDialogOpen(false);
         }}
       />

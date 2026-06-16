@@ -22,6 +22,7 @@ const TENANT_MODELS = new Set([
   "MenuItem",
   "ActivityLog",
   "PasswordResetToken",
+  "StockMovement",
 ]);
 
 function createPrismaClient() {

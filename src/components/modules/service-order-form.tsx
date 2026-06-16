@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ export interface ServiceOrderItemData {
   description: string;
   quantity: number;
   unitPrice: number;
+  productId?: string;
 }
 
 export interface ServiceOrderFormData {
@@ -61,9 +62,18 @@ interface QuoteOption {
   customerName: string;
 }
 
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+}
+
 interface ServiceOrderFormProps {
   customers: CustomerOption[];
   quotes?: QuoteOption[];
+  products?: ProductOption[];
+  inventoryActive?: boolean;
   initialData?: Partial<ServiceOrderFormData>;
   onSubmit: (data: ServiceOrderFormData) => Promise<void>;
   submitLabel?: string;
@@ -79,6 +89,8 @@ interface ServiceOrderFormProps {
 export function ServiceOrderForm({
   customers,
   quotes,
+  products = [],
+  inventoryActive = false,
   initialData,
   onSubmit,
   submitLabel = "Salvar",
@@ -141,6 +153,32 @@ export function ServiceOrderForm({
     }
     handleChange("items", newItems);
   }
+
+  function handleProductSelect(index: number, productId: string) {
+    const newItems = [...formData.items];
+    if (!productId) {
+      // Manual item — clear productId but keep description/price editable
+      newItems[index] = {
+        ...newItems[index],
+        productId: undefined,
+      };
+    } else {
+      const product = products.find((p) => p.id === productId);
+      if (product) {
+        newItems[index] = {
+          ...newItems[index],
+          productId: product.id,
+          description: product.name,
+          unitPrice: Number(product.salePrice),
+        };
+      }
+    }
+    handleChange("items", newItems);
+  }
+
+  const selectedProductId = (index: number) => {
+    return formData.items[index]?.productId || "";
+  };
 
   function addItem() {
     handleChange("items", [
@@ -424,7 +462,34 @@ export function ServiceOrderForm({
               key={index}
               className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end border-b pb-4 last:border-0 last:pb-0"
             >
-              <div className="md:col-span-5 space-y-2">
+              {/* Product selector (only when inventory active) */}
+              {inventoryActive && !readOnly && (
+                <div className="md:col-span-12 space-y-2">
+                  <Label className={index === 0 ? "" : "md:invisible"}>
+                    Produto
+                  </Label>
+                  <Select
+                    value={selectedProductId(index)}
+                    onValueChange={(value: string | null) =>
+                      handleProductSelect(index, value || "")
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione um produto ou item manual" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Item manual (sem produto)</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} ({Number(product.quantity)} un.)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className={`${inventoryActive && !readOnly ? "md:col-span-6" : "md:col-span-5"} space-y-2`}>
                 <Label className={index === 0 ? "" : "md:invisible"}>
                   Descricao *
                 </Label>
@@ -454,7 +519,7 @@ export function ServiceOrderForm({
                 />
               </div>
 
-              <div className="md:col-span-3 space-y-2">
+              <div className="md:col-span-2 space-y-2">
                 <Label className={index === 0 ? "" : "md:invisible"}>
                   Preco Unit. *
                 </Label>

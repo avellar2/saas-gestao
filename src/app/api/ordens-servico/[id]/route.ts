@@ -23,9 +23,10 @@ export async function GET(
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
 
-  const [hasAccess, financeActive] = await Promise.all([
+  const [hasAccess, financeActive, inventoryActive] = await Promise.all([
     checkModuleAccess(companyId, "service_orders"),
     checkModuleAccess(companyId, "finance"),
+    checkModuleAccess(companyId, "inventory"),
   ]);
   if (!hasAccess) {
     return NextResponse.json({ error: "Modulo nao ativo" }, { status: 403 });
@@ -40,6 +41,11 @@ export async function GET(
       customer: true,
       items: {
         orderBy: { createdAt: "asc" },
+        include: {
+          product: {
+            select: { id: true, name: true, quantity: true },
+          },
+        },
       },
       quote: {
         select: { id: true, number: true, status: true, total: true },
@@ -62,6 +68,9 @@ export async function GET(
           updatedAt: true,
         },
       },
+      stockMovements: {
+        include: { product: { select: { id: true, name: true } } },
+      },
     },
   });
 
@@ -78,7 +87,14 @@ export async function GET(
       ...t,
       amount: Number(t.amount),
     })),
+    stockMovements: (serviceOrder.stockMovements || []).map((sm) => ({
+      ...sm,
+      quantity: Number(sm.quantity),
+      previousQuantity: Number(sm.previousQuantity),
+      newQuantity: Number(sm.newQuantity),
+    })),
     financeActive,
+    inventoryActive,
   });
 }
 
@@ -343,11 +359,12 @@ export async function PUT(
         notes: notes?.trim() || null,
         items: {
           create: items.map(
-            (item: { description: string; quantity: number; unitPrice: number }) => ({
+            (item: { description: string; quantity: number; unitPrice: number; productId?: string }) => ({
               description: item.description.trim(),
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               total: item.quantity * item.unitPrice,
+              productId: item.productId || null,
             })
           ),
         },

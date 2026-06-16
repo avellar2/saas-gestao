@@ -16,7 +16,8 @@ export interface LogActivityParams {
     | "appointment"
     | "catalog"
     | "menu"
-    | "user";
+    | "user"
+    | "stock_movement";
   entityId?: string;
   details?: string;
 }

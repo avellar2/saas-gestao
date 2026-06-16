@@ -18,11 +18,20 @@ interface QuoteOption {
   customerName: string;
 }
 
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+}
+
 export default function NovaOSContent() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [quotes, setQuotes] = useState<QuoteOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [inventoryActive, setInventoryActive] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -57,6 +66,31 @@ export default function NovaOSContent() {
         }
       } catch {
         // silently fail
+      }
+
+      // Check if inventory module is active
+      try {
+        const invRes = await fetch("/api/estoque?limit=1");
+        if (invRes.ok) {
+          setInventoryActive(true);
+          // Load products for the selector
+          const prodRes = await fetch("/api/estoque?limit=500&active=true");
+          if (prodRes.ok) {
+            const prodData = await prodRes.json();
+            setProducts(
+              (prodData.products || []).map(
+                (p: { id: string; name: string; salePrice: number; quantity: number }) => ({
+                  id: p.id,
+                  name: p.name,
+                  salePrice: p.salePrice,
+                  quantity: p.quantity,
+                })
+              )
+            );
+          }
+        }
+      } catch {
+        // silently fail — inventory inactive or API unavailable
       }
     }
     loadData();
@@ -93,6 +127,8 @@ export default function NovaOSContent() {
       <ServiceOrderForm
         customers={customers}
         quotes={quotes}
+        products={products}
+        inventoryActive={inventoryActive}
         onSubmit={handleSubmit}
         submitLabel="Criar OS"
       />

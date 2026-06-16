@@ -36,6 +36,7 @@ export const osItemSchema = z.object({
   description: z.string().min(1, "Descrição é obrigatória"),
   quantity: z.coerce.number().positive("Quantidade deve ser positiva"),
   unitPrice: z.coerce.number().nonnegative("Preço não pode ser negativo"),
+  productId: z.string().optional().or(z.literal("")),
 });
 
 export const osSchema = z.object({
