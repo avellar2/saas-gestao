@@ -7,6 +7,7 @@ import {
   ServiceOrderForm,
   type ServiceOrderFormData,
 } from "@/components/modules/service-order-form";
+import { CloseServiceOrderDialog } from "@/components/modules/close-service-order-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import {
   serviceOrderDeliveredMessage,
 } from "@/lib/whatsapp";
 import { MessageCircle, FileDown } from "lucide-react";
+import Link from "next/link";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
 import {
@@ -30,6 +32,7 @@ import {
   SERVICE_ORDER_PRIORITY,
   PAYMENT_METHOD,
   STATUS_TRANSITIONS,
+  ALLOWED_CLOSE_TRANSITIONS,
 } from "@/lib/os-status";
 
 interface ServiceOrderItem {
@@ -98,6 +101,20 @@ interface ServiceOrderDetail {
   items: ServiceOrderItem[];
   createdAt: string;
   updatedAt: string;
+  financeActive?: boolean;
+  transactions?: {
+    id: string;
+    type: string;
+    description: string;
+    category: string | null;
+    amount: number;
+    dueDate: string | null;
+    paidAt: string | null;
+    status: string;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }
 
 interface CustomerOption {
@@ -124,6 +141,7 @@ export default function OSDetailContent() {
   const [quotes, setQuotes] = useState<QuoteOption[]>([]);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [showPayment, setShowPayment] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   async function loadServiceOrder() {
     try {
@@ -340,14 +358,30 @@ export default function OSDetailContent() {
       );
     }
 
-    // Status transition buttons
+    // "Finalizar OS" button for close-eligible statuses
+    const canClose = ["IN_PROGRESS", "READY", "DELIVERED"].includes(so!.status);
+    if (canClose && !editing) {
+      buttons.push(
+        <Button
+          key="close"
+          variant="default"
+          onClick={() => setCloseDialogOpen(true)}
+        >
+          Finalizar OS
+        </Button>
+      );
+    }
+
+    // Status transition buttons (exclude transitions handled by close dialog)
+    const closeTransitions = ALLOWED_CLOSE_TRANSITIONS[so!.status] || [];
     transitions.forEach((nextStatus) => {
       if (nextStatus === "CANCELLED") return; // Handle cancel separately
+      if (closeTransitions.includes(nextStatus)) return; // Handled by close dialog
       const label = getStatusLabel(nextStatus as any);
       buttons.push(
         <Button
           key={nextStatus}
-          variant={nextStatus === "DELIVERED" ? "default" : "outline"}
+          variant="outline"
           onClick={() => handleStatusChange(nextStatus)}
         >
           {label}
@@ -761,6 +795,73 @@ export default function OSDetailContent() {
             </CardContent>
           </Card>
 
+          {/* Finance Integration (Etapa 5) */}
+          {so.status !== "CANCELLED" && !so.financeActive && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Financeiro</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Ative o módulo Financeiro para lançar receitas automaticamente.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {so.financeActive && so.transactions && so.transactions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Lançamento Financeiro</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4 text-sm flex-wrap">
+                  <span className="text-muted-foreground">Valor:</span>
+                  <span className="font-semibold">{formatCurrency(so.transactions[0].amount)}</span>
+                  {(() => {
+                    const s = so.transactions[0].status;
+                    const colors: Record<string, string> = {
+                      PENDING: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                      PAID: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                      OVERDUE: "bg-destructive/10 text-destructive border-destructive/20",
+                      CANCELLED: "bg-muted text-muted-foreground border-border",
+                    };
+                    const labels: Record<string, string> = {
+                      PENDING: "Pendente",
+                      PAID: "Pago",
+                      OVERDUE: "Vencido",
+                      CANCELLED: "Cancelado",
+                    };
+                    return (
+                      <Badge variant="outline" className={colors[s] || ""}>
+                        {labels[s] || s}
+                      </Badge>
+                    );
+                  })()}
+                  {so.transactions[0].paidAt && (
+                    <>
+                      <span className="text-muted-foreground">Pago em:</span>
+                      <span>{formatDate(so.transactions[0].paidAt)}</span>
+                    </>
+                  )}
+                  {so.transactions[0].dueDate && !so.transactions[0].paidAt && (
+                    <>
+                      <span className="text-muted-foreground">Vencimento:</span>
+                      <span>{formatDate(so.transactions[0].dueDate)}</span>
+                    </>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <Link
+                    href={`/financeiro/${so.transactions[0].id}`}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Ver no Financeiro →
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Warranty */}
           {so.warrantyEnabled && (
             <Card>
@@ -832,6 +933,17 @@ export default function OSDetailContent() {
           )}
         </>
       )}
+
+      {/* Close Dialog */}
+      <CloseServiceOrderDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        serviceOrder={so}
+        onSuccess={(updated) => {
+          setSo({ ...so, ...updated });
+          setCloseDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

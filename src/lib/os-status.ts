@@ -26,6 +26,14 @@ export const STATUS_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]
   CANCELLED: [],
 };
 
+// ── Close transitions (for the close/finalize dialog) ────────────────────────
+
+export const ALLOWED_CLOSE_TRANSITIONS: Record<string, string[]> = {
+  IN_PROGRESS: ["READY", "DELIVERED", "COMPLETED"],
+  READY: ["DELIVERED", "COMPLETED"],
+  DELIVERED: ["COMPLETED"],
+};
+
 export function getStatusLabel(status: ServiceOrderStatus): string {
   return SERVICE_ORDER_STATUS.find(s => s.value === status)?.label ?? status;
 }

@@ -29,3 +29,11 @@ export function serviceOrderDeliveredMessage(
 ): string {
   return `Olá ${customerName}! Sua OS #${soNumber} da ${companyName} foi marcada como entregue. Obrigado!`;
 }
+
+export function portalWhatsAppMessage(
+  customerName: string,
+  osCode: string,
+  companyName: string
+): string {
+  return `Olá! Sou ${customerName}, estou acompanhando a OS ${osCode} pelo portal e gostaria de mais informações.`;
+}

@@ -60,6 +60,25 @@ export const osSchema = z.object({
 
 export const osUpdateSchema = osSchema.partial();
 
+export const closeServiceOrderSchema = z.object({
+  finalStatus: z.enum(["READY", "DELIVERED", "COMPLETED"], {
+    message: "Status final inválido",
+  }),
+  finalAmount: z.coerce.number().nonnegative("Valor final não pode ser negativo"),
+  paymentStatus: z.enum(["PENDING", "PARTIAL", "PAID", "CANCELLED"], {
+    message: "Status de pagamento inválido",
+  }),
+  paymentMethod: z.enum(["CASH", "PIX", "CARD", "TRANSFER", "OTHER"]).optional().nullable(),
+  completedAt: z.string().min(1, "Data de conclusão é obrigatória"),
+  serviceDescription: z.string().optional().default(""),
+  customerNotes: z.string().optional().default(""),
+  warrantyEnabled: z.coerce.boolean(),
+  warrantyStartDate: z.string().optional().default(""),
+  warrantyEndDate: z.string().optional().default(""),
+  warrantyTerms: z.string().optional().default(""),
+  sendEmail: z.coerce.boolean().optional().default(true),
+});
+
 // ─── Produtos (Estoque) ────────────────────────────────────────────
 export const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200),

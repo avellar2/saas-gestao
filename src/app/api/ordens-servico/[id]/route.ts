@@ -23,7 +23,10 @@ export async function GET(
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
 
-  const hasAccess = await checkModuleAccess(companyId, "service_orders");
+  const [hasAccess, financeActive] = await Promise.all([
+    checkModuleAccess(companyId, "service_orders"),
+    checkModuleAccess(companyId, "finance"),
+  ]);
   if (!hasAccess) {
     return NextResponse.json({ error: "Modulo nao ativo" }, { status: 403 });
   }
@@ -44,6 +47,21 @@ export async function GET(
       technician: {
         select: { id: true, name: true },
       },
+      transactions: {
+        select: {
+          id: true,
+          type: true,
+          description: true,
+          category: true,
+          amount: true,
+          dueDate: true,
+          paidAt: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   });
 
@@ -54,7 +72,14 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(serviceOrder);
+  return NextResponse.json({
+    ...serviceOrder,
+    transactions: (serviceOrder.transactions || []).map((t) => ({
+      ...t,
+      amount: Number(t.amount),
+    })),
+    financeActive,
+  });
 }
 
 export async function PUT(
