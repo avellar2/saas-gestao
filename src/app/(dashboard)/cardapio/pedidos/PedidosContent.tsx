@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UtensilsCrossed, Store, Search, X } from "lucide-react";
+import { UtensilsCrossed, Store, Search, X, DollarSign } from "lucide-react";
 
 interface OrderItem {
   id: string;
@@ -13,6 +13,17 @@ interface OrderItem {
   quantity: number;
   notes: string | null;
   total: number;
+}
+
+interface FinancialTransaction {
+  id: string;
+  type: string;
+  status: string;
+  amount: number;
+  description: string;
+  category: string | null;
+  paidAt: string | null;
+  createdAt: string;
 }
 
 interface Order {
@@ -27,6 +38,7 @@ interface Order {
   createdAt: string;
   table: { name: string } | null;
   items: OrderItem[];
+  transactions?: FinancialTransaction[];
 }
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -37,12 +49,20 @@ const STATUS_BADGE: Record<string, { label: string; variant: "default" | "second
   CANCELLED: { label: "Cancelado", variant: "destructive" },
 };
 
+const FINANCE_STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  PAID: { label: "Pago", variant: "default" },
+  PENDING: { label: "Pendente", variant: "secondary" },
+  OVERDUE: { label: "Vencido", variant: "destructive" },
+  CANCELLED: { label: "Cancelado", variant: "outline" },
+};
+
 export function PedidosContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [financeActive, setFinanceActive] = useState(false);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -54,6 +74,7 @@ export function PedidosContent() {
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders);
+        setFinanceActive(data.financeActive ?? false);
       }
     } catch {
       // silently fail
@@ -75,6 +96,8 @@ export function PedidosContent() {
       (o.table?.name?.toLowerCase().includes(q) ?? false)
     );
   });
+
+  const hasDeliveredOrders = orders.some((o) => o.status === "DELIVERED");
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
@@ -127,6 +150,13 @@ export function PedidosContent() {
         </div>
       </div>
 
+      {/* Aviso financeiro */}
+      {!financeActive && hasDeliveredOrders && (
+        <div className="rounded-lg border border-muted bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          Ative o Financeiro para lançar receitas automaticamente a partir dos pedidos entregues.
+        </div>
+      )}
+
       {filteredOrders.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <UtensilsCrossed className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -137,6 +167,7 @@ export function PedidosContent() {
           {filteredOrders.map((order) => {
             const badge = STATUS_BADGE[order.status] || { label: order.status, variant: "default" as const };
             const isExpanded = expandedId === order.id;
+            const tx = order.transactions?.[0];
 
             return (
               <div
@@ -193,6 +224,30 @@ export function PedidosContent() {
                       <p className="text-sm text-muted-foreground italic">
                         Obs: {order.notes}
                       </p>
+                    )}
+
+                    {/* Badge financeiro */}
+                    {tx && (
+                      <div className="flex items-center gap-2 pt-1 border-t">
+                        <DollarSign className="h-3.5 w-3.5 text-green-600" />
+                        <span className="text-xs text-muted-foreground">
+                          Lançamento financeiro gerado —
+                        </span>
+                        <Badge
+                          variant={FINANCE_STATUS_BADGE[tx.status]?.variant || "outline"}
+                          className="text-xs"
+                        >
+                          {FINANCE_STATUS_BADGE[tx.status]?.label || tx.status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {formatCurrency(Number(tx.amount))}
+                        </span>
+                        {tx.paidAt && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(tx.paidAt).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

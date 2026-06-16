@@ -20,7 +20,11 @@ export async function GET(request: Request) {
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
 
-  const hasAccess = await checkModuleAccess(companyId, "menu");
+  const [hasAccess, financeActive] = await Promise.all([
+    checkModuleAccess(companyId, "menu"),
+    checkModuleAccess(companyId, "finance"),
+  ]);
+
   if (!hasAccess) {
     return NextResponse.json({ error: "Módulo não ativo" }, { status: 403 });
   }
@@ -40,16 +44,34 @@ export async function GET(request: Request) {
     where.status = { in: statuses };
   }
 
+  const include: Record<string, unknown> = {
+    items: true,
+    table: { select: { name: true } },
+  };
+
+  // Inclui transações financeiras apenas se o módulo finance estiver ativo
+  if (financeActive) {
+    include.transactions = {
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        amount: true,
+        description: true,
+        category: true,
+        paidAt: true,
+        createdAt: true,
+      },
+    };
+  }
+
   const [orders, total] = await Promise.all([
     tenant.menuOrder.findMany({
       where,
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
-      include: {
-        items: true,
-        table: { select: { name: true } },
-      },
+      include,
     }),
     tenant.menuOrder.count({ where }),
   ]);
@@ -59,5 +81,6 @@ export async function GET(request: Request) {
     total,
     page,
     totalPages: Math.ceil(total / limit),
+    financeActive,
   });
 }

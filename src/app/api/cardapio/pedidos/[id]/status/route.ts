@@ -34,7 +34,11 @@ export async function PATCH(
 
   const companyId = (session.user as Record<string, unknown>).companyId as string;
 
-  const hasAccess = await checkModuleAccess(companyId, "menu");
+  const [hasAccess, financeActive] = await Promise.all([
+    checkModuleAccess(companyId, "menu"),
+    checkModuleAccess(companyId, "finance"),
+  ]);
+
   if (!hasAccess) {
     return NextResponse.json({ error: "Módulo não ativo" }, { status: 403 });
   }
@@ -87,6 +91,7 @@ export async function PATCH(
 
   const userId = (session.user as Record<string, unknown>).id as string;
   const userName = (session.user as Record<string, unknown>).name as string;
+
   await logActivity({
     tenant,
     userId,
@@ -97,5 +102,95 @@ export async function PATCH(
     details: `Pedido #${existing.orderNumber}: ${currentStatus} → ${newStatus}`,
   });
 
-  return NextResponse.json(updated);
+  // ── Integração Financeira (best-effort) ──────────────────────────────
+  if (financeActive) {
+    try {
+      if (newStatus === "DELIVERED") {
+        // Busca transação existente para evitar duplicidade
+        const existingTx = await tenant.financialTransaction.findFirst({
+          where: { menuOrderId: id },
+        });
+
+        const now = new Date();
+        const tableName = existing.table?.name || null;
+        const orderTypeLabel = existing.orderType === "TABLE"
+          ? `Mesa ${tableName}`
+          : "Para viagem";
+
+        const txData = {
+          type: "RECEIVABLE",
+          status: "PAID",
+          amount: existing.total,
+          description: `Receita do Pedido #${existing.orderNumber}`,
+          category: "Cardápio",
+          paidAt: now,
+          dueDate: now,
+          notes: `Pedido #${existing.orderNumber} - ${orderTypeLabel}`,
+          menuOrderId: id,
+          companyId,
+        };
+
+        if (existingTx) {
+          await tenant.financialTransaction.update({
+            where: { id: existingTx.id },
+            data: txData,
+          });
+
+          await logActivity({
+            tenant,
+            userId,
+            userName,
+            action: "UPDATE",
+            entity: "financial",
+            entityId: existingTx.id,
+            details: `Receita financeira atualizada a partir do Pedido #${existing.orderNumber}`,
+          });
+        } else {
+          const created = await tenant.financialTransaction.create({
+            data: txData,
+          });
+
+          await logActivity({
+            tenant,
+            userId,
+            userName,
+            action: "CREATE",
+            entity: "financial",
+            entityId: created.id,
+            details: `Receita financeira criada a partir do Pedido #${existing.orderNumber}`,
+          });
+        }
+      } else if (newStatus === "CANCELLED") {
+        // Se cancelar pedido que já foi entregue, marcar transação como CANCELLED
+        const existingTx = await tenant.financialTransaction.findFirst({
+          where: { menuOrderId: id, status: { not: "CANCELLED" } },
+        });
+
+        if (existingTx) {
+          await tenant.financialTransaction.update({
+            where: { id: existingTx.id },
+            data: { status: "CANCELLED" },
+          });
+
+          await logActivity({
+            tenant,
+            userId,
+            userName,
+            action: "UPDATE",
+            entity: "financial",
+            entityId: existingTx.id,
+            details: `Pedido #${existing.orderNumber} entregue foi cancelado; receita financeira cancelada`,
+          });
+        }
+      }
+    } catch (err) {
+      // Erro no financeiro não quebra a mudança de status do pedido
+      console.error("Erro ao criar/atualizar transação financeira:", err);
+    }
+  }
+
+  return NextResponse.json({
+    ...updated,
+    financeActive,
+  });
 }

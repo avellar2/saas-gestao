@@ -241,17 +241,20 @@ model FinancialTransaction {
   customerId      String?
   notes           String?
   serviceOrderId  String?
+  menuOrderId     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer    Customer?     @relation(fields: [customerId], references: [id])
   serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  menuOrder    MenuOrder?    @relation(fields: [menuOrderId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([type])
   @@index([status])
   @@index([serviceOrderId])
+  @@index([menuOrderId])
   @@map("financial_transactions")
 }
 
@@ -362,6 +365,7 @@ model MenuOrder {
   company Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   table   RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
   items   MenuOrderItem[]
+  transactions FinancialTransaction[]
 
   @@unique([companyId, orderNumber])
   @@index([companyId])
