@@ -177,8 +177,8 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
-        <div className="flex items-center gap-3 px-3 py-2 mb-1">
-          <Avatar className="w-8 h-8 bg-primary shrink-0">
+        <div className="flex items-center gap-3 px-3 py-2 mb-1 rounded-xl hover:bg-sidebar-accent/40 transition-colors duration-160">
+          <Avatar className="w-8 h-8 bg-primary shrink-0 ring-1 ring-sidebar-border">
             <AvatarFallback className="text-xs font-semibold text-primary-foreground bg-primary">
               {initials}
             </AvatarFallback>
@@ -192,8 +192,8 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                 transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                 className="min-w-0 overflow-hidden"
               >
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{name || "Usuario"}</p>
-                <p className="text-xs text-sidebar-foreground/50 truncate">{email}</p>
+                <p className="text-sm font-medium text-sidebar-foreground truncate leading-tight">{name || "Usuario"}</p>
+                <p className="text-xs text-sidebar-foreground/40 truncate mt-0.5">{email}</p>
               </motion.div>
             )}
           </AnimatePresence>

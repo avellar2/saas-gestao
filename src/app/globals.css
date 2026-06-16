@@ -73,17 +73,17 @@
   --border: #e4e4e7;
   --input: #e4e4e7;
   --ring: #059669;
-  --chart-1: #059669;
-  --chart-2: #0891b2;
-  --chart-3: #059669;
-  --chart-4: #d97706;
+  --chart-1: #10b981;
+  --chart-2: #3b82f6;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
   --chart-5: #ef4444;
   --radius: 0.875rem;
-  --sidebar: #09090b;
+  --sidebar: #18181b;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #059669;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #18181b;
+  --sidebar-accent: #27272a;
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #27272a;
   --sidebar-ring: #059669;
@@ -109,11 +109,11 @@
   --input: #27272a;
   --ring: #34d399;
   --chart-1: #34d399;
-  --chart-2: #22d3ee;
-  --chart-3: #34d399;
-  --chart-4: #fbbf24;
+  --chart-2: #60a5fa;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
   --chart-5: #f87171;
-  --sidebar: #000000;
+  --sidebar: #0a0a0c;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #34d399;
   --sidebar-primary-foreground: #064e3b;
@@ -121,6 +121,24 @@
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #27272a;
   --sidebar-ring: #34d399;
+}
+
+/* Premium soft shadows — tinted, GPU-friendly (transform/box-shadow only).
+   Used by cards/buttons/surfaces. In dark mode the ring provides definition. */
+@utility shadow-soft {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.04),
+    0 1px 3px 0 rgb(0 0 0 / 0.03);
+}
+@utility shadow-lift {
+  box-shadow:
+    0 8px 30px -6px rgb(0 0 0 / 0.08),
+    0 2px 8px -2px rgb(0 0 0 / 0.05);
+}
+@utility shadow-card {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    0 2px 4px -1px rgb(0 0 0 / 0.04);
 }
 
 @layer base {

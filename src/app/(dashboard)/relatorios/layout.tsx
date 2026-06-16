@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { SectionTabs } from "@/components/layout/section-tabs";
+import type { TabConfig } from "@/components/layout/section-tabs";
 import {
   LayoutDashboard,
   DollarSign,
@@ -12,15 +13,11 @@ import {
   Users,
 } from "lucide-react";
 
-interface TabConfig {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
+interface ExtendedTabConfig extends TabConfig {
   moduleKey: string;
-  exact: boolean;
 }
 
-const ALL_TABS: TabConfig[] = [
+const ALL_TABS: ExtendedTabConfig[] = [
   { href: "/relatorios/executivo", label: "Executivo", icon: LayoutDashboard, moduleKey: "reports", exact: true },
   { href: "/relatorios/financeiro", label: "Financeiro", icon: DollarSign, moduleKey: "finance", exact: false },
   { href: "/relatorios/os", label: "Ordens de Serviço", icon: Wrench, moduleKey: "service_orders", exact: false },
@@ -57,6 +54,12 @@ export default function RelatoriosLayout({ children }: { children: React.ReactNo
     ? ALL_TABS.filter((tab) => activeModules.has(tab.moduleKey))
     : ALL_TABS; // Enquanto carrega, mostra todas
 
+  // Adicionar query string month às URLs
+  const tabsWithMonth = visibleTabs.map((tab) => ({
+    ...tab,
+    href: `${tab.href}?month=${month}`,
+  }));
+
   function handleMonthChange(newMonth: string) {
     setMonth(newMonth);
     const params = new URLSearchParams(searchParams.toString());
@@ -77,28 +80,8 @@ export default function RelatoriosLayout({ children }: { children: React.ReactNo
         />
       </div>
 
-      {/* Abas */}
-      <div className="flex flex-wrap gap-1 border-b pb-1">
-        {visibleTabs.map((tab) => {
-          const isActive = tab.exact
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={`${tab.href}?month=${month}`}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                isActive
-                  ? "bg-primary/10 text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
+      {/* Abas - usando SectionTabs */}
+      <SectionTabs tabs={tabsWithMonth} />
 
       {/* Conteúdo */}
       <div>{children}</div>
