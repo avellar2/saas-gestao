@@ -11,6 +11,7 @@ export interface CompanyLimits {
   scheduling: number;
   catalog: number;
   menu: number;
+  restaurantTables: number;
 }
 
 const TRIAL_LIMITS: CompanyLimits = {
@@ -23,6 +24,7 @@ const TRIAL_LIMITS: CompanyLimits = {
   scheduling: 30,
   catalog: 20,
   menu: 20,
+  restaurantTables: 30,
 };
 
 const UNLIMITED: CompanyLimits = {
@@ -35,6 +37,7 @@ const UNLIMITED: CompanyLimits = {
   scheduling: Infinity,
   catalog: Infinity,
   menu: Infinity,
+  restaurantTables: Infinity,
 };
 
 export function getCompanyLimits(status: CompanyStatus): CompanyLimits {

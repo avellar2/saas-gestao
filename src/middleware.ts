@@ -69,6 +69,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password") ||
     pathname.startsWith("/portal") ||
+    pathname.startsWith("/c/") ||
     pathname.startsWith("/api/public") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/stripe/webhook") ||

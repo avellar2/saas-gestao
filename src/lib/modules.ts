@@ -213,7 +213,7 @@ export const MODULES: ModuleConfig[] = [
     monthlyPrice: 35,
     includedInCore: false,
     hasClientPortal: true,
-    routes: ["/cardapio"],
+    routes: ["/cardapio", "/cardapio/mesas", "/cardapio/cozinha", "/cardapio/pedidos", "/cardapio/config"],
     icon: "UtensilsCrossed",
     order: 8,
     color: "bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400",
@@ -223,7 +223,7 @@ export const MODULES: ModuleConfig[] = [
       "Atualização em tempo real",
       "Portal do cliente",
     ],
-    status: "coming_soon",
+    status: "active",
     visibleInUpgrade: true,
   },
   {

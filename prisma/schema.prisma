@@ -58,6 +58,7 @@ enum CompanyStatus {
 model Company {
   id               String        @id @default(cuid())
   name             String
+  slug             String?       @unique
   tradeName        String?
   document         String?
   phone            String?
@@ -84,6 +85,8 @@ model Company {
   appointments          Appointment[]
   catalogItems          CatalogItem[]
   menuItems             MenuItem[]
+  restaurantTables      RestaurantTable[]
+  menuOrders            MenuOrder[]
   activityLogs          ActivityLog[]
   stockMovements        StockMovement[]
 
@@ -137,10 +140,10 @@ enum SubscriptionStatus {
 model ActivityLog {
   id        String   @id @default(cuid())
   companyId String
-  userId    String
-  userName  String
+  userId    String?
+  userName  String?
   action    String   // CREATE, UPDATE, DELETE
-  entity    String   // customer, quote, service_order, product, financial, appointment, catalog, menu, user
+  entity    String   // customer, quote, service_order, product, financial, appointment, catalog, menu, user, menu_order, restaurant_table
   entityId  String?
   details   String?
   createdAt DateTime @default(now())
@@ -304,11 +307,84 @@ model MenuItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderItems MenuOrderItem[]
 
   @@index([companyId])
   @@index([category])
   @@map("menu_items")
+}
+
+enum MenuOrderType {
+  TABLE
+  TAKEAWAY
+}
+
+enum MenuOrderStatus {
+  RECEIVED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model RestaurantTable {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  token     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders  MenuOrder[]
+
+  @@index([companyId])
+  @@index([token])
+  @@map("restaurant_tables")
+}
+
+model MenuOrder {
+  id           String          @id @default(cuid())
+  companyId    String
+  tableId      String?
+  customerName String?
+  customerPhone String?
+  orderType    MenuOrderType
+  status       MenuOrderStatus @default(RECEIVED)
+  total        Decimal         @db.Decimal(10, 2)
+  notes        String?
+  orderNumber  Int
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  company Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  table   RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  items   MenuOrderItem[]
+
+  @@unique([companyId, orderNumber])
+  @@index([companyId])
+  @@index([status])
+  @@map("menu_orders")
+}
+
+model MenuOrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  menuItemId    String?
+  nameSnapshot  String
+  priceSnapshot Decimal  @db.Decimal(10, 2)
+  quantity      Int
+  notes         String?
+  total         Decimal  @db.Decimal(10, 2)
+
+  order    MenuOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("menu_order_items")
 }
 
 enum QuoteStatus {

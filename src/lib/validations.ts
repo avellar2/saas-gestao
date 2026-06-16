@@ -172,6 +172,40 @@ export const companySchema = z.object({
   trialEndsAt: z.string().optional().or(z.literal("")),
 });
 
+// ─── Cardápio: Mesas ────────────────────────────────────────────────
+export const restaurantTableSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório").max(100),
+  active: z.coerce.boolean().optional().default(true),
+});
+
+export const restaurantTableUpdateSchema = restaurantTableSchema.partial();
+
+// ─── Cardápio: Pedidos ──────────────────────────────────────────────
+export const menuOrderItemSchema = z.object({
+  menuItemId: z.string().min(1, "Item é obrigatório"),
+  quantity: z.number().int().positive("Quantidade deve ser positiva"),
+  notes: z.string().optional().or(z.literal("")),
+});
+
+export const createMenuOrderSchema = z.object({
+  tableToken: z.string().optional(),
+  orderType: z.enum(["TABLE", "TAKEAWAY"]),
+  customerName: z.string().optional().or(z.literal("")),
+  customerPhone: z.string().optional().or(z.literal("")),
+  items: z.array(menuOrderItemSchema).min(1, "Adicione pelo menos um item"),
+  notes: z.string().optional().or(z.literal("")),
+});
+
+export const updateMenuOrderStatusSchema = z.object({
+  status: z.enum(["RECEIVED", "PREPARING", "READY", "DELIVERED", "CANCELLED"]),
+});
+
+// ─── Cardápio: Slug ──────────────────────────────────────────────────
+export const menuConfigSchema = z.object({
+  slug: z.string().min(1, "Slug é obrigatório").max(50)
+    .regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
+});
+
 // ─── Atividades ────────────────────────────────────────────────────
 export const activitySchema = z.object({
   action: z.string().min(1, "Ação é obrigatória").max(100),

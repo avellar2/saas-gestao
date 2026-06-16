@@ -4,8 +4,8 @@ import type { TenantPrismaClient } from "./prisma";
 
 export interface LogActivityParams {
   tenant: TenantPrismaClient;
-  userId: string;
-  userName: string;
+  userId?: string;
+  userName?: string;
   action: "CREATE" | "UPDATE" | "DELETE";
   entity:
     | "customer"
@@ -17,7 +17,9 @@ export interface LogActivityParams {
     | "catalog"
     | "menu"
     | "user"
-    | "stock_movement";
+    | "stock_movement"
+    | "menu_order"
+    | "restaurant_table";
   entityId?: string;
   details?: string;
 }
