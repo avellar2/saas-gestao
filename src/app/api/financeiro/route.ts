@@ -5,6 +5,7 @@ import { isTrialLimitReached } from "@/lib/company-limits";
 import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus } from "@/generated/prisma/client";
 import { financialTransactionSchema } from "@/lib/validations";
+import { getMonthRange } from "@/lib/finance-helpers";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -31,6 +32,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "";
   const status = searchParams.get("status") || "";
+  const month = searchParams.get("month") || "";
+  const origin = searchParams.get("origin") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "20", 10);
   const skip = (page - 1) * limit;
@@ -42,6 +45,25 @@ export async function GET(request: Request) {
   }
   if (status && ["PENDING", "PAID", "OVERDUE", "CANCELLED"].includes(status)) {
     where.status = status;
+  }
+
+  // Filtro por mês
+  if (month) {
+    const { start, end } = getMonthRange(month);
+    where.OR = [
+      { status: "PAID", paidAt: { gte: start, lte: end } },
+      { status: { not: "PAID" }, dueDate: { gte: start, lte: end } },
+    ];
+  }
+
+  // Filtro por origem
+  if (origin === "os") {
+    where.serviceOrderId = { not: null };
+  } else if (origin === "menu") {
+    where.menuOrderId = { not: null };
+  } else if (origin === "manual") {
+    where.serviceOrderId = null;
+    where.menuOrderId = null;
   }
 
   const [sortField, sortDir] = sort.split("_");

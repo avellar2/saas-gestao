@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
+import { financialTransactionUpdateSchema } from "@/lib/validations";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -75,7 +76,7 @@ export async function PUT(
 
   const body = await request.json();
 
-  // Mark as paid
+  // Mark as paid (shortcut)
   if (body.status === "PAID") {
     const updated = await tenant.financialTransaction.update({
       where: { id },
@@ -100,14 +101,16 @@ export async function PUT(
     return NextResponse.json(updated);
   }
 
-  const { type, description, category, amount, dueDate, customerId, notes } = body;
-
-  if (type && !["RECEIVABLE", "PAYABLE"].includes(type)) {
+  // Valida com Zod
+  const result = financialTransactionUpdateSchema.safeParse(body);
+  if (!result.success) {
     return NextResponse.json(
-      { error: "Tipo invalido. Use RECEIVABLE ou PAYABLE" },
+      { error: result.error.issues[0]?.message || "Dados invalidos" },
       { status: 400 }
     );
   }
+
+  const { type, description, category, amount, dueDate, customerId, notes } = result.data;
 
   const data: Record<string, unknown> = {};
   if (type) data.type = type;

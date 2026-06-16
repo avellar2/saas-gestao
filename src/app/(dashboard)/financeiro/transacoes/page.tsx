@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
-import { VisaoGeralContent } from "./VisaoGeralContent";
+import { TransacoesListContent } from "../TransacoesListContent";
 
-export default async function FinanceiroPage() {
+export default async function TransacoesPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -11,5 +11,5 @@ export default async function FinanceiroPage() {
   const hasAccess = await isModuleActive(companyId, "finance");
   if (!hasAccess) redirect("/upgrade?module=finance");
 
-  return <VisaoGeralContent />;
+  return <TransacoesListContent title="Todas as Transações" showOrigin={true} />;
 }
