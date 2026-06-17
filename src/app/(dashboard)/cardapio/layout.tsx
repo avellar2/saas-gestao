@@ -26,7 +26,7 @@ export default function CardapioLayout({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b pb-1">
         {TABS.map((tab) => {

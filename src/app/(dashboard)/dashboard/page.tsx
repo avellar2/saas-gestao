@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <MotionContainer className="flex items-center justify-between">
         <MotionItem>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Dashboard</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">Bem-vindo de volta, {company?.name}</p>
         </MotionItem>
         {isTrial && (

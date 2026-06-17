@@ -79,12 +79,12 @@ export function EstoqueContent() {
   const { resumo, produtosBaixoLista, produtosZeradosLista, produtosMaisMovimentados, movimentacoesPorOrigem } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{formatMonthLabel(month)}</p>
+        <p className="text-base text-muted-foreground font-medium">{formatMonthLabel(month)}</p>
         <button
           onClick={loadData}
-          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-card border border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30 transition-all duration-150"
         >
           Atualizar
         </button>
@@ -92,51 +92,87 @@ export function EstoqueContent() {
 
       {/* Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Estoque Baixo
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Estoque Baixo</span>
+            </div>
           </div>
-          <p className={`text-2xl font-bold ${resumo.produtosBaixo > 0 ? "text-amber-600" : ""}`}>
-            {resumo.produtosBaixo}
-          </p>
+          <div className="p-5">
+            <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${resumo.produtosBaixo > 0 ? "text-amber-600" : "text-foreground"}`}>
+              {resumo.produtosBaixo}
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Ban className="h-4 w-4 text-destructive" />
-            Zerados
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <Ban className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Zerados</span>
+            </div>
           </div>
-          <p className={`text-2xl font-bold ${resumo.produtosZerados > 0 ? "text-destructive" : ""}`}>
-            {resumo.produtosZerados}
-          </p>
+          <div className="p-5">
+            <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${resumo.produtosZerados > 0 ? "text-destructive" : "text-foreground"}`}>
+              {resumo.produtosZerados}
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <DollarSign className="h-4 w-4 text-cyan-500" />
-            Valor em Estoque
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Valor em Estoque</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-cyan-600">{formatCurrency(resumo.valorTotalEstoque)}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-cyan-600">{formatCurrency(resumo.valorTotalEstoque)}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Package className="h-4 w-4 text-purple-500" />
-            Movimentações
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <Package className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Movimentações</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{resumo.movimentacoesNoPeriodo}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{resumo.movimentacoesNoPeriodo}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
-            Entradas
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <ArrowUpCircle className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Entradas</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{resumo.entradas}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">{resumo.entradas}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowDownCircle className="h-4 w-4 text-destructive" />
-            Saídas
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <ArrowDownCircle className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Saídas</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-destructive">{resumo.saidas}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-destructive">{resumo.saidas}</p>
+          </div>
         </div>
       </div>
 

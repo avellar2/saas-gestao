@@ -3,8 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_VARIANTS, MOVEMENT_REASON_LABELS, getMovementOrigin, ORIGIN_LABELS } from "@/lib/estoque-helpers";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/layout/pagination";
+import { EmptyState } from "@/components/empty-state";
+import { TableSkeleton } from "@/components/ui/section-skeleton";
+import { ArrowLeftRight } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftRight, Search, X } from "lucide-react";
 
 interface Movement {
   id: string;
@@ -20,6 +31,19 @@ interface Movement {
   product: { id: string; name: string };
   createdBy?: { id: string; name: string } | null;
 }
+
+const TYPE_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "IN", label: "Entradas" },
+  { value: "OUT", label: "Saídas" },
+  { value: "ADJUSTMENT", label: "Ajustes" },
+];
+
+const ORIGIN_OPTIONS = [
+  { value: "", label: "Todas origens" },
+  { value: "manual", label: "Manual" },
+  { value: "os", label: "OS" },
+];
 
 export function MovimentacoesContent() {
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -56,127 +80,127 @@ export function MovimentacoesContent() {
   }, [loadMovements]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Movimentações</h1>
-        <Button variant="outline" size="sm" onClick={loadMovements}>
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Movimentações</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">Histórico de entradas, saídas e ajustes</p>
+        </div>
+        <Button variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150" onClick={loadMovements}>
           Atualizar
         </Button>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1">
-          {["", "IN", "OUT", "ADJUSTMENT"].map((t) => (
+        {TYPE_OPTIONS.map((f) => {
+          const active = typeFilter === f.value;
+          return (
             <button
-              key={t}
-              onClick={() => { setTypeFilter(t); setPage(1); }}
-              className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                typeFilter === t
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              key={f.value}
+              onClick={() => { setTypeFilter(active ? "" : f.value); setPage(1); }}
+              className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+                active
+                  ? "bg-amber-50 border-amber-200 text-amber-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
               }`}
             >
-              {t ? MOVEMENT_TYPE_LABELS[t] || t : "Todos"}
+              {f.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
 
-        <div className="w-px h-6 bg-border" />
+        <div className="w-px h-6 bg-border hidden sm:block" />
 
-        <div className="flex gap-1">
-          {["", "manual", "os"].map((o) => (
+        {ORIGIN_OPTIONS.map((f) => {
+          const active = originFilter === f.value;
+          return (
             <button
-              key={o}
-              onClick={() => { setOriginFilter(o); setPage(1); }}
-              className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                originFilter === o
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              key={f.value}
+              onClick={() => { setOriginFilter(active ? "" : f.value); setPage(1); }}
+              className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+                active
+                  ? "bg-amber-50 border-amber-200 text-amber-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
               }`}
             >
-              {o ? ORIGIN_LABELS[o] || o : "Todas origens"}
+              {f.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <TableSkeleton rows={5} />
       ) : movements.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <ArrowLeftRight className="h-16 w-16 mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-medium">Nenhuma movimentação encontrada</p>
-          <p className="text-sm mt-1">Movimentações aparecem aqui quando você faz entradas, saídas ou ajustes.</p>
-        </div>
+        <EmptyState
+          icon={ArrowLeftRight}
+          title="Nenhuma movimentação encontrada"
+          description="Movimentações aparecem aqui quando você faz entradas, saídas ou ajustes."
+        />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/30 text-muted-foreground text-xs">
-                  <th className="text-left p-3 font-medium">Data</th>
-                  <th className="text-left p-3 font-medium">Produto</th>
-                  <th className="text-left p-3 font-medium">Tipo</th>
-                  <th className="text-left p-3 font-medium">Motivo</th>
-                  <th className="text-right p-3 font-medium">Qtd</th>
-                  <th className="text-right p-3 font-medium">Anterior</th>
-                  <th className="text-right p-3 font-medium">Novo</th>
-                  <th className="text-left p-3 font-medium">Origem</th>
-                  <th className="text-left p-3 font-medium">Descrição</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movements.map((m) => {
-                  const origin = getMovementOrigin(m);
-                  return (
-                    <tr key={m.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="p-3 text-muted-foreground whitespace-nowrap">
-                        {new Date(m.createdAt).toLocaleString("pt-BR")}
-                      </td>
-                      <td className="p-3 font-medium">{m.product.name}</td>
-                      <td className="p-3">
-                        <Badge variant={MOVEMENT_TYPE_VARIANTS[m.type] || "outline"} className="text-xs">
-                          {MOVEMENT_TYPE_LABELS[m.type] || m.type}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        {MOVEMENT_REASON_LABELS[m.reason] || m.reason}
-                      </td>
-                      <td className="p-3 text-right font-medium">
-                        {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : "±"}
-                        {m.quantity}
-                      </td>
-                      <td className="p-3 text-right text-muted-foreground">{m.previousQuantity}</td>
-                      <td className="p-3 text-right text-muted-foreground">{m.newQuantity}</td>
-                      <td className="p-3">
-                        <Badge variant={origin === "os" ? "secondary" : "outline"} className="text-xs">
-                          {ORIGIN_LABELS[origin]}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-muted-foreground max-w-[200px] truncate">
-                        {m.description || "-"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+                    <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Data</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Produto</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Tipo</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Motivo</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Qtd</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Anterior</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Novo</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Origem</TableHead>
+                    <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Descrição</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {movements.map((m) => {
+                    const origin = getMovementOrigin(m);
+                    return (
+                      <TableRow key={m.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-amber-50/30 last:border-b-0">
+                        <TableCell className="py-3.5 pl-5 pr-3 text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(m.createdAt).toLocaleString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm font-medium text-foreground">{m.product.name}</TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm">
+                          <Badge variant={MOVEMENT_TYPE_VARIANTS[m.type] || "outline"} className="rounded-full text-xs font-medium">
+                            {MOVEMENT_TYPE_LABELS[m.type] || m.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">
+                          {MOVEMENT_REASON_LABELS[m.reason] || m.reason}
+                        </TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm font-medium text-right tabular-nums">
+                          {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : "±"}
+                          {m.quantity}
+                        </TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm text-muted-foreground text-right tabular-nums">{m.previousQuantity}</TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm text-muted-foreground text-right tabular-nums">{m.newQuantity}</TableCell>
+                        <TableCell className="py-3.5 px-3 text-sm">
+                          <Badge variant={origin === "os" ? "secondary" : "outline"} className="rounded-full text-xs font-medium">
+                            {ORIGIN_LABELS[origin]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3.5 pl-3 pr-5 text-sm text-muted-foreground max-w-[200px] truncate">
+                          {m.description || "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  variant={p === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
-              ))}
-            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           )}
         </>
       )}

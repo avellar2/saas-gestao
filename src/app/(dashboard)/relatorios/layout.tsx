@@ -68,15 +68,18 @@ export default function RelatoriosLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header com filtro de mês */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold">Relatórios</h1>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight leading-none text-foreground">Relatórios</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">Acompanhe o desempenho e métricas do negócio</p>
+        </div>
         <input
           type="month"
           value={month}
           onChange={(e) => handleMonthChange(e.target.value)}
-          className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring w-48"
+          className="h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 w-48"
         />
       </div>
 

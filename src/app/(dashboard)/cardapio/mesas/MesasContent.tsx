@@ -141,24 +141,24 @@ export function MesasContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Mesas / QR Code</h1>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Mesas / QR Code</h1>
           {slug && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Link do cardápio: <a href={`/c/${slug}`} className="text-primary underline" target="_blank">/{slug}</a>
+            <p className="text-base text-muted-foreground mt-2 font-medium">
+              Link do cardápio: <a href={`/c/${slug}`} className="text-orange-600 underline" target="_blank">/{slug}</a>
             </p>
           )}
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)} className="rounded-lg h-9 bg-orange-600 hover:bg-orange-700 text-white transition-all duration-150 active:scale-[0.97]">
           <Plus className="h-4 w-4 mr-2" />
           Nova Mesa
         </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
           {error}
         </div>
       )}
@@ -166,7 +166,7 @@ export function MesasContent() {
       {tables.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <QrCode className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>Nenhuma mesa cadastrada.</p>
+          <p className="text-lg font-medium">Nenhuma mesa cadastrada.</p>
           <p className="text-sm">Crie mesas para gerar QR Codes.</p>
         </div>
       ) : (
@@ -176,18 +176,18 @@ export function MesasContent() {
             return (
               <div
                 key={table.id}
-                className={`rounded-xl border p-4 space-y-3 ${
+                className={`rounded-2xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] p-5 space-y-4 ${
                   !table.active ? "opacity-60" : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{table.name}</h3>
+                  <h3 className="font-semibold text-base">{table.name}</h3>
                   <button
                     onClick={() => handleToggleActive(table)}
-                    className={`p-1 rounded-md transition-colors ${
+                    className={`p-1.5 rounded-md transition-colors ${
                       table.active
-                        ? "text-green-600 hover:text-green-700"
-                        : "text-muted-foreground hover:text-destructive"
+                        ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        : "text-muted-foreground hover:text-destructive hover:bg-red-50"
                     }`}
                     title={table.active ? "Desativar" : "Ativar"}
                   >
@@ -217,7 +217,7 @@ export function MesasContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-1"
+                      className="flex-1 gap-1 rounded-lg h-8 border-border/80 hover:bg-muted/50 transition-all duration-150"
                       onClick={() => handleCopyLink(table.token)}
                     >
                       {copiedId === table.token ? (
@@ -230,7 +230,7 @@ export function MesasContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 gap-1"
+                      className="flex-1 gap-1 rounded-lg h-8 border-border/80 hover:bg-muted/50 transition-all duration-150"
                       onClick={() => handleDownloadQR(table.token, table.name)}
                     >
                       <Download className="h-3.5 w-3.5" />
@@ -244,7 +244,6 @@ export function MesasContent() {
         </div>
       )}
 
-      {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
@@ -261,10 +260,10 @@ export function MesasContent() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>
+            <Button variant="outline" onClick={() => setShowCreate(false)} className="rounded-lg h-9">
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={!newName.trim()}>
+            <Button onClick={handleCreate} disabled={!newName.trim()} className="rounded-lg h-9 bg-orange-600 hover:bg-orange-700 text-white transition-all duration-150 active:scale-[0.97]">
               Criar
             </Button>
           </DialogFooter>
@@ -273,4 +272,3 @@ export function MesasContent() {
     </div>
   );
 }
-

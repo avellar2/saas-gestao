@@ -83,10 +83,10 @@ export function CaixaContent() {
   }, [loadCaixa]);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Caixa do Cardápio</h1>
-        <Button variant="outline" size="sm" onClick={loadCaixa}>
+        <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Caixa do Cardápio</h1>
+        <Button variant="outline" size="sm" onClick={loadCaixa} className="rounded-lg h-9 border-border/80 hover:bg-muted/50 transition-all duration-150">
           Atualizar
         </Button>
       </div>
@@ -100,7 +100,7 @@ export function CaixaContent() {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring"
+          className="h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
         />
       </div>
 
@@ -121,44 +121,60 @@ export function CaixaContent() {
         <>
           {/* Cards de resumo */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-xl border bg-card p-4 space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <DollarSign className="h-4 w-4" />
-                Total Vendido
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-5 py-4 bg-orange-50/40 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <DollarSign className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Total Vendido</span>
+                </div>
               </div>
-              <p className="text-2xl font-bold">
-                {formatCurrency(data.summary.totalSold)}
-              </p>
+              <div className="p-5">
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.summary.totalSold)}</p>
+              </div>
             </div>
 
-            <div className="rounded-xl border bg-card p-4 space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <ShoppingBag className="h-4 w-4" />
-                Pedidos Entregues
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-5 py-4 bg-orange-50/40 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <ShoppingBag className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Pedidos Entregues</span>
+                </div>
               </div>
-              <p className="text-2xl font-bold">
-                {data.summary.deliveredCount}
-              </p>
+              <div className="p-5">
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{data.summary.deliveredCount}</p>
+              </div>
             </div>
 
-            <div className="rounded-xl border bg-card p-4 space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <XCircle className="h-4 w-4" />
-                Cancelados
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-5 py-4 bg-orange-50/40 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <XCircle className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Cancelados</span>
+                </div>
               </div>
-              <p className="text-2xl font-bold">
-                {data.summary.cancelledCount}
-              </p>
+              <div className="p-5">
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-red-600">{data.summary.cancelledCount}</p>
+              </div>
             </div>
 
-            <div className="rounded-xl border bg-card p-4 space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4" />
-                Ticket Médio
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-5 py-4 bg-orange-50/40 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Ticket Médio</span>
+                </div>
               </div>
-              <p className="text-2xl font-bold">
-                {formatCurrency(data.summary.averageTicket)}
-              </p>
+              <div className="p-5">
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.summary.averageTicket)}</p>
+              </div>
             </div>
           </div>
 

@@ -2,14 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { EstoqueForm, type EstoqueFormData } from "@/components/modules/estoque-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
-import { getStockStatus, STOCK_STATUS_CONFIG, MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_VARIANTS, MOVEMENT_REASON_LABELS, getMovementOrigin, ORIGIN_LABELS } from "@/lib/estoque-helpers";
-import { Plus, Minus, SlidersHorizontal, History } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { ActionBar } from "@/components/layout/action-bar";
+import {
+  getStockStatus, STOCK_STATUS_CONFIG, MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_VARIANTS,
+  MOVEMENT_REASON_LABELS, getMovementOrigin, ORIGIN_LABELS
+} from "@/lib/estoque-helpers";
+import {
+  Plus, Minus, SlidersHorizontal, History, Package, ChevronLeft
+} from "lucide-react";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+
+const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, duration: 0.3, ease: easeOut },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
+};
 
 interface ProductDetail {
   id: string;
@@ -88,7 +113,6 @@ export default function EstoqueDetailContent() {
 
   async function handleUpdate(data: EstoqueFormData) {
     setError(null);
-    // Remove quantity do payload para evitar alteração não auditada
     const { quantity, ...safeData } = data;
     const res = await fetch(`/api/estoque/${id}`, {
       method: "PUT",
@@ -166,7 +190,6 @@ export default function EstoqueDetailContent() {
       setDialogQty("");
       setDialogDesc("");
 
-      // Recarrega movimentações
       const movRes = await fetch(`/api/estoque/movimentacoes?productId=${id}&limit=20`);
       if (movRes.ok) {
         const movData = await movRes.json();
@@ -180,22 +203,22 @@ export default function EstoqueDetailContent() {
   }
 
   if (loading) {
-    return <DetailSkeleton />;
+    return (
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <DetailSkeleton />
+      </div>
+    );
   }
 
   if (!product) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          {error || "Produto não encontrado"}
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => router.push("/estoque")}
-        >
-          Voltar
-        </Button>
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <EmptyState
+          title="Produto não encontrado"
+          description={error || "O produto solicitado não existe ou foi removido."}
+          actionLabel="Voltar"
+          actionHref="/estoque"
+        />
       </div>
     );
   }
@@ -206,191 +229,209 @@ export default function EstoqueDetailContent() {
   const statusCfg = STOCK_STATUS_CONFIG[status];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-5">
+      {/* Top bar */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{product.name}</h1>
-        <div className="flex gap-2">
-          {!editing && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => { setDialog("entrada"); setDialogQty(""); setDialogDesc(""); setDialogError(null); }}>
-                <Plus className="h-4 w-4 mr-1" />
-                Entrada
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => { setDialog("saida"); setDialogQty(""); setDialogDesc(""); setDialogError(null); }}>
-                <Minus className="h-4 w-4 mr-1" />
-                Saída
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => { setDialog("ajuste"); setDialogQty(String(qty)); setDialogDesc(""); setDialogError(null); }}>
-                <SlidersHorizontal className="h-4 w-4 mr-1" />
-                Ajustar
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
-                {editing ? "Cancelar" : "Editar"}
-              </Button>
-              <Button variant="destructive" size="sm" onClick={handleDelete}>
-                Excluir
-              </Button>
-            </>
-          )}
-          {editing && (
-            <Button variant="outline" onClick={() => setEditing(false)}>
-              Cancelar
-            </Button>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 px-3.5 rounded-lg text-sm font-semibold border-border/80 hover:bg-muted/50 transition-all duration-150"
+          onClick={() => router.push("/estoque")}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1.5" />
+          Voltar
+        </Button>
+
+        <ActionBar
+          primaryActions={[
+            { key: "entrada", label: "Entrada", icon: Plus, variant: "default", onClick: () => { setDialog("entrada"); setDialogQty(""); setDialogDesc(""); setDialogError(null); } },
+            { key: "saida", label: "Saída", icon: Minus, variant: "default", onClick: () => { setDialog("saida"); setDialogQty(""); setDialogDesc(""); setDialogError(null); } },
+            { key: "ajuste", label: "Ajustar", icon: SlidersHorizontal, variant: "outline", onClick: () => { setDialog("ajuste"); setDialogQty(String(qty)); setDialogDesc(""); setDialogError(null); } },
+          ]}
+          secondaryActions={[
+            { key: "edit", label: editing ? "Cancelar" : "Editar", icon: editing ? undefined : SlidersHorizontal, variant: "outline", onClick: () => setEditing(!editing) },
+            { key: "div", label: "", divider: true },
+            { key: "delete", label: "Excluir", icon: undefined, variant: "destructive", onClick: handleDelete },
+          ]}
+        />
       </div>
 
-      {error && (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
-          {error}
-        </div>
-      )}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
+        {/* Error */}
+        {error && (
+          <motion.div
+            variants={itemVariants}
+            className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+          >
+            {error}
+          </motion.div>
+        )}
 
-      {/* Edição */}
-      {editing ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Editar Produto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EstoqueForm
-              initialData={{
-                name: product.name,
-                description: product.description || "",
-                sku: product.sku || "",
-                category: product.category || "",
-                quantity: product.quantity,
-                minStock: product.minStock,
-                costPrice: product.costPrice ?? 0,
-                salePrice: product.salePrice,
-              }}
-              onSubmit={handleUpdate}
-              submitLabel="Salvar Alterações"
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Informações do Produto */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Produto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">SKU:</span>{" "}
-                  <span>{product.sku || "-"}</span>
+        {editing ? (
+          <motion.div variants={itemVariants}>
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+              <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
+                <h2 className="text-lg font-bold text-foreground">Editar Produto</h2>
+                <p className="text-base text-muted-foreground">Atualize os dados do produto</p>
+              </div>
+              <div className="p-6">
+                <EstoqueForm
+                  initialData={{
+                    name: product.name,
+                    description: product.description || "",
+                    sku: product.sku || "",
+                    category: product.category || "",
+                    quantity: product.quantity,
+                    minStock: product.minStock,
+                    costPrice: product.costPrice ?? 0,
+                    salePrice: product.salePrice,
+                  }}
+                  onSubmit={handleUpdate}
+                  submitLabel="Salvar Alterações"
+                />
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            {/* Hero Card */}
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+                <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-amber-100 text-amber-600">
+                        <Package className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h1 className="text-xl font-extrabold text-foreground">{product.name}</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          SKU: {product.sku || "—"} · Categoria: {product.category || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold border ${statusCfg.classes}`}
+                    >
+                      {statusCfg.label}
+                    </Badge>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Categoria:</span>{" "}
-                  <span>{product.category || "-"}</span>
+
+                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: "Quantidade", value: String(qty), highlight: true },
+                    { label: "Estoque Mínimo", value: String(min) },
+                    { label: "Preço de Custo", value: product.costPrice ? formatCurrency(product.costPrice) : "—" },
+                    { label: "Preço de Venda", value: formatCurrency(product.salePrice) },
+                    { label: "Status", value: product.active ? "Ativo" : "Inativo" },
+                    { label: "Atualizado em", value: new Date(product.updatedAt).toLocaleString("pt-BR") },
+                  ].map((info, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">{info.label}</p>
+                      <p className={`text-sm font-medium text-foreground leading-relaxed ${info.highlight ? "text-2xl font-extrabold text-amber-600" : ""}`}>{info.value}</p>
+                    </div>
+                  ))}
+                  {product.description && (
+                    <div className="sm:col-span-2 lg:col-span-4 space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Descrição</p>
+                      <p className="text-sm font-medium text-foreground leading-relaxed">{product.description}</p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Quantidade:</span>{" "}
-                  <span className="font-bold text-lg">{qty}</span>
+              </div>
+            </motion.div>
+
+            {/* Movimentações */}
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+                <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                      <History className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-foreground">Histórico de Movimentações</h2>
+                      <p className="text-base text-muted-foreground">Entradas, saídas e ajustes</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Estoque Mínimo:</span>{" "}
-                  <span>{min}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Preço de Custo:</span>{" "}
-                  <span>{product.costPrice ? formatCurrency(product.costPrice) : "-"}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Preço de Venda:</span>{" "}
-                  <span>{formatCurrency(product.salePrice)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Status:</span>{" "}
-                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                </div>
-                {product.description && (
-                  <div className="md:col-span-2">
-                    <span className="text-muted-foreground">Descrição:</span>{" "}
-                    <span>{product.description}</span>
+                {movements.length === 0 ? (
+                  <div className="px-6 py-10">
+                    <EmptyState
+                      variant="compact"
+                      title="Nenhuma movimentação"
+                      description="Não há movimentações registradas para este produto."
+                    />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/40">
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Data</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Tipo</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Motivo</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Qtd</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Anterior</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Novo</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Origem</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Descrição</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {movements.map((m) => {
+                          const origin = getMovementOrigin(m);
+                          return (
+                            <TableRow key={m.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-amber-50/30 last:border-b-0">
+                              <TableCell className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                                {new Date(m.createdAt).toLocaleString("pt-BR")}
+                              </TableCell>
+                              <TableCell className="py-3 px-4 text-sm">
+                                <Badge variant={MOVEMENT_TYPE_VARIANTS[m.type] || "outline"} className="rounded-full text-xs font-medium">
+                                  {MOVEMENT_TYPE_LABELS[m.type] || m.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-3 px-4 text-sm text-muted-foreground">
+                                {MOVEMENT_REASON_LABELS[m.reason] || m.reason}
+                              </TableCell>
+                              <TableCell className="py-3 px-4 text-sm font-medium text-right tabular-nums">
+                                {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : "±"}
+                                {m.quantity}
+                              </TableCell>
+                              <TableCell className="py-3 px-4 text-sm text-muted-foreground text-right tabular-nums">{m.previousQuantity}</TableCell>
+                              <TableCell className="py-3 px-4 text-sm text-muted-foreground text-right tabular-nums">{m.newQuantity}</TableCell>
+                              <TableCell className="py-3 px-4 text-sm">
+                                <Badge variant={origin === "os" ? "secondary" : "outline"} className="rounded-full text-xs font-medium">
+                                  {ORIGIN_LABELS[origin]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-3 px-4 text-sm text-muted-foreground max-w-[150px] truncate">
+                                {m.description || "—"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Histórico de Movimentações */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Histórico de Movimentações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {movements.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma movimentação registrada para este produto.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-muted-foreground text-xs">
-                        <th className="text-left p-2 font-medium">Data</th>
-                        <th className="text-left p-2 font-medium">Tipo</th>
-                        <th className="text-left p-2 font-medium">Motivo</th>
-                        <th className="text-right p-2 font-medium">Qtd</th>
-                        <th className="text-right p-2 font-medium">Anterior</th>
-                        <th className="text-right p-2 font-medium">Novo</th>
-                        <th className="text-left p-2 font-medium">Origem</th>
-                        <th className="text-left p-2 font-medium">Descrição</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {movements.map((m) => {
-                        const origin = getMovementOrigin(m);
-                        return (
-                          <tr key={m.id} className="border-b last:border-0 hover:bg-muted/30">
-                            <td className="p-2 text-muted-foreground whitespace-nowrap text-xs">
-                              {new Date(m.createdAt).toLocaleString("pt-BR")}
-                            </td>
-                            <td className="p-2">
-                              <Badge variant={MOVEMENT_TYPE_VARIANTS[m.type] || "outline"} className="text-xs">
-                                {MOVEMENT_TYPE_LABELS[m.type] || m.type}
-                              </Badge>
-                            </td>
-                            <td className="p-2 text-muted-foreground text-xs">
-                              {MOVEMENT_REASON_LABELS[m.reason] || m.reason}
-                            </td>
-                            <td className="p-2 text-right font-medium">
-                              {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : "±"}
-                              {m.quantity}
-                            </td>
-                            <td className="p-2 text-right text-muted-foreground">{m.previousQuantity}</td>
-                            <td className="p-2 text-right text-muted-foreground">{m.newQuantity}</td>
-                            <td className="p-2">
-                              <Badge variant={origin === "os" ? "secondary" : "outline"} className="text-xs">
-                                {ORIGIN_LABELS[origin]}
-                              </Badge>
-                            </td>
-                            <td className="p-2 text-muted-foreground text-xs max-w-[150px] truncate">
-                              {m.description || "-"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+            </motion.div>
+          </>
+        )}
+      </motion.div>
 
       {/* Dialog de Entrada/Saída/Ajuste */}
       {dialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-xl shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
+          <div className="bg-background rounded-2xl shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
             <h3 className="text-lg font-bold">
               {dialog === "entrada" && `Entrada de Estoque — ${product.name}`}
               {dialog === "saida" && `Saída de Estoque — ${product.name}`}
@@ -403,7 +444,7 @@ export default function EstoqueDetailContent() {
 
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium">
+                <label className="text-sm font-semibold mb-1.5 block">
                   {dialog === "ajuste" ? "Nova quantidade" : "Quantidade"}
                 </label>
                 <input
@@ -412,13 +453,13 @@ export default function EstoqueDetailContent() {
                   step="any"
                   value={dialogQty}
                   onChange={(e) => setDialogQty(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring mt-1"
+                  className="w-full h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">
+                <label className="text-sm font-semibold mb-1.5 block">
                   Descrição {dialog === "ajuste" ? "(obrigatória)" : "(opcional)"}
                 </label>
                 <input
@@ -426,7 +467,7 @@ export default function EstoqueDetailContent() {
                   value={dialogDesc}
                   onChange={(e) => setDialogDesc(e.target.value)}
                   placeholder={dialog === "ajuste" ? "Motivo do ajuste..." : "Descrição da movimentação..."}
-                  className="w-full h-9 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring mt-1"
+                  className="w-full h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
                 />
               </div>
             </div>
@@ -438,14 +479,14 @@ export default function EstoqueDetailContent() {
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 h-9 rounded-lg"
                 onClick={() => { setDialog(null); setDialogError(null); }}
                 disabled={dialogLoading}
               >
                 Cancelar
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 h-9 rounded-lg"
                 onClick={handleDialogSubmit}
                 disabled={dialogLoading || !dialogQty}
               >

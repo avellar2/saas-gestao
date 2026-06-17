@@ -20,7 +20,7 @@ export function SortSelect({ options, defaultValue }: SortSelectProps) {
         url.searchParams.set("page", "1");
         window.location.href = url.toString();
       }}
-      className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 placeholder:text-muted-foreground"
+      className="h-12 rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>

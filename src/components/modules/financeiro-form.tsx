@@ -71,7 +71,7 @@ export function FinanceiroForm({
             value={formData.type}
             onChange={(e) => handleChange("type", e.target.value)}
             required
-            className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="RECEIVABLE">A Receber</option>
             <option value="PAYABLE">A Pagar</option>
@@ -129,7 +129,7 @@ export function FinanceiroForm({
             id="customerId"
             value={formData.customerId}
             onChange={(e) => handleChange("customerId", e.target.value)}
-            className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="">Nenhum</option>
             {customers.map((customer) => (
@@ -149,7 +149,7 @@ export function FinanceiroForm({
           onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Observacoes sobre a transacao"
           rows={3}
-          className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+          className="flex min-h-[120px] w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-base shadow-sm outline-none placeholder:text-muted-foreground/60 focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
         />
       </div>
 

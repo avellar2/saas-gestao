@@ -64,12 +64,12 @@ export function ClientesContent() {
   const { resumo, topClientesReceita, clientesMaisOS } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{formatMonthLabel(month)}</p>
+        <p className="text-base text-muted-foreground font-medium">{formatMonthLabel(month)}</p>
         <button
           onClick={loadData}
-          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-card border border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30 transition-all duration-150"
         >
           Atualizar
         </button>
@@ -77,19 +77,31 @@ export function ClientesContent() {
 
       {/* Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4 text-blue-500" />
-            Total de Clientes
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <Users className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Total de Clientes</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{resumo.total}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{resumo.total}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <UserPlus className="h-4 w-4 text-emerald-500" />
-            Novos no Período
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <UserPlus className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Novos no Período</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{resumo.novosNoPeriodo}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">{resumo.novosNoPeriodo}</p>
+          </div>
         </div>
       </div>
 

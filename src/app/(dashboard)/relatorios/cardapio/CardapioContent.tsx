@@ -71,12 +71,12 @@ export function CardapioContent() {
   const { resumo, vendasPorPagamento, itensMaisVendidos, vendasPorDia } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{formatMonthLabel(month)}</p>
+        <p className="text-base text-muted-foreground font-medium">{formatMonthLabel(month)}</p>
         <button
           onClick={loadData}
-          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-card border border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30 transition-all duration-150"
         >
           Atualizar
         </button>
@@ -84,33 +84,57 @@ export function CardapioContent() {
 
       {/* Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ShoppingBag className="h-4 w-4 text-emerald-500" />
-            Pedidos Entregues
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <ShoppingBag className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Pedidos Entregues</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{resumo.pedidosEntregues}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">{resumo.pedidosEntregues}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <XCircle className="h-4 w-4 text-destructive" />
-            Cancelados
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <XCircle className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Cancelados</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-destructive">{resumo.pedidosCancelados}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-red-600">{resumo.pedidosCancelados}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
-            Receita
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Receita</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(resumo.receita)}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">{formatCurrency(resumo.receita)}</p>
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-amber-500" />
-            Ticket Médio
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Ticket Médio</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(resumo.ticketMedio)}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(resumo.ticketMedio)}</p>
+          </div>
         </div>
       </div>
 

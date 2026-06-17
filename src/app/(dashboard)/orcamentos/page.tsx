@@ -5,8 +5,7 @@ import { tenantPrisma } from "@/lib/prisma";
 import { QuoteStatus } from "@/generated/prisma/client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FileDown, Plus, FileText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { FileDown, Plus, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,37 +32,30 @@ const STATUS_TABS = [
   { label: "Expirado", value: "EXPIRED" },
 ];
 
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+function getStatusBadgeClass(status: string) {
   switch (status) {
-    case "DRAFT":
-      return "secondary";
-    case "SENT":
-      return "outline";
     case "APPROVED":
-      return "default";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "SENT":
+      return "bg-blue-50 text-blue-700 border-blue-200";
     case "REJECTED":
-      return "destructive";
+      return "bg-red-50 text-red-700 border-red-200";
     case "EXPIRED":
-      return "secondary";
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "DRAFT":
     default:
-      return "secondary";
+      return "bg-slate-50 text-slate-700 border-slate-200";
   }
 }
 
 function getStatusLabel(status: string): string {
   switch (status) {
-    case "DRAFT":
-      return "Rascunho";
-    case "SENT":
-      return "Enviado";
-    case "APPROVED":
-      return "Aprovado";
-    case "REJECTED":
-      return "Rejeitado";
-    case "EXPIRED":
-      return "Expirado";
-    default:
-      return status;
+    case "DRAFT": return "Rascunho";
+    case "SENT": return "Enviado";
+    case "APPROVED": return "Aprovado";
+    case "REJECTED": return "Rejeitado";
+    case "EXPIRED": return "Expirado";
+    default: return status;
   }
 }
 
@@ -93,50 +85,55 @@ export default async function OrcamentosPage({
   const [sortField, sortDir] = sort.split("_");
   const orderBy = { [sortField]: sortDir };
 
-  const quotes = await tenant.quote.findMany({
-    where,
-    orderBy,
-    include: {
-      customer: {
-        select: { id: true, name: true },
+  const [quotes, total] = await Promise.all([
+    tenant.quote.findMany({
+      where,
+      orderBy,
+      include: {
+        customer: { select: { id: true, name: true } },
       },
-    },
-  });
+    }),
+    tenant.quote.count({ where }),
+  ]);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Orcamentos</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Gerencie orçamentos e propostas</p>
+          <h1 className="text-[2.25rem] font-extrabold text-foreground">Orçamentos</h1>
+          <p className="text-base font-medium text-muted-foreground mt-1">{total} {total === 1 ? "orçamento" : "orçamentos"}</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/api/exportar?entity=quotes" download>
-            <Button variant="outline" className="rounded-xl">
+            <Button variant="outline" className="rounded-lg h-9 px-3.5 border-border/80 hover:bg-muted/50 transition-all duration-150">
               <FileDown className="h-4 w-4 mr-2" />
-              Exportar CSV
+              Exportar
             </Button>
           </a>
           <Link href="/orcamentos/novo">
-            <Button className="rounded-xl">
+            <Button className="rounded-lg h-9 px-3.5 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-150 active:scale-[0.97]">
               <Plus className="h-4 w-4 mr-2" />
-              Novo Orcamento
+              Novo Orçamento
             </Button>
           </Link>
         </div>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map((tab) => (
             <Link key={tab.value} href={tab.value ? `/orcamentos?status=${tab.value}` : "/orcamentos"}>
-              <Button
-                variant={statusFilter === tab.value ? "default" : "outline"}
-                size="sm"
-                className="rounded-lg"
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-all duration-150 ${
+                  statusFilter === tab.value
+                    ? "bg-blue-50 border-blue-200 text-blue-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                    : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                }`}
               >
                 {tab.label}
-              </Button>
+              </span>
             </Link>
           ))}
         </div>
@@ -158,40 +155,43 @@ export default async function OrcamentosPage({
               ? "Nenhum orçamento encontrado com esse status."
               : "Crie seu primeiro orçamento para enviar aos clientes."
           }
-          icon={FileText}
-          actionLabel="Novo Orcamento"
+          icon="FileText"
+          actionLabel="Novo Orçamento"
           actionHref="/orcamentos/novo"
         />
       ) : (
-        <div className="rounded-[1.25rem] border border-border/60 overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30 transition-colors">
-                  <TableHead>No</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Acoes</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Nº</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Cliente</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Total</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Data</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground text-right"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {quotes.map((quote) => (
-                  <TableRow key={quote.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-medium">#{quote.number}</TableCell>
-                    <TableCell>{quote.customer.name}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(quote.status)}>
+                  <TableRow
+                    key={quote.id}
+                    className="hover:bg-blue-50/30 transition-colors duration-150 cursor-pointer border-b border-border/30 last:border-0"
+                  >
+                    <TableCell className="text-sm text-foreground font-medium px-4 py-3.5">#{String(quote.number).padStart(4, "0")}</TableCell>
+                    <TableCell className="text-sm text-foreground px-4 py-3.5">{quote.customer.name}</TableCell>
+                    <TableCell className="text-sm text-foreground px-4 py-3.5">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${getStatusBadgeClass(quote.status)}`}>
                         {getStatusLabel(quote.status)}
-                      </Badge>
+                      </span>
                     </TableCell>
-                    <TableCell>{formatCurrency(Number(quote.total))}</TableCell>
-                    <TableCell>{formatDate(quote.createdAt)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm text-foreground px-4 py-3.5">{formatCurrency(Number(quote.total))}</TableCell>
+                    <TableCell className="text-sm text-foreground px-4 py-3.5">{formatDate(quote.createdAt)}</TableCell>
+                    <TableCell className="text-sm text-foreground px-4 py-3.5 text-right">
                       <Link href={`/orcamentos/${quote.id}`}>
-                        <Button variant="outline" size="sm" className="rounded-lg">
-                          Ver
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                          <ChevronRight className="h-4 w-4" />
                         </Button>
                       </Link>
                     </TableCell>

@@ -2,32 +2,38 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { tenantPrisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
-import { History } from "lucide-react";
 
 const ENTITY_LABELS: Record<string, string> = {
   customer: "Cliente",
-  quote: "Orcamento",
-  service_order: "Ordem de Servico",
+  quote: "Orçamento",
+  service_order: "Ordem de Serviço",
   product: "Produto",
   financial: "Financeiro",
   appointment: "Agendamento",
-  catalog: "Catalogo",
-  menu: "Cardapio",
-  user: "Usuario",
+  catalog: "Catálogo",
+  menu: "Cardápio",
+  user: "Usuário",
 };
 
-const ACTION_VARIANTS: Record<string, "default" | "secondary" | "destructive"> = {
-  CREATE: "default",
-  UPDATE: "secondary",
-  DELETE: "destructive",
+const ACTION_CLASSES: Record<string, string> = {
+  CREATE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  UPDATE: "bg-slate-50 text-slate-700 border-slate-200",
+  DELETE: "bg-red-50 text-red-700 border-red-200",
 };
 
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "Criado",
   UPDATE: "Atualizado",
-  DELETE: "Excluido",
+  DELETE: "Excluído",
 };
 
 interface AtividadesPageProps {
@@ -78,129 +84,114 @@ export default async function AtividadesPage({ searchParams }: AtividadesPagePro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Historico de Atividades</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Registro de todas as acoes realizadas no sistema
-        </p>
+        <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Histórico de Atividades</h1>
+        <p className="text-base text-muted-foreground mt-2 font-medium">{total} {total === 1 ? "registro" : "registros"}</p>
       </div>
 
       {/* Entity filter pills */}
       <div className="flex flex-wrap gap-2">
-        <Link
-          href="/atividades"
-          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+        <Link href="/atividades">
+          <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
             !currentEntity
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          }`}
-        >
-          Todas
+              ? "bg-slate-50 border-slate-200 text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+          }`}>
+            Todas
+          </span>
         </Link>
-        {entities.map((entity) => (
-          <Link
-            key={entity}
-            href={`/atividades?entity=${entity}`}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              currentEntity === entity
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            {ENTITY_LABELS[entity]}
-          </Link>
-        ))}
+        {entities.map((entity) => {
+          const isActive = currentEntity === entity;
+          return (
+            <Link key={entity} href={`/atividades?entity=${entity}`}>
+              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+                isActive
+                  ? "bg-slate-50 border-slate-200 text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+              }`}>
+                {ENTITY_LABELS[entity]}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Activities table */}
-      <div className="bg-card rounded-[1.25rem] border border-border/60 overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Data / Hora
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Usuario
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Acao
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Entidade
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Detalhes
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+                <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 whitespace-nowrap">Data / Hora</TableHead>
+                <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 whitespace-nowrap">Usuário</TableHead>
+                <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Ação</TableHead>
+                <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 whitespace-nowrap">Entidade</TableHead>
+                <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Detalhes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {activities.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-0">
+                <TableRow>
+                  <TableCell colSpan={5} className="px-0 py-0">
                     <EmptyState
                       title="Nenhuma atividade registrada"
-                      description="As acoes realizadas no sistema aparecerao aqui automaticamente."
-                      icon={History}
+                      description="As ações realizadas no sistema aparecerão aqui automaticamente."
+                      icon="History"
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 activities.map((activity) => (
-                  <tr
+                  <TableRow
                     key={activity.id}
-                    className="hover:bg-muted/30 transition-colors"
+                    className="group border-b border-border/30 transition-colors duration-150 hover:bg-slate-50/30 last:border-b-0"
                   >
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
+                    <TableCell className="py-3.5 pl-5 pr-3 text-sm text-muted-foreground whitespace-nowrap">
                       {formatDateTime(activity.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-foreground font-medium whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3 text-sm font-medium text-foreground whitespace-nowrap">
                       {activity.userName}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant={ACTION_VARIANTS[activity.action] || "default"}
-                      >
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3 text-sm">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${ACTION_CLASSES[activity.action] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
                         {ACTION_LABELS[activity.action] || activity.action}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3 text-sm text-muted-foreground whitespace-nowrap">
                       {ENTITY_LABELS[activity.entity] || activity.entity}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground/70 max-w-xs truncate">
-                      {activity.details || "-"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="py-3.5 pl-3 pr-5 text-sm text-muted-foreground/70 max-w-xs truncate">
+                      {activity.details || "—"}
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/20">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {total} registro{total !== 1 ? "s" : ""}
             </p>
-            <div className="flex gap-1">
-              {currentPage > 1 && (
-                <Link
-                  href={`/atividades?page=${currentPage - 1}${currentEntity ? `&entity=${currentEntity}` : ""}`}
-                  className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground bg-card border border-border/60 hover:bg-muted/50 transition-colors"
-                >
-                  Anterior
-                </Link>
-              )}
-              {currentPage < totalPages && (
-                <Link
-                  href={`/atividades?page=${currentPage + 1}${currentEntity ? `&entity=${currentEntity}` : ""}`}
-                  className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground bg-card border border-border/60 hover:bg-muted/50 transition-colors"
-                >
-                  Proximo
-                </Link>
+            <div className="flex items-center justify-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (p) => (
+                  <Link
+                    key={p}
+                    href={`/atividades?page=${p}${currentEntity ? `&entity=${currentEntity}` : ""}`}
+                  >
+                    <span className={`inline-flex items-center justify-center min-w-[2.25rem] h-9 px-2.5 rounded-lg text-sm font-medium border transition-all cursor-pointer select-none ${
+                      p === currentPage
+                        ? "bg-slate-600 border-slate-600 text-white"
+                        : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                    }`}>
+                      {p}
+                    </span>
+                  </Link>
+                )
               )}
             </div>
           </div>

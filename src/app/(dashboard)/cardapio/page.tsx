@@ -1,10 +1,10 @@
-﻿import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, Plus, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -17,7 +17,6 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { SortSelect } from "@/components/sort-select";
 import { EmptyState } from "@/components/empty-state";
-import { UtensilsCrossed } from "lucide-react";
 
 interface SearchParams {
   search?: string;
@@ -66,7 +65,6 @@ export default async function CardapioPage({
   const [sortField, sortDir] = sort.split("_");
   const orderBy = { [sortField]: sortDir };
 
-  // Fetch items and categories in parallel
   const [items, total, categories] = await Promise.all([
     tenant.menuItem.findMany({
       where,
@@ -85,7 +83,6 @@ export default async function CardapioPage({
 
   const totalPages = Math.ceil(total / limit);
 
-  // Group items by category
   const groupedByCategory: Record<string, typeof items> = {};
   const uncategorized: typeof items = [];
 
@@ -106,18 +103,24 @@ export default async function CardapioPage({
     .filter(Boolean) as string[];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Cardapio Digital</h1>
-        <div className="flex items-center gap-2">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Cardápio Digital</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">{total} {total === 1 ? "item" : "itens"}</p>
+        </div>
+        <div className="flex items-center gap-2.5">
           <a href="/api/exportar?entity=menu" download>
-            <Button variant="outline">
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="gap-2 h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
+              <FileDown className="h-4 w-4" />
               Exportar CSV
             </Button>
           </a>
           <Link href="/cardapio/novo">
-            <Button>Novo Item</Button>
+            <Button size="sm" className="gap-2 h-9 px-3.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white transition-all duration-150 active:scale-[0.97]">
+              <Plus className="h-4 w-4" />
+              Novo Item
+            </Button>
           </Link>
         </div>
       </div>
@@ -128,21 +131,21 @@ export default async function CardapioPage({
           <input
             name="search"
             type="text"
-            placeholder="Buscar por nome, descricao ou categoria..."
+            placeholder="Buscar por nome, descrição ou categoria..."
             defaultValue={search}
-            className="flex-1 h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 placeholder:text-muted-foreground"
+            className="flex-1 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 placeholder:text-muted-foreground/60"
           />
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
             Buscar
           </Button>
         </form>
         <SortSelect
           options={[
-            { value: "sortOrder_asc", label: "Ordem padrao" },
+            { value: "sortOrder_asc", label: "Ordem padrão" },
             { value: "name_asc", label: "Nome A-Z" },
             { value: "name_desc", label: "Nome Z-A" },
-            { value: "price_asc", label: "Menor preco" },
-            { value: "price_desc", label: "Maior preco" },
+            { value: "price_asc", label: "Menor preço" },
+            { value: "price_desc", label: "Maior preço" },
           ]}
           defaultValue={sort}
         />
@@ -152,12 +155,13 @@ export default async function CardapioPage({
       {categoryList.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <Link href="/cardapio">
-            <Badge
-              variant={categoryFilter === "" ? "default" : "outline"}
-              className="cursor-pointer"
-            >
+            <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+              categoryFilter === ""
+                ? "bg-orange-50 border-orange-200 text-orange-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+            }`}>
               Todas
-            </Badge>
+            </span>
           </Link>
           {categoryList.map((cat) => {
             const linkParams = new URLSearchParams();
@@ -168,12 +172,13 @@ export default async function CardapioPage({
                 key={cat}
                 href={`/cardapio?${linkParams.toString()}`}
               >
-                <Badge
-                  variant={categoryFilter === cat ? "default" : "outline"}
-                  className="cursor-pointer"
-                >
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+                  categoryFilter === cat
+                    ? "bg-orange-50 border-orange-200 text-orange-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                    : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                }`}>
                   {cat}
-                </Badge>
+                </span>
               </Link>
             );
           })}
@@ -181,7 +186,7 @@ export default async function CardapioPage({
       )}
 
       {items.length === 0 ? (
-        <EmptyState icon={UtensilsCrossed}
+        <EmptyState icon="UtensilsCrossed"
           title={search ? "Nenhum resultado" : "Nenhum item"}
           description={search ? "Tente ajustar os termos da busca." : "Adicione seu primeiro item ao cardápio."}
           actionLabel="Novo Item"
@@ -189,20 +194,16 @@ export default async function CardapioPage({
         />
       ) : (
         <>
-          {/* Uncategorized items first */}
           {uncategorized.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-2 text-muted-foreground">
-                Sem Categoria
-              </h2>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.04em] text-muted-foreground mb-2">Sem Categoria</h2>
               <CardapioTable items={uncategorized} />
             </div>
           )}
 
-          {/* Grouped by category */}
           {Object.entries(groupedByCategory).map(([category, catItems]) => (
             <div key={category}>
-              <h2 className="text-lg font-semibold mb-2">{category}</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.04em] text-muted-foreground mb-2">{category}</h2>
               <CardapioTable items={catItems} />
             </div>
           ))}
@@ -221,12 +222,13 @@ export default async function CardapioPage({
                       key={p}
                       href={`/cardapio?${linkParams.toString()}`}
                     >
-                      <Button
-                        variant={p === page ? "default" : "outline"}
-                        size="sm"
-                      >
+                      <span className={`inline-flex items-center justify-center min-w-[2.25rem] h-9 px-2.5 rounded-lg text-sm font-medium border transition-all cursor-pointer select-none ${
+                        p === page
+                          ? "bg-orange-600 border-orange-600 text-white"
+                          : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                      }`}>
                         {p}
-                      </Button>
+                      </span>
                     </Link>
                   );
                 }
@@ -253,54 +255,56 @@ function CardapioTable({
   }[];
 }) {
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Descricao</TableHead>
-            <TableHead>Preco</TableHead>
-            <TableHead>Ordem</TableHead>
-            <TableHead>Ativo</TableHead>
-            <TableHead>Acoes</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  {item.imageUrl && (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-8 h-8 rounded object-cover"
-                    />
-                  )}
-                  <span>{item.name}</span>
-                </div>
-              </TableCell>
-              <TableCell className="max-w-xs truncate text-muted-foreground">
-                {item.description || "-"}
-              </TableCell>
-              <TableCell>{formatCurrency(Number(item.price))}</TableCell>
-              <TableCell>{item.sortOrder}</TableCell>
-              <TableCell>
-                <Badge variant={item.active ? "default" : "secondary"}>
-                  {item.active ? "Sim" : "Nao"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Link href={`/cardapio/${item.id}`}>
-                  <Button variant="outline" size="sm">
-                    Ver
-                  </Button>
-                </Link>
-              </TableCell>
+    <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+              <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Nome</TableHead>
+              <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Descrição</TableHead>
+              <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Preço</TableHead>
+              <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Ordem</TableHead>
+              <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Ativo</TableHead>
+              <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right"></TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-orange-50/30 last:border-b-0">
+                <TableCell className="py-3.5 pl-5 pr-3 text-sm font-medium text-foreground">
+                  <div className="flex items-center gap-2">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-8 h-8 rounded object-cover"
+                      />
+                    )}
+                    <span>{item.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="py-3.5 px-3 text-sm text-muted-foreground max-w-xs truncate">
+                  {item.description || "—"}
+                </TableCell>
+                <TableCell className="py-3.5 px-3 text-sm font-semibold text-foreground">{formatCurrency(Number(item.price))}</TableCell>
+                <TableCell className="py-3.5 px-3 text-sm text-foreground">{item.sortOrder}</TableCell>
+                <TableCell className="py-3.5 px-3 text-sm">
+                  <Badge variant={item.active ? "default" : "secondary"} className="rounded-full text-xs font-medium">
+                    {item.active ? "Sim" : "Não"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-3.5 pl-3 pr-5 text-right">
+                  <Link href={`/cardapio/${item.id}`}>
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground/40 hover:text-orange-600 hover:bg-orange-50 transition-all duration-150">
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -115,10 +115,10 @@ export function PedidosContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pedidos</h1>
-        <Button variant="outline" size="sm" onClick={loadOrders}>
+        <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Pedidos</h1>
+        <Button variant="outline" size="sm" onClick={loadOrders} className="rounded-lg h-9 border-border/80 hover:bg-muted/50 transition-all duration-150">
           Atualizar
         </Button>
       </div>
@@ -132,7 +132,7 @@ export function PedidosContent() {
             placeholder="Buscar por número, cliente ou mesa..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-9 rounded-lg border border-input bg-transparent pl-8 pr-8 text-sm outline-none focus-visible:border-ring"
+            className="w-full h-9 rounded-lg border border-border/60 bg-background pl-9 pr-9 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 placeholder:text-muted-foreground/60"
           />
           {search && (
             <button

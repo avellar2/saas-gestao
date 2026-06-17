@@ -4,9 +4,7 @@ import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import { ServiceOrderStatus } from "@/generated/prisma/client";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { FileDown, Plus, ClipboardList } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, FileDown, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,14 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { SortSelect } from "@/components/sort-select";
 import { EmptyState } from "@/components/empty-state";
-import {
-  getStatusLabel, getStatusVariant,
-  getPriorityLabel, getPriorityVariant,
-  getPaymentStatusLabel, getPaymentStatusVariant,
-} from "@/lib/os-status";
+import { StatusPill } from "@/components/layout/status-badge";
 
 interface SearchParams {
   status?: string;
@@ -81,125 +76,200 @@ export default async function OrdensServicoPage({
     },
   });
 
+  const activeLabel = STATUS_TABS.find((t) => t.value === statusFilter)?.label ?? "Todas";
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      {/* ── Header Premium ── */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Ordens de Servico</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Gerencie ordens de servico</p>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">
+            Ordens de Serviço
+          </h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">
+            {serviceOrders.length === 0
+              ? "Nenhuma ordem cadastrada"
+              : `${serviceOrders.length} ${serviceOrders.length === 1 ? "ordem" : "ordens"} ${activeLabel.toLowerCase()}${statusFilter ? "" : " no sistema"}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <a href="/api/exportar?entity=service_orders" download>
-            <Button variant="outline" className="rounded-xl">
-              <FileDown className="h-4 w-4 mr-2" />
-              Exportar CSV
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150"
+            >
+              <FileDown className="h-4 w-4" />
+              Exportar
             </Button>
           </a>
           <Link href="/ordens-servico/novo">
-            <Button className="rounded-xl">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button
+              size="sm"
+              className="gap-2 h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-150 active:scale-[0.97]"
+            >
+              <Plus className="h-4 w-4" />
               Nova OS
             </Button>
           </Link>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      {/* ── Filtros Premium ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex flex-wrap gap-2">
-          {STATUS_TABS.map((tab) => (
-            <Link
-              key={tab.value}
-              href={
-                tab.value
-                  ? `/ordens-servico?status=${tab.value}`
-                  : "/ordens-servico"
-              }
-            >
-              <Button
-                variant={statusFilter === tab.value ? "default" : "outline"}
-                size="sm"
-                className="rounded-lg"
+          {STATUS_TABS.map((tab) => {
+            const isActive = statusFilter === tab.value;
+            return (
+              <Link
+                key={tab.value}
+                href={
+                  tab.value
+                    ? `/ordens-servico?status=${tab.value}`
+                    : "/ordens-servico"
+                }
               >
-                {tab.label}
-              </Button>
-            </Link>
-          ))}
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none",
+                    isActive
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                      : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                  )}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
-        <SortSelect
-          options={[
-            { value: "createdAt_desc", label: "Mais recentes" },
-            { value: "total_desc", label: "Maior valor" },
-            { value: "total_asc", label: "Menor valor" },
-          ]}
-          defaultValue={sort}
-        />
+        <div className="sm:ml-auto">
+          <SortSelect
+            options={[
+              { value: "createdAt_desc", label: "Mais recentes" },
+              { value: "total_desc", label: "Maior valor" },
+              { value: "total_asc", label: "Menor valor" },
+            ]}
+            defaultValue={sort}
+          />
+        </div>
       </div>
 
+      {/* ── Tabela Premium ── */}
       {serviceOrders.length === 0 ? (
         <EmptyState
           title={statusFilter ? "Nenhum resultado" : "Nenhuma ordem cadastrada"}
           description={
             statusFilter
               ? "Nenhuma ordem encontrada com esse status."
-              : "Crie sua primeira ordem de servico."
+              : "Crie sua primeira ordem de serviço."
           }
-          icon={ClipboardList}
+          icon="ClipboardList"
           actionLabel="Nova OS"
           actionHref="/ordens-servico/novo"
         />
       ) : (
-        <div className="rounded-[1.25rem] border border-border/60 overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30 transition-colors">
-                  <TableHead>OS</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Equipamento</TableHead>
-                  <TableHead>Prioridade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Pagamento</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Acoes</TableHead>
+                <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+                  <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 w-24">
+                    OS
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Cliente
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Equipamento
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Prioridade
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Status
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">
+                    Total
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Pagamento
+                  </TableHead>
+                  <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">
+                    Data
+                  </TableHead>
+                  <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right w-16">
+                    {/* Empty — icon column */}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {serviceOrders.map((so) => (
-                  <TableRow key={so.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-medium">{so.code || `#${so.number}`}</TableCell>
-                    <TableCell>{so.customer.name}</TableCell>
-                    <TableCell>
+                {serviceOrders.map((so, index) => (
+                  <TableRow
+                    key={so.id}
+                    className={cn(
+                      "group border-b border-border/30 transition-colors duration-150 cursor-pointer hover:bg-emerald-50/30",
+                      index === serviceOrders.length - 1 && "border-b-0"
+                    )}
+                  >
+                    <TableCell className="py-3.5 pl-5 pr-3">
+                      <Link
+                        href={`/ordens-servico/${so.id}`}
+                        className="inline-flex items-center gap-1 font-semibold text-sm text-foreground hover:text-emerald-600 transition-colors tabular-nums"
+                      >
+                        {so.code || `#${so.number}`}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3">
+                      <span className="font-medium text-sm text-foreground">
+                        {so.customer.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3">
                       {so.equipmentName ? (
-                        <span className="text-sm">{so.equipmentName}</span>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {so.priority && (
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPriorityVariant(so.priority)}`}>
-                          {getPriorityLabel(so.priority)}
+                        <span className="text-sm text-muted-foreground">
+                          {so.equipmentName}
                         </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground/40">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status)}`}>
-                        {getStatusLabel(so.status)}
+                    <TableCell className="py-3.5 px-3">
+                      {so.priority ? (
+                        <StatusPill
+                          kind="serviceOrderPriority"
+                          value={so.priority}
+                        />
+                      ) : (
+                        <span className="text-sm text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3">
+                      <StatusPill
+                        kind="serviceOrder"
+                        value={so.status}
+                      />
+                    </TableCell>
+                    <TableCell className="py-3.5 px-3 text-right">
+                      <span className="font-semibold tabular-nums text-sm text-foreground">
+                        {formatCurrency(Number(so.total))}
                       </span>
                     </TableCell>
-                    <TableCell>{formatCurrency(Number(so.total))}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPaymentStatusVariant(so.paymentStatus)}`}>
-                        {getPaymentStatusLabel(so.paymentStatus)}
-                      </span>
+                    <TableCell className="py-3.5 px-3">
+                      <StatusPill
+                        kind="payment"
+                        value={so.paymentStatus}
+                      />
                     </TableCell>
-                    <TableCell>{formatDate(so.createdAt)}</TableCell>
-                    <TableCell>
-                      <Link href={`/ordens-servico/${so.id}`}>
-                        <Button variant="outline" size="sm" className="rounded-lg">
-                          Ver
-                        </Button>
+                    <TableCell className="py-3.5 px-3 text-muted-foreground text-sm whitespace-nowrap tabular-nums">
+                      {formatDate(so.createdAt)}
+                    </TableCell>
+                    <TableCell className="py-3.5 pl-3 pr-5 text-right">
+                      <Link
+                        href={`/ordens-servico/${so.id}`}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground/40 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-150"
+                      >
+                        <ChevronRight className="w-4 h-4" />
                       </Link>
                     </TableCell>
                   </TableRow>

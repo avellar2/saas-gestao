@@ -1,10 +1,10 @@
-﻿import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
-import { Users } from "lucide-react";
 
 interface SearchParams {
   search?: string;
@@ -76,29 +75,34 @@ export default async function UsuariosPage({
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Usuarios</h1>
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Usuários</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">{total} {total === 1 ? "usuário" : "usuários"}</p>
+        </div>
         <Link href="/usuarios/novo">
-          <Button>Novo Usuario</Button>
+          <Button size="sm" className="gap-2 h-9 px-3.5 rounded-lg bg-slate-600 hover:bg-slate-700 text-white transition-all duration-150 active:scale-[0.97]">
+            Novo Usuário
+          </Button>
         </Link>
       </div>
 
-      <form className="flex gap-2" action="/usuarios" method="GET">
+      <form className="flex gap-2 flex-1" action="/usuarios" method="GET">
         <input
           name="search"
           type="text"
-          placeholder="Buscar por nome ou email..."
+          placeholder="Buscar por nome ou e-mail..."
           defaultValue={search}
-          className="flex-1 h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 placeholder:text-muted-foreground"
+          className="flex-1 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 placeholder:text-muted-foreground/60"
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
           Buscar
         </Button>
       </form>
 
       {users.length === 0 ? (
-        <EmptyState icon={Users}
+        <EmptyState icon="Users"
           title={search ? "Nenhum resultado" : "Nenhum usuário"}
           description={search ? "Tente ajustar os termos da busca." : "Cadastre seu primeiro usuário para começar."}
           actionLabel="Novo Usuário"
@@ -106,45 +110,47 @@ export default async function UsuariosPage({
         />
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Funcao</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criado em</TableHead>
-                  <TableHead>Acoes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {ROLE_LABELS[user.role] || user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.active ? "default" : "secondary"}>
-                        {user.active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(user.createdAt)}</TableCell>
-                    <TableCell>
-                      <Link href={`/usuarios/${user.id}`}>
-                        <Button variant="outline" size="sm">
-                          Ver
-                        </Button>
-                      </Link>
-                    </TableCell>
+          <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+                    <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Nome</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">E-mail</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Função</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Status</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Criado em</TableHead>
+                    <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-slate-50/30 last:border-b-0">
+                      <TableCell className="py-3.5 pl-5 pr-3 text-sm font-medium text-foreground">{user.name}</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">{user.email}</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm">
+                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border bg-slate-50 text-slate-700 border-slate-200">
+                          {ROLE_LABELS[user.role] || user.role}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${user.active ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"}`}>
+                          {user.active ? "Ativo" : "Inativo"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
+                      <TableCell className="py-3.5 pl-3 pr-5 text-right">
+                        <Link href={`/usuarios/${user.id}`}>
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground/40 hover:text-slate-600 hover:bg-slate-50 transition-all duration-150">
+                            <ChevronRight className="h-4 w-4" />
+                          </span>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {totalPages > 1 && (
@@ -155,12 +161,13 @@ export default async function UsuariosPage({
                     key={p}
                     href={`/usuarios?search=${encodeURIComponent(search)}&page=${p}`}
                   >
-                    <Button
-                      variant={p === page ? "default" : "outline"}
-                      size="sm"
-                    >
+                    <span className={`inline-flex items-center justify-center min-w-[2.25rem] h-9 px-2.5 rounded-lg text-sm font-medium border transition-all cursor-pointer select-none ${
+                      p === page
+                        ? "bg-slate-600 border-slate-600 text-white"
+                        : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                    }`}>
                       {p}
-                    </Button>
+                    </span>
                   </Link>
                 )
               )}

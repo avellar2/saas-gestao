@@ -23,10 +23,25 @@ export function getStockStatus(quantity: number, minStock: number): StockStatus 
   return "normal";
 }
 
-export const STOCK_STATUS_CONFIG: Record<StockStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  normal: { label: "Normal", variant: "default" },
-  low: { label: "Baixo", variant: "secondary" },
-  out: { label: "Zerado", variant: "destructive" },
+export const STOCK_STATUS_CONFIG: Record<
+  StockStatus,
+  { label: string; variant: "default" | "secondary" | "outline" | "destructive"; classes: string }
+> = {
+  normal: {
+    label: "Normal",
+    variant: "default",
+    classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  low: {
+    label: "Baixo",
+    variant: "secondary",
+    classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  out: {
+    label: "Zerado",
+    variant: "destructive",
+    classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  },
 };
 
 /**

@@ -15,7 +15,7 @@ export default function EstoqueLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <SectionTabs tabs={TABS} />
       {children}
     </div>

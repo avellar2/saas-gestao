@@ -1,10 +1,150 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { PackageOpen } from "lucide-react";
+import {
+  PackageOpen,
+  Users,
+  UtensilsCrossed,
+  Calendar,
+  ShoppingBag,
+  History,
+  FileText,
+  ClipboardList,
+  Package,
+  ArrowLeftRight,
+  DollarSign,
+  TrendingUp,
+  Wrench,
+  LayoutDashboard,
+  ArrowUpFromLine,
+  ArrowDownFromLine,
+  AlertTriangle,
+  TrendingDown,
+  BarChart3,
+  CheckCircle,
+  XCircle,
+  PieChart,
+  Clock,
+  Receipt,
+  Ban,
+  Pencil,
+  SlidersHorizontal,
+  Search,
+  X,
+  Plus,
+  Minus,
+  FileDown,
+  ExternalLink,
+  Copy,
+  MessageCircle,
+  Phone,
+  Mail,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Check,
+  Trash2,
+  Loader2,
+  Eye,
+  EyeOff,
+  Building2,
+  Lock,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  FileSearch,
+  Info,
+  HelpCircle,
+  Store,
+  Smartphone,
+  CreditCard,
+  Banknote,
+  QrCode,
+  ChefHat,
+  Globe,
+  Settings,
+  Save,
+  PackageCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  PackageOpen,
+  Users,
+  UtensilsCrossed,
+  Calendar,
+  ShoppingBag,
+  History,
+  FileText,
+  ClipboardList,
+  Package,
+  ArrowLeftRight,
+  DollarSign,
+  TrendingUp,
+  Wrench,
+  LayoutDashboard,
+  ArrowUpFromLine,
+  ArrowDownFromLine,
+  AlertTriangle,
+  TrendingDown,
+  BarChart3,
+  CheckCircle,
+  XCircle,
+  PieChart,
+  Clock,
+  Receipt,
+  Ban,
+  Pencil,
+  SlidersHorizontal,
+  Search,
+  X,
+  Plus,
+  Minus,
+  FileDown,
+  ExternalLink,
+  Copy,
+  MessageCircle,
+  Phone,
+  Mail,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Check,
+  Trash2,
+  Loader2,
+  Eye,
+  EyeOff,
+  Building2,
+  Lock,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  FileSearch,
+  Info,
+  HelpCircle,
+  Store,
+  Smartphone,
+  CreditCard,
+  Banknote,
+  QrCode,
+  ChefHat,
+  Globe,
+  Settings,
+  Save,
+  PackageCheck,
+};
+
+function resolveIcon(icon: string | LucideIcon | undefined): LucideIcon | undefined {
+  if (!icon) return undefined;
+  if (typeof icon === "string") {
+    return ICON_MAP[icon];
+  }
+  return icon;
+}
 
 interface EmptyStateProps {
   /** Título do estado vazio */
@@ -17,8 +157,8 @@ interface EmptyStateProps {
   actionHref?: string;
   /** Callback da ação primária */
   onAction?: () => void;
-  /** Ícone principal (Lucide) */
-  icon?: LucideIcon;
+  /** Ícone principal (nome do ícone Lucide ou componente) */
+  icon?: string | LucideIcon;
   /** Variante visual */
   variant?: "default" | "compact" | "inline";
   /** Label da ação secundária */
@@ -51,13 +191,14 @@ export function EmptyState({
   actionLabel,
   actionHref,
   onAction,
-  icon: Icon = PackageOpen,
+  icon: iconProp = "PackageOpen",
   variant = "default",
   secondaryActionLabel,
   onSecondaryAction,
   secondaryActionHref,
   className,
 }: EmptyStateProps) {
+  const Icon = resolveIcon(iconProp) ?? PackageOpen;
   const hasPrimaryAction = actionLabel && (actionHref || onAction);
   const hasSecondaryAction =
     secondaryActionLabel &&
@@ -200,4 +341,3 @@ export function EmptyState({
     </motion.div>
   );
 }
-

@@ -2,16 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { buildWhatsAppLink, quoteWhatsAppMessage } from "@/lib/whatsapp";
-import { MessageCircle, FileDown, ExternalLink, Copy } from "lucide-react";
+import { MessageCircle, FileDown, ChevronLeft, Trash2, Send, CheckSquare, XCircle, Wrench, Edit } from "lucide-react";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
+import { ActionBar } from "@/components/layout/action-bar";
+
+const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, duration: 0.3, ease: easeOut },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
+};
 
 interface QuoteItem {
   id: string;
@@ -51,37 +66,14 @@ interface CustomerOption {
   name: string;
 }
 
-function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "DRAFT":
-      return "secondary";
-    case "SENT":
-      return "outline";
-    case "APPROVED":
-      return "default";
-    case "REJECTED":
-      return "destructive";
-    case "EXPIRED":
-      return "secondary";
-    default:
-      return "secondary";
-  }
-}
-
 function getStatusLabel(status: string): string {
   switch (status) {
-    case "DRAFT":
-      return "Rascunho";
-    case "SENT":
-      return "Enviado";
-    case "APPROVED":
-      return "Aprovado";
-    case "REJECTED":
-      return "Rejeitado";
-    case "EXPIRED":
-      return "Expirado";
-    default:
-      return status;
+    case "DRAFT": return "Rascunho";
+    case "SENT": return "Enviado";
+    case "APPROVED": return "Aprovado";
+    case "REJECTED": return "Rejeitado";
+    case "EXPIRED": return "Expirado";
+    default: return status;
   }
 }
 
@@ -217,228 +209,322 @@ export default function OrcamentoDetailContent() {
         quote.customer.name,
         quote.number,
         Number(quote.total),
-        "" // Company name not available on client
+        ""
       )
     );
   }
 
   if (loading) {
-    return <DetailSkeleton />;
+    return (
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <DetailSkeleton />
+      </div>
+    );
   }
 
   if (!quote) {
     return (
-      <EmptyState
-        title="Orcamento nao encontrado"
-        description={error || "O orcamento solicitado nao existe ou foi removido."}
-        actionLabel="Voltar para Orcamentos"
-        actionHref="/orcamentos"
-      />
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <EmptyState
+          title="Orcamento nao encontrado"
+          description={error || "O orcamento solicitado nao existe ou foi removido."}
+          actionLabel="Voltar para Orcamentos"
+          actionHref="/orcamentos"
+        />
+      </div>
     );
   }
 
+  const statusLabel = getStatusLabel(quote.status);
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-5">
+      {/* Top bar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Orcamento #{quote.number}</h1>
-          <Badge variant={getStatusVariant(quote.status)}>
-            {getStatusLabel(quote.status)}
-          </Badge>
-        </div>
-        <div className="flex gap-2">
-          {quote.status === "DRAFT" && !editing && (
-            <>
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                Editar
-              </Button>
-              <Button onClick={() => handleStatusChange("SENT")}>
-                Enviar
-              </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                Excluir
-              </Button>
-            </>
-          )}
-          {quote.status === "SENT" && (
-            <>
-              <Button onClick={() => handleStatusChange("APPROVED")}>
-                Aprovar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleStatusChange("REJECTED")}
-              >
-                Rejeitar
-              </Button>
-            </>
-          )}
-          {quote.status === "APPROVED" && (
-            <Button onClick={handleConvertToServiceOrder}>
-              Converter em OS
-            </Button>
-          )}
-          {getWhatsAppLink() && (
-            <a
-              href={getWhatsAppLink()!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-            >
-              <MessageCircle className="size-4 mr-1" />
-              WhatsApp
-            </a>
-          )}
-          <a
-            href={`/api/pdf/orcamento/${id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-          >
-            <FileDown className="size-4" />
-            Baixar PDF
-          </a>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/orcamentos")}
-          >
-            Voltar
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg h-9 text-sm font-semibold border-border/80 hover:bg-muted/50 transition-all duration-150"
+          onClick={() => router.push("/orcamentos")}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1.5" />
+          Voltar
+        </Button>
+
+        <ActionBar
+          primaryActions={[
+            ...(quote.status === "DRAFT" && !editing
+              ? [{ key: "send", label: "Enviar", icon: Send, variant: "default" as const, onClick: () => handleStatusChange("SENT") }]
+              : []),
+            ...(quote.status === "SENT"
+              ? [
+                  { key: "approve", label: "Aprovar", icon: CheckSquare, variant: "default" as const, onClick: () => handleStatusChange("APPROVED") },
+                  { key: "reject", label: "Rejeitar", icon: XCircle, variant: "outline" as const, onClick: () => handleStatusChange("REJECTED") },
+                ]
+              : []),
+            ...(quote.status === "APPROVED"
+              ? [{ key: "convert", label: "Converter em OS", icon: Wrench, variant: "default" as const, onClick: handleConvertToServiceOrder }]
+              : []),
+          ]}
+          secondaryActions={[
+            ...(quote.status === "DRAFT" && !editing
+              ? [{ key: "edit", label: "Editar", icon: Edit, variant: "outline" as const, onClick: () => setEditing(true) }]
+              : []),
+            ...(quote.status === "DRAFT" && editing
+              ? [{ key: "cancel", label: "Cancelar", variant: "outline" as const, onClick: () => setEditing(false) }]
+              : []),
+            { key: "pdf", label: "Baixar PDF", icon: FileDown, variant: "outline" as const, href: `/api/pdf/orcamento/${id}`, external: true },
+            ...(getWhatsAppLink()
+              ? [{ key: "whatsapp", label: "WhatsApp", icon: MessageCircle, variant: "outline" as const, href: getWhatsAppLink()!, external: true }]
+              : []),
+            ...(quote.status === "DRAFT"
+              ? [
+                  { divider: true } as { key: string; label: string; divider: true },
+                  { key: "delete", label: "Excluir", icon: Trash2, variant: "destructive" as const, onClick: handleDelete },
+                ]
+              : []),
+          ]}
+        />
       </div>
 
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
-        >
-          {error}
-        </motion.div>
-      )}
-
-      {editing && quote.status === "DRAFT" ? (
-        <QuoteForm
-          customers={customers}
-          initialData={{
-            customerId: quote.customerId,
-            description: quote.description || "",
-            validUntil: quote.validUntil
-              ? new Date(quote.validUntil).toISOString().split("T")[0]
-              : "",
-            discount: Number(quote.discount),
-            notes: quote.notes || "",
-            items: quote.items.map((item) => ({
-              description: item.description,
-              quantity: Number(item.quantity),
-              unitPrice: Number(item.unitPrice),
-            })),
-          }}
-          onSubmit={handleUpdate}
-          submitLabel="Salvar Alteracoes"
-        />
-      ) : (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Informacoes do Orcamento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Cliente:</span>{" "}
-                  <span className="font-medium">{quote.customer.name}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Status:</span>{" "}
-                  <Badge variant={getStatusVariant(quote.status)}>
-                    {getStatusLabel(quote.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Validade:</span>{" "}
-                  <span>
-                    {quote.validUntil
-                      ? formatDate(quote.validUntil)
-                      : "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Data:</span>{" "}
-                  <span>{formatDate(quote.createdAt)}</span>
-                </div>
-                {quote.description && (
-                  <div className="md:col-span-2">
-                    <span className="text-muted-foreground">Descricao:</span>{" "}
-                    <span>{quote.description}</span>
-                  </div>
-                )}
+      <AnimatePresence mode="wait">
+        {editing ? (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+            >
+              <div className="px-6 py-4 bg-blue-50/40 border-b border-border/30"
+              >
+                <h2 className="text-base font-bold text-foreground"
+                >Editar Orçamento</h2>
+                <p className="text-sm text-muted-foreground"
+                >Atualize os dados do orçamento</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-6"
+              >
+                <QuoteForm
+                  customers={customers}
+                  initialData={{
+                    customerId: quote.customerId,
+                    description: quote.description || "",
+                    validUntil: quote.validUntil
+                      ? new Date(quote.validUntil).toISOString().split("T")[0]
+                      : "",
+                    discount: Number(quote.discount),
+                    notes: quote.notes || "",
+                    items: quote.items.map((item) => ({
+                      description: item.description,
+                      quantity: Number(item.quantity),
+                      unitPrice: Number(item.unitPrice),
+                    })),
+                  }}
+                  onSubmit={handleUpdate}
+                  submitLabel="Salvar Alteracoes"
+                />
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="view"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0, y: -12, transition: { duration: 0.2 } }}
+            className="space-y-6"
+          >
+            {/* Error */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Itens</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground pb-2 border-b">
-                  <div className="col-span-5">Descricao</div>
-                  <div className="col-span-2">Qtd</div>
-                  <div className="col-span-2">Preco Unit.</div>
-                  <div className="col-span-2 text-right">Total</div>
-                </div>
-                {quote.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-12 gap-2 text-sm py-1"
+            {/* Hero Card */}
+            <motion.div variants={itemVariants}
+            >
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+              >
+                <div className="px-6 py-5 bg-blue-50/40 border-b border-border/30"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                   >
-                    <div className="col-span-5">{item.description}</div>
-                    <div className="col-span-2">{Number(item.quantity)}</div>
-                    <div className="col-span-2">
-                      {formatCurrency(Number(item.unitPrice))}
+                    <div className="flex items-center gap-3"
+                    >
+                      <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-blue-100 text-blue-600"
+                      >
+                        <span className="text-lg font-extrabold">#</span>
+                      </div>
+                      <div>
+                        <h1 className="text-xl font-extrabold text-foreground"
+                        >
+                          Orçamento #{quote.number}
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-0.5"
+                        >Criado em {formatDate(quote.createdAt)}</p>
+                      </div>
                     </div>
-                    <div className="col-span-2 text-right font-medium">
-                      {formatCurrency(Number(item.total))}
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold border ${
+                        quote.status === "APPROVED"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : quote.status === "SENT"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : quote.status === "REJECTED"
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : quote.status === "EXPIRED"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-slate-50 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {statusLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                  {[
+                    { label: "Cliente", value: quote.customer.name },
+                    { label: "Telefone", value: quote.customer.phone || "—" },
+                    { label: "E-mail", value: quote.customer.email || "—" },
+                    { label: "Validade", value: quote.validUntil ? formatDate(quote.validUntil) : "—" },
+                    { label: "Descricao", value: quote.description || "—" },
+                  ].map((info, idx) => (
+                    <div key={idx} className="space-y-1"
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground"
+                      >{info.label}</p>
+                      <p className="text-sm font-medium text-foreground leading-relaxed"
+                      >{info.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Items */}
+            <motion.div variants={itemVariants}
+            >
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+              >
+                <div className="px-6 py-4 bg-blue-50/40 border-b border-border/30"
+                >
+                  <h2 className="text-base font-bold text-foreground"
+                  >Itens e Serviços</h2>
+                </div>
+                <div className="overflow-x-auto"
+                >
+                  <table className="w-full text-sm"
+                  >
+                    <thead>
+                      <tr className="bg-muted/30 transition-colors"
+                      >
+                        <th className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground px-4 py-3 text-left"
+                        >Descrição</th>
+                        <th className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground px-4 py-3 text-center"
+                        >Qtd</th>
+                        <th className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground px-4 py-3 text-right"
+                        >Unit.</th>
+                        <th className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground px-4 py-3 text-right"
+                        >Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quote.items.length === 0 ? (
+                        <tr
+                        >
+                          <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground"
+                          >
+                            Nenhum item cadastrado
+                          </td>
+                        </tr>
+                      ) : (
+                        quote.items.map((item) => (
+                          <tr key={item.id} className="hover:bg-blue-50/30 transition-colors duration-150 border-b border-border/30 last:border-0"
+                          >
+                            <td className="px-4 py-3.5 text-sm font-medium text-foreground"
+                            >{item.description}</td>
+                            <td className="px-4 py-3.5 text-sm text-center text-foreground"
+                            >{Number(item.quantity)}</td>
+                            <td className="px-4 py-3.5 text-sm text-right text-foreground"
+                            >{formatCurrency(Number(item.unitPrice))}</td>
+                            <td className="px-4 py-3.5 text-sm font-semibold text-right text-foreground"
+                            >{formatCurrency(Number(item.total))}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className="px-6 py-5 bg-muted/20 border-t border-border/30"
+                >
+                  <div className="flex flex-col sm:flex-row justify-end gap-4"
+                  >
+                    <div className="text-right space-y-2"
+                    >
+                      <div className="text-sm text-muted-foreground"
+                      >
+                        Subtotal:{" "}
+                        <span className="ml-2 font-medium text-foreground"
+                        >{formatCurrency(Number(quote.subtotal))}</span>
+                      </div>
+                      {Number(quote.discount) > 0 && (
+                        <div className="text-sm text-muted-foreground"
+                        >
+                          Desconto:{" "}
+                          <span className="ml-2 font-medium text-red-600"
+                          >
+                            -{formatCurrency(Number(quote.discount))}
+                          </span>
+                        </div>
+                      )}
+                      <div className="text-lg font-extrabold text-foreground pt-2 border-t border-border/30"
+                      >
+                        Total:{" "}
+                        <span className="text-blue-600"
+                        >{formatCurrency(Number(quote.total))}</span>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col items-end gap-2 pt-4 border-t mt-4">
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">
-                    {formatCurrency(Number(quote.subtotal))}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-muted-foreground">Desconto:</span>
-                  <span className="font-medium">
-                    {formatCurrency(Number(quote.discount))}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-base font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(Number(quote.total))}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </motion.div>
 
-          {quote.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observacoes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{quote.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
+            {/* Notes */}
+            {quote.notes && (
+              <motion.div variants={itemVariants}
+              >
+                <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+                >
+                  <div className="px-6 py-4 bg-blue-50/40 border-b border-border/30"
+                  >
+                    <h2 className="text-base font-bold text-foreground"
+                    >Observações</h2>
+                  </div>
+                  <div className="px-6 py-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap"
+                  >
+                    {quote.notes}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

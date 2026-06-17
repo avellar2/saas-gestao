@@ -276,7 +276,7 @@ export function CloseServiceOrderDialog({
               id="finalStatus"
               value={finalStatus}
               onChange={(e) => setFinalStatus(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+              className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 transition-colors"
             >
               {allowedStatuses.map((s) => (
                 <option key={s} value={s}>
@@ -307,7 +307,7 @@ export function CloseServiceOrderDialog({
                   id="paymentStatus"
                   value={paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
-                  className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                  className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 transition-colors"
                 >
                   {PAYMENT_STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -324,7 +324,7 @@ export function CloseServiceOrderDialog({
                   id="paymentMethod"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                  className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 transition-colors"
                 >
                   <option value="">Selecione...</option>
                   {PAYMENT_METHOD_OPTIONS.map((opt) => (
@@ -385,7 +385,7 @@ export function CloseServiceOrderDialog({
                     id="warrantyDays"
                     value={warrantyDays}
                     onChange={(e) => setWarrantyDays(e.target.value)}
-                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                    className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-4 text-base shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 transition-colors"
                   >
                     {WARRANTY_DAYS_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>

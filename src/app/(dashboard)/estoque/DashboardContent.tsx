@@ -2,14 +2,25 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { MOVEMENT_TYPE_LABELS, MOVEMENT_REASON_LABELS, getMovementOrigin, ORIGIN_LABELS } from "@/lib/estoque-helpers";
+import { MOVEMENT_TYPE_LABELS } from "@/lib/estoque-helpers";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
+import { PageSkeleton } from "@/components/ui/section-skeleton";
 import Link from "next/link";
-import { Package, AlertTriangle, Ban, DollarSign, ArrowLeftRight } from "lucide-react";
+import { CHART_SERIES } from "@/lib/chart-palette";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { Package, AlertTriangle, Ban, DollarSign, ArrowLeftRight, TrendingUp, Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface RecentMovement {
   id: string;
@@ -56,14 +67,23 @@ export function DashboardContent() {
   }, [loadResumo]);
 
   if (loading) {
-    return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+    return (
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <PageSkeleton statCards={4} sections={2} />
+      </div>
+    );
   }
 
   if (!data) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        <Package className="h-16 w-16 mx-auto mb-4 opacity-30" />
-        <p className="text-lg font-medium">Nenhum dado disponível</p>
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <EmptyState
+          icon={Package}
+          title="Nenhum dado disponível"
+          description="Não há dados de estoque para exibir."
+          actionLabel="Novo Produto"
+          actionHref="/estoque/novo"
+        />
       </div>
     );
   }
@@ -88,137 +108,204 @@ export function DashboardContent() {
 
   const chartData = Object.values(last7Days).sort((a, b) => a.date.localeCompare(b.date));
 
+  const getMovementVariant = (type: string) => {
+    switch (type) {
+      case "IN":
+        return "default";
+      case "OUT":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard de Estoque</h1>
-        <Button variant="outline" size="sm" onClick={loadResumo}>
-          Atualizar
-        </Button>
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Dashboard de Estoque</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">Visão geral e movimentações recentes</p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150" onClick={loadResumo}>
+            Atualizar
+          </Button>
+          <Link href="/estoque/novo">
+            <Button size="sm" className="gap-2 h-9 px-3.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-all duration-150 active:scale-[0.97]">
+              <Plus className="h-4 w-4" />
+              Novo Produto
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Package className="h-4 w-4" />
-            Produtos Ativos
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Package className="h-4 w-4 text-amber-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Produtos Ativos</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{data.totalAtivos}</p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{data.totalAtivos}</p>
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Estoque Baixo
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Estoque Baixo</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-amber-600">{data.totalBaixo}</p>
+          <div className="p-5">
+            <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${data.totalBaixo > 0 ? "text-amber-600" : "text-foreground"}`}>{data.totalBaixo}</p>
+            {data.totalBaixo > 0 && <p className="text-xs text-muted-foreground mt-1">Atenção: necessita reposição</p>}
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Ban className="h-4 w-4 text-destructive" />
-            Zerados
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Ban className="h-4 w-4 text-amber-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Zerados</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-destructive">{data.totalZerados}</p>
+          <div className="p-5">
+            <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${data.totalZerados > 0 ? "text-red-600" : "text-foreground"}`}>{data.totalZerados}</p>
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <DollarSign className="h-4 w-4 text-primary" />
-            Valor em Estoque
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-amber-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Valor em Estoque</span>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-primary">
-            {formatCurrency(data.valorTotalEstoque)}
-          </p>
+          <div className="p-5">
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.valorTotalEstoque)}</p>
+          </div>
         </div>
       </div>
 
       {/* Gráfico */}
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <h2 className="font-semibold text-sm">Movimentações (últimos 7 dias)</h2>
-        {chartData.every((d) => d.in === 0 && d.out === 0) ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhuma movimentação nos últimos 7 dias.
-          </p>
-        ) : (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v: string) => {
-                    const d = new Date(v);
-                    return `${d.getDate()}/${d.getMonth() + 1}`;
-                  }}
-                />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(value: unknown) => `${value} unidades`}
-                  labelFormatter={(label: unknown) =>
-                    new Date(label as string).toLocaleDateString("pt-BR")
-                  }
-                />
-                <Bar dataKey="in" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="out" name="Saídas" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Movimentações (últimos 7 dias)</h2>
+              <p className="text-base text-muted-foreground">Entradas e saídas diárias</p>
+            </div>
           </div>
-        )}
+        </div>
+        <div className="p-6">
+          {chartData.every((d) => d.in === 0 && d.out === 0) ? (
+            <EmptyState
+              variant="compact"
+              title="Nenhuma movimentação"
+              description="Não há movimentações nos últimos 7 dias."
+            />
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: string) => {
+                      const d = new Date(v);
+                      return `${d.getDate()}/${d.getMonth() + 1}`;
+                    }}
+                  />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip
+                    formatter={(value: unknown) => `${value} unidades`}
+                    labelFormatter={(label: unknown) =>
+                      new Date(label as string).toLocaleDateString("pt-BR")
+                    }
+                  />
+                  <Bar dataKey="in" name="Entradas" fill={CHART_SERIES.entradas} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="out" name="Saídas" fill={CHART_SERIES.saidas} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Movimentações recentes */}
-      <div className="rounded-xl border bg-card">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Movimentações Recentes</h2>
-          <Link href="/estoque/movimentacoes">
-            <Button variant="outline" size="sm">
-              Ver todas
-            </Button>
-          </Link>
+      <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <ArrowLeftRight className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Movimentações Recentes</h2>
+                <p className="text-base text-muted-foreground">Últimas operações registradas</p>
+              </div>
+            </div>
+            <Link href="/estoque/movimentacoes">
+              <Button variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
+                Ver todas
+              </Button>
+            </Link>
+          </div>
         </div>
         {data.recentMovements.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <ArrowLeftRight className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Nenhuma movimentação registrada.</p>
+          <div className="px-6 py-10">
+            <EmptyState
+              variant="compact"
+              title="Nenhuma movimentação"
+              description="Movimentações aparecem aqui quando você faz entradas, saídas ou ajustes."
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-muted-foreground text-xs">
-                  <th className="text-left p-3 font-medium">Data</th>
-                  <th className="text-left p-3 font-medium">Produto</th>
-                  <th className="text-left p-3 font-medium">Tipo</th>
-                  <th className="text-right p-3 font-medium">Qtd</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/40">
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Data</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Produto</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Tipo</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Qtd</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.recentMovements.map((m) => (
-                  <tr key={m.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3 text-muted-foreground">
+                  <TableRow key={m.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-amber-50/30 last:border-b-0">
+                    <TableCell className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
                       {new Date(m.createdAt).toLocaleString("pt-BR")}
-                    </td>
-                    <td className="p-3 font-medium">{m.product.name}</td>
-                    <td className="p-3">
-                      <Badge
-                        variant={
-                          m.type === "IN" ? "default" : m.type === "OUT" ? "destructive" : "secondary"
-                        }
-                        className="text-xs"
-                      >
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-foreground">{m.product.name}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm">
+                      <Badge variant={getMovementVariant(m.type)} className="rounded-full text-xs font-medium">
                         {MOVEMENT_TYPE_LABELS[m.type] || m.type}
                       </Badge>
-                    </td>
-                    <td className="p-3 text-right font-medium">
-                      {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : ""}
+                    </TableCell>
+                    <TableCell className="py-3 px-4 text-sm font-medium text-right tabular-nums">
+                      {m.type === "IN" ? "+" : m.type === "OUT" ? "-" : "±"}
                       {m.quantity}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

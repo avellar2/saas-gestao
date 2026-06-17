@@ -154,10 +154,10 @@ export function CozinhaContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Cozinha</h1>
-        <Button variant="outline" size="sm" onClick={loadOrders}>
+        <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Cozinha</h1>
+        <Button variant="outline" size="sm" onClick={loadOrders} className="rounded-lg h-9 border-border/80 hover:bg-muted/50 transition-all duration-150">
           Atualizar
         </Button>
       </div>

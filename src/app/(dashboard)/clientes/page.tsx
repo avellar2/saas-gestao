@@ -4,7 +4,7 @@ import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FileDown, Plus, Users } from "lucide-react";
+import { FileDown, Plus, ChevronRight, Users } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -68,21 +68,22 @@ export default async function ClientesPage({
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Clientes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Gerencie sua base de clientes</p>
+          <h1 className="text-[2.25rem] font-extrabold text-foreground">Clientes</h1>
+          <p className="text-base font-medium text-muted-foreground mt-1">{total} {total === 1 ? "cliente" : "clientes"} cadastrados</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/api/exportar?entity=customers" download>
-            <Button variant="outline" className="rounded-xl">
+            <Button variant="outline" className="rounded-lg h-9 px-3.5 border-border/80 hover:bg-muted/50 transition-all duration-150">
               <FileDown className="h-4 w-4 mr-2" />
-              Exportar CSV
+              Exportar
             </Button>
           </a>
           <Link href="/clientes/novo">
-            <Button className="rounded-xl">
+            <Button className="rounded-lg h-9 px-3.5 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-150 active:scale-[0.97]">
               <Plus className="h-4 w-4 mr-2" />
               Novo Cliente
             </Button>
@@ -90,6 +91,7 @@ export default async function ClientesPage({
         </div>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <form className="flex gap-2 flex-1" action="/clientes" method="GET">
           <input
@@ -97,9 +99,9 @@ export default async function ClientesPage({
             type="text"
             placeholder="Buscar por nome, telefone ou WhatsApp..."
             defaultValue={search}
-            className="flex-1 h-10 rounded-xl border border-border/60 bg-card px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 placeholder:text-muted-foreground/60 transition-colors"
+            className="flex-1 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20 placeholder:text-muted-foreground/60 transition-colors"
           />
-          <Button type="submit" variant="outline" className="rounded-xl">
+          <Button type="submit" variant="outline" className="rounded-lg h-9 px-3.5 border-border/80 hover:bg-muted/50 transition-all duration-150">
             Buscar
           </Button>
         </form>
@@ -121,35 +123,39 @@ export default async function ClientesPage({
               ? "Nenhum cliente encontrado para essa busca."
               : "Cadastre seus clientes para comecar a gerenciar."
           }
-          icon={Users}
+          icon="Users"
           actionLabel="Novo Cliente"
           actionHref="/clientes/novo"
         />
       ) : (
         <>
-          <div className="rounded-[1.25rem] border border-border/60 overflow-hidden shadow-sm">
+          {/* Table */}
+          <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30 transition-colors">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>WhatsApp</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Acoes</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Nome</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Telefone</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">WhatsApp</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground text-right"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {customers.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-muted/20 transition-colors">
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.phone || "-"}</TableCell>
-                      <TableCell>{customer.whatsapp || "-"}</TableCell>
-                      <TableCell>{customer.email || "-"}</TableCell>
-                      <TableCell>
+                    <TableRow
+                      key={customer.id}
+                      className="hover:bg-blue-50/30 transition-colors duration-150 cursor-pointer border-b border-border/30 last:border-0"
+                    >
+                      <TableCell className="text-sm text-foreground font-medium px-4 py-3.5">{customer.name}</TableCell>
+                      <TableCell className="text-sm text-foreground px-4 py-3.5">{customer.phone || "-"}</TableCell>
+                      <TableCell className="text-sm text-foreground px-4 py-3.5">{customer.whatsapp || "-"}</TableCell>
+                      <TableCell className="text-sm text-foreground px-4 py-3.5">{customer.email || "-"}</TableCell>
+                      <TableCell className="text-sm text-foreground px-4 py-3.5 text-right">
                         <Link href={`/clientes/${customer.id}`}>
-                          <Button variant="outline" size="sm" className="rounded-lg">
-                            Ver
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                            <ChevronRight className="h-4 w-4" />
                           </Button>
                         </Link>
                       </TableCell>
@@ -160,24 +166,25 @@ export default async function ClientesPage({
             </div>
           </div>
 
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (p) => (
-                  <Link
-                    key={p}
-                    href={`/clientes?search=${encodeURIComponent(search)}&page=${p}`}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Link
+                  key={p}
+                  href={`/clientes?search=${encodeURIComponent(search)}&page=${p}`}
+                >
+                  <span
+                    className={`inline-flex items-center justify-center min-w-[2.25rem] h-9 px-2.5 rounded-lg text-sm font-medium border cursor-pointer transition-all duration-150 ${
+                      p === page
+                        ? "bg-blue-600 border-blue-600 text-white"
+                        : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                    }`}
                   >
-                    <Button
-                      variant={p === page ? "default" : "outline"}
-                      size="sm"
-                      className="rounded-lg min-w-[2.25rem]"
-                    >
-                      {p}
-                    </Button>
-                  </Link>
-                )
-              )}
+                    {p}
+                  </span>
+                </Link>
+              ))}
             </div>
           )}
         </>

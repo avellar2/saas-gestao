@@ -5,11 +5,23 @@ import { useSearchParams } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { formatMonthLabel } from "@/lib/relatorios-helpers";
 import { getStatusLabel } from "@/lib/os-status";
-import { Wrench, CheckCircle, XCircle, TrendingUp, DollarSign, Users, BarChart3 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageSkeleton } from "@/components/ui/section-skeleton";
+import { PIE_COLORS } from "@/lib/chart-palette";
+import { Wrench, CheckCircle, XCircle, TrendingUp, DollarSign, Users, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 interface OSData {
   month: string;
@@ -25,8 +37,6 @@ interface OSData {
   topClientes: { cliente: string; receita: number; os: number }[];
   porTecnico: { tecnico: string; total: number; concluidas: number }[];
 }
-
-const PIE_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1"];
 
 export function OSContent() {
   const searchParams = useSearchParams();
@@ -58,156 +68,199 @@ export function OSContent() {
   }, [loadData]);
 
   if (loading) {
-    return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+    return (
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <PageSkeleton statCards={6} sections={2} />
+      </div>
+    );
   }
 
   if (!data) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        <Wrench className="h-16 w-16 mx-auto mb-4 opacity-30" />
-        <p className="text-lg font-medium">Nenhum dado de OS disponível</p>
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <EmptyState
+          icon={Wrench}
+          title="Nenhum dado de OS disponível"
+          description="Não há ordens de serviço no período selecionado."
+        />
       </div>
     );
   }
 
   const { resumo, statusDistribution, topClientes, porTecnico } = data;
 
+  const statItems = [
+    { label: "Total no Mês", value: resumo.total, prefix: "", icon: BarChart3, tone: "default" as const },
+    { label: "Abertas", value: resumo.abertas, prefix: "", icon: Wrench, tone: "info" as const },
+    { label: "Concluídas", value: resumo.concluidas, prefix: "", icon: CheckCircle, tone: "success" as const },
+    { label: "Canceladas", value: resumo.canceladas, prefix: "", icon: XCircle, tone: "danger" as const },
+    { label: "Receita Gerada", value: resumo.receitaGerada, prefix: "R$ ", icon: DollarSign, tone: "success" as const },
+    { label: "Ticket Médio", value: resumo.ticketMedio, prefix: "R$ ", icon: TrendingUp, tone: "info" as const },
+  ];
+
+  const toneClasses: Record<string, string> = {
+    success: "text-emerald-600",
+    danger: "text-red-600",
+    warning: "text-amber-600",
+    info: "text-blue-600",
+    default: "text-foreground",
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{formatMonthLabel(month)}</p>
-        <button
-          onClick={loadData}
-          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-        >
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Relatório de Ordens de Serviço</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">{formatMonthLabel(month)}</p>
+        </div>
+        <Button variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150" onClick={loadData}>
           Atualizar
-        </button>
+        </Button>
       </div>
 
       {/* Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <BarChart3 className="h-4 w-4 text-purple-500" />
-            Total no Mês
-          </div>
-          <p className="text-2xl font-bold">{resumo.total}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Wrench className="h-4 w-4 text-blue-500" />
-            Abertas
-          </div>
-          <p className="text-2xl font-bold text-blue-600">{resumo.abertas}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="h-4 w-4 text-emerald-500" />
-            Concluídas
-          </div>
-          <p className="text-2xl font-bold text-emerald-600">{resumo.concluidas}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <XCircle className="h-4 w-4 text-destructive" />
-            Canceladas
-          </div>
-          <p className="text-2xl font-bold text-destructive">{resumo.canceladas}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
-            Receita Gerada
-          </div>
-          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(resumo.receitaGerada)}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-amber-500" />
-            Ticket Médio
-          </div>
-          <p className="text-2xl font-bold">{formatCurrency(resumo.ticketMedio)}</p>
-        </div>
+        {statItems.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-5 py-4 bg-violet-50/40 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                    <Icon className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">{s.label}</span>
+                </div>
+              </div>
+              <div className="p-5">
+                <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${toneClasses[s.tone]}`}>
+                  {s.prefix}{typeof s.value === "number" && s.value % 1 !== 0 ? s.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : s.value.toLocaleString("pt-BR")}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Distribuição por Status */}
-        <div className="rounded-xl border bg-card p-4 space-y-3">
-          <h2 className="font-semibold text-sm">Distribuição por Status</h2>
-          {statusDistribution.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma OS.</p>
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusDistribution}
-                    dataKey="count"
-                    nameKey="status"
-                    cx="50%" cy="50%"
-                    outerRadius={80}
-                    label={({ name, percent }: { name?: string; percent?: number }) =>
-                      `${getStatusLabel((name || "") as never)} ${(percent! * 100).toFixed(0)}%`
-                    }
-                  >
-                    {statusDistribution.map((_, idx) => (
-                      <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-6 py-5 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <PieChartIcon className="h-5 w-5 text-violet-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Distribuição por Status</h2>
+                <p className="text-base text-muted-foreground">Composição das OS no período</p>
+              </div>
             </div>
-          )}
+          </div>
+          <div className="p-6">
+            {statusDistribution.length === 0 ? (
+              <EmptyState
+                variant="compact"
+                title="Nenhuma OS"
+                description="Não há ordens de serviço no período."
+              />
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusDistribution}
+                      dataKey="count"
+                      nameKey="status"
+                      cx="50%" cy="50%"
+                      outerRadius={80}
+                      label={({ name, percent }: { name?: string; percent?: number }) =>
+                        `${getStatusLabel((name || "") as never)} ${(percent! * 100).toFixed(0)}%`
+                      }
+                    >
+                      {statusDistribution.map((_, idx) => (
+                        <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Top Clientes */}
-        <div className="rounded-xl border bg-card p-4 space-y-3">
-          <h2 className="font-semibold text-sm">Top Clientes por Receita</h2>
-          {topClientes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhum cliente no período.</p>
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topClientes} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="cliente" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip formatter={(value: unknown) => formatCurrency(value as number)} />
-                  <Bar dataKey="receita" name="Receita" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-6 py-5 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-violet-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Top Clientes por Receita</h2>
+                <p className="text-base text-muted-foreground">Quem mais gerou receita</p>
+              </div>
             </div>
-          )}
+          </div>
+          <div className="p-6">
+            {topClientes.length === 0 ? (
+              <EmptyState
+                variant="compact"
+                title="Nenhum cliente"
+                description="Não há clientes no período."
+              />
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topClientes} layout="vertical">
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="cliente" tick={{ fontSize: 11 }} width={100} />
+                    <Tooltip formatter={(value: unknown) => formatCurrency(value as number)} />
+                    <Bar dataKey="receita" name="Receita" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Tabela: Por Técnico */}
       {porTecnico.length > 0 && (
-        <div className="rounded-xl border bg-card">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold text-sm flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              OS por Técnico
-            </h2>
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-violet-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-6 py-5 bg-violet-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <Users className="h-5 w-5 text-violet-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">OS por Técnico</h2>
+                <p className="text-base text-muted-foreground">Produtividade da equipe</p>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-muted-foreground text-xs">
-                  <th className="text-left p-3 font-medium">Técnico</th>
-                  <th className="text-right p-3 font-medium">Total</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/40">
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Técnico</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Total</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">Concluídas</TableHead>
+                  <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right">% Concluído</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {porTecnico.map((t, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3 font-medium">{t.tecnico}</td>
-                    <td className="p-3 text-right">{t.total}</td>
-                  </tr>
+                  <TableRow key={i} className="group border-b border-border/30 transition-colors duration-150 hover:bg-violet-50/30 last:border-b-0">
+                    <TableCell className="py-3 px-4 text-sm font-medium text-foreground">{t.tecnico}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-right">{t.total}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-emerald-600 font-medium text-right">{t.concluidas}</TableCell>
+                    <TableCell className="py-3 px-4 text-sm text-right">
+                      {t.total > 0 ? ((t.concluidas / t.total) * 100).toFixed(0) : 0}%
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

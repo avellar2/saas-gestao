@@ -10,23 +10,51 @@ import {
 import { CloseServiceOrderDialog } from "@/components/modules/close-service-order-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import {
   buildWhatsAppLink,
   serviceOrderFinishedMessage,
   serviceOrderDeliveredMessage,
 } from "@/lib/whatsapp";
-import { MessageCircle, FileDown, PackageCheck, ExternalLink, Copy } from "lucide-react";
+import {
+  MessageCircle,
+  FileDown,
+  PackageCheck,
+  ExternalLink,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
+  User,
+  Calendar,
+  DollarSign,
+  AlertTriangle,
+  Info,
+  ChevronRight,
+  Shield,
+} from "lucide-react";
 import Link from "next/link";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
+import { StatusPill } from "@/components/layout/status-badge";
 import {
-  getStatusLabel, getStatusVariant,
-  getPriorityLabel, getPriorityVariant,
-  getPaymentStatusLabel, getPaymentStatusVariant,
+  ActionBar,
+  type ActionItem,
+} from "@/components/layout/action-bar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  getStatusLabel,
+  getPaymentStatusLabel,
   getPaymentMethodLabel,
   getWarrantyStatus,
   SERVICE_ORDER_PRIORITY,
@@ -151,6 +179,23 @@ interface ProductOption {
   quantity: number;
 }
 
+// Easing custom (Emil) — cubic-bezier tuple
+const easeOut = [0.23, 1, 0.32, 1] as const;
+
+// Stagger children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, ease: easeOut },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
+};
+
 export default function OSDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -249,7 +294,7 @@ export default function OSDetailContent() {
           );
         }
       } catch {
-        // silently fail — inventory inactive
+        // silently fail
       }
     }
     loadProducts();
@@ -374,7 +419,6 @@ export default function OSDetailContent() {
     );
   }
 
-  // ── Estoque helpers ──
   const itemsWithProduct = so?.items.filter((item) => item.productId) || [];
   const hasStockDeducted = !!so?.inventoryDeductedAt;
   const stockMovements = so?.stockMovements || [];
@@ -398,713 +442,652 @@ export default function OSDetailContent() {
   const canDelete = so.status === "RECEIVED";
   const transitions = getAvailableTransitions();
   const priorityInfo = SERVICE_ORDER_PRIORITY.find(p => p.value === so.priority);
-
-  // Action buttons based on status
-  function renderActionButtons() {
-    const buttons: React.ReactNode[] = [];
-
-    if (canEdit && !editing) {
-      buttons.push(
-        <Button key="edit" variant="outline" onClick={() => setEditing(true)}>
-          Editar
-        </Button>
-      );
-    }
-
-    if (canDelete && !editing) {
-      buttons.push(
-        <Button key="delete" variant="destructive" onClick={handleDelete}>
-          Excluir
-        </Button>
-      );
-    }
-
-    // "Finalizar OS" button for close-eligible statuses
-    const canClose = ["IN_PROGRESS", "READY", "DELIVERED"].includes(so!.status);
-    if (canClose && !editing) {
-      buttons.push(
-        <Button
-          key="close"
-          variant="default"
-          onClick={() => setCloseDialogOpen(true)}
-        >
-          Finalizar OS
-        </Button>
-      );
-    }
-
-    // Status transition buttons (exclude transitions handled by close dialog)
-    const closeTransitions = ALLOWED_CLOSE_TRANSITIONS[so!.status] || [];
-    transitions.forEach((nextStatus) => {
-      if (nextStatus === "CANCELLED") return;
-      if (closeTransitions.includes(nextStatus)) return;
-      const label = getStatusLabel(nextStatus as any);
-      buttons.push(
-        <Button
-          key={nextStatus}
-          variant="outline"
-          onClick={() => handleStatusChange(nextStatus)}
-        >
-          {label}
-        </Button>
-      );
-    });
-
-    // WhatsApp buttons
-    if (so!.status === "READY" && getWhatsAppLinkFinished()) {
-      buttons.push(
-        <a
-          key="wpp-ready"
-          href={getWhatsAppLinkFinished()!}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-        >
-          <MessageCircle className="size-4" />
-          WhatsApp
-        </a>
-      );
-    }
-
-    if (so!.status === "DELIVERED" && getWhatsAppLinkDelivered()) {
-      buttons.push(
-        <a
-          key="wpp-delivered"
-          href={getWhatsAppLinkDelivered()!}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-        >
-          <MessageCircle className="size-4" />
-          WhatsApp
-        </a>
-      );
-    }
-
-    // Cancel button
-    if (transitions.includes("CANCELLED" as never) && so!.status !== "CANCELLED") {
-      buttons.push(
-        <Button
-          key="cancel"
-          variant="destructive"
-          size="sm"
-          onClick={() => handleStatusChange("CANCELLED")}
-        >
-          Cancelar
-        </Button>
-      );
-    }
-
-    // Portal link button — always show, generates token if missing
-    const portalUrl = so!.publicToken
-      ? `${window.location.origin}/portal/os/${so!.publicToken}`
-      : null;
-    buttons.push(
-      <Button
-        key="portal"
-        variant="outline"
-        onClick={async () => {
-          if (so!.publicToken) {
-            navigator.clipboard.writeText(portalUrl!);
-            setCopiedPortal(true);
-            setTimeout(() => setCopiedPortal(false), 2000);
-          } else {
-            // Generate token via PATCH
-            try {
-              const res = await fetch(`/api/ordens-servico/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ generatePublicToken: true }),
-              });
-              if (res.ok) {
-                const updated = await res.json();
-                setSo({ ...so!, publicToken: updated.publicToken });
-              }
-            } catch {}
-          }
-        }}
-      >
-        {copiedPortal ? <Copy className="size-4 mr-1" /> : <ExternalLink className="size-4 mr-1" />}
-        {copiedPortal ? "Link copiado!" : so!.publicToken ? "Link do Portal" : "Gerar Link do Portal"}
-      </Button>
-    );
-
-    // PDF button
-    buttons.push(
-      <a
-        key="pdf"
-        href={`/api/pdf/os/${id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-      >
-        <FileDown className="size-4" />
-        Baixar PDF
-      </a>
-    );
-
-    buttons.push(
-      <Button
-        key="back"
-        variant="outline"
-        onClick={() => router.push("/ordens-servico")}
-      >
-        Voltar
-      </Button>
-    );
-
-    return buttons;
-  }
-
   const warrantyInfo = getWarrantyStatus(so.warrantyEnabled, so.warrantyEndDate ? new Date(so.warrantyEndDate) : null);
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{so.code || `OS #${so.number}`}</h1>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status as any)}`}>
-            {getStatusLabel(so.status as any)}
-          </span>
-          {priorityInfo && (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityInfo.variant}`}>
-              {priorityInfo.label}
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {renderActionButtons()}
-        </div>
-      </div>
+  const primaryActions: ActionItem[] = [];
+  const secondaryActions: ActionItem[] = [];
 
+  const canClose = ["IN_PROGRESS", "READY", "DELIVERED"].includes(so.status);
+  if (canClose && !editing) {
+    primaryActions.push({
+      key: "close",
+      label: "Finalizar OS",
+      variant: "default",
+      onClick: () => setCloseDialogOpen(true),
+    });
+  }
+
+  if (so.status === "READY" && getWhatsAppLinkFinished()) {
+    primaryActions.push({
+      key: "wpp-ready",
+      label: "WhatsApp",
+      icon: MessageCircle,
+      variant: "default",
+      href: getWhatsAppLinkFinished()!,
+      external: true,
+    });
+  }
+  if (so.status === "DELIVERED" && getWhatsAppLinkDelivered()) {
+    primaryActions.push({
+      key: "wpp-delivered",
+      label: "WhatsApp",
+      icon: MessageCircle,
+      variant: "default",
+      href: getWhatsAppLinkDelivered()!,
+      external: true,
+    });
+  }
+
+  if (canEdit && !editing) {
+    secondaryActions.push({
+      key: "edit",
+      label: "Editar",
+      icon: Edit,
+      variant: "outline",
+      onClick: () => setEditing(true),
+    });
+  }
+
+  const closeTransitions = ALLOWED_CLOSE_TRANSITIONS[so.status] || [];
+  transitions.forEach((nextStatus) => {
+    if (nextStatus === "CANCELLED") return;
+    if (closeTransitions.includes(nextStatus)) return;
+    const label = getStatusLabel(nextStatus as any);
+    secondaryActions.push({
+      key: nextStatus,
+      label,
+      variant: "outline",
+      onClick: () => handleStatusChange(nextStatus),
+    });
+  });
+
+  if (transitions.includes("CANCELLED" as never) && so.status !== "CANCELLED") {
+    secondaryActions.push({
+      key: "cancel",
+      label: "Cancelar",
+      variant: "destructive",
+      onClick: () => handleStatusChange("CANCELLED"),
+    });
+  }
+
+  const portalUrl = so.publicToken
+    ? `${window.location.origin}/portal/os/${so.publicToken}`
+    : null;
+  secondaryActions.push({
+    key: "portal",
+    label: so.publicToken ? "Link do Portal" : "Gerar Link do Portal",
+    icon: ExternalLink,
+    variant: "outline",
+    onClick: async () => {
+      if (so.publicToken) {
+        navigator.clipboard.writeText(portalUrl!);
+        setCopiedPortal(true);
+        setTimeout(() => setCopiedPortal(false), 2000);
+      } else {
+        try {
+          const res = await fetch(`/api/ordens-servico/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ generatePublicToken: true }),
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            setSo({ ...so, publicToken: updated.publicToken });
+          }
+        } catch {}
+      }
+    },
+  });
+
+  secondaryActions.push({
+    key: "pdf",
+    label: "Baixar PDF",
+    icon: FileDown,
+    variant: "outline",
+    href: `/api/pdf/os/${id}`,
+    external: true,
+  });
+
+  if (canDelete && !editing) {
+    secondaryActions.push({
+      key: "delete",
+      label: "Excluir",
+      icon: Trash2,
+      variant: "destructive",
+      onClick: handleDelete,
+    });
+  }
+
+  secondaryActions.push({
+    key: "back",
+    label: "Voltar",
+    icon: ArrowLeft,
+    variant: "ghost",
+    onClick: () => router.push("/ordens-servico"),
+  });
+
+  return (
+    <motion.div
+      className="max-w-[1400px] mx-auto space-y-5"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Error Banner */}
       {error && (
         <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+          variants={itemVariants}
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
         >
           {error}
         </motion.div>
       )}
 
-      {editing && canEdit ? (
-        <ServiceOrderForm
-          customers={customers}
-          quotes={quotes}
-          products={products}
-          inventoryActive={so.inventoryActive}
-          initialData={{
-            customerId: so.customerId,
-            quoteId: so.quoteId || "",
-            problemDescription: so.problemDescription || "",
-            serviceDescription: so.serviceDescription || "",
-            equipmentName: so.equipmentName || "",
-            equipmentBrand: so.equipmentBrand || "",
-            equipmentModel: so.equipmentModel || "",
-            serialNumber: so.serialNumber || "",
-            accessories: so.accessories || "",
-            priority: so.priority,
-            expectedDeliveryDate: so.expectedDeliveryDate ? so.expectedDeliveryDate.split("T")[0] : "",
-            warrantyEnabled: so.warrantyEnabled,
-            warrantyTerms: so.warrantyTerms || "",
-            internalNotes: so.internalNotes || "",
-            customerNotes: so.customerNotes || "",
-            notes: so.notes || "",
-            items: so.items.map((item) => ({
-              description: item.description,
-              quantity: Number(item.quantity),
-              unitPrice: Number(item.unitPrice),
-              productId: item.productId || undefined,
-            })),
-          }}
-          onSubmit={handleUpdate}
-          submitLabel="Salvar Alteracoes"
-          paymentStatus={so.paymentStatus}
-          paymentMethod={so.paymentMethod || undefined}
-          paidAmount={Number(so.paidAmount)}
-          total={Number(so.total)}
-          warrantyEnabled={so.warrantyEnabled}
-          warrantyEndDate={so.warrantyEndDate}
-        />
-      ) : (
-        <>
-          {/* Customer + OS Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informacoes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Cliente:</span>{" "}
-                  <span className="font-medium">{so.customer.name}</span>
+      {/* ZONA 1: Hero Premium */}
+      <motion.div variants={itemVariants}>
+        <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
+              {/* Left: identity */}
+              <div className="space-y-4 min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-[2.5rem] font-extrabold tracking-tight text-foreground tabular-nums leading-none">
+                    {so.code || `OS #${so.number}`}
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <StatusPill kind="serviceOrder" value={so.status} />
+                    {priorityInfo && (
+                      <StatusPill kind="serviceOrderPriority" value={so.priority} />
+                    )}
+                    <StatusPill kind="payment" value={so.paymentStatus} />
+                  </div>
                 </div>
-                {so.customer.phone && (
-                  <div>
-                    <span className="text-muted-foreground">Telefone:</span>{" "}
-                    <span>{so.customer.phone}</span>
-                  </div>
-                )}
-                {so.customer.email && (
-                  <div>
-                    <span className="text-muted-foreground">E-mail:</span>{" "}
-                    <span>{so.customer.email}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-muted-foreground">Status:</span>{" "}
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusVariant(so.status as any)}`}>
-                    {getStatusLabel(so.status as any)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Prioridade:</span>{" "}
-                  {priorityInfo && (
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityInfo.variant}`}>
-                      {priorityInfo.label}
-                    </span>
-                  )}
-                </div>
-                {so.technician && (
-                  <div>
-                    <span className="text-muted-foreground">Tecnico:</span>{" "}
-                    <span className="font-medium">{so.technician.name}</span>
-                  </div>
-                )}
-                {so.quote && (
-                  <div>
-                    <span className="text-muted-foreground">Orcamento Vinculado:</span>{" "}
-                    <span className="font-medium">#{so.quote.number}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Equipment Section */}
-          {(so.equipmentName || so.equipmentBrand || so.equipmentModel || so.serialNumber || so.accessories) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Equipamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-base">
+                    <User className="w-4 h-4 text-muted-foreground/60" />
+                    <span className="text-muted-foreground">{so.customer.name}</span>
+                    {so.customer.phone && (
+                      <>
+                        <span className="text-muted-foreground/40">|</span>
+                        <span className="text-base text-muted-foreground tabular-nums">{so.customer.phone}</span>
+                      </>
+                    )}
+                  </div>
                   {so.equipmentName && (
-                    <div>
-                      <span className="text-muted-foreground">Equipamento:</span>{" "}
-                      <span className="font-medium">{so.equipmentName}</span>
-                    </div>
-                  )}
-                  {so.equipmentBrand && (
-                    <div>
-                      <span className="text-muted-foreground">Marca:</span>{" "}
-                      <span>{so.equipmentBrand}</span>
-                    </div>
-                  )}
-                  {so.equipmentModel && (
-                    <div>
-                      <span className="text-muted-foreground">Modelo:</span>{" "}
-                      <span>{so.equipmentModel}</span>
-                    </div>
-                  )}
-                  {so.serialNumber && (
-                    <div>
-                      <span className="text-muted-foreground">N/S:</span>{" "}
-                      <span>{so.serialNumber}</span>
-                    </div>
-                  )}
-                  {so.accessories && (
-                    <div className="md:col-span-2">
-                      <span className="text-muted-foreground">Acessorios:</span>
-                      <p className="mt-1 whitespace-pre-wrap">{so.accessories}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Problem + Service Description */}
-          {(so.problemDescription || so.serviceDescription) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Descricao</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {so.problemDescription && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">Problema Relatado:</span>
-                    <p className="mt-1 text-sm whitespace-pre-wrap">{so.problemDescription}</p>
-                  </div>
-                )}
-                {so.serviceDescription && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">Servico Realizado:</span>
-                    <p className="mt-1 text-sm whitespace-pre-wrap">{so.serviceDescription}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Dates */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Prazos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Data de Entrada:</span>{" "}
-                  <span>{so.receivedAt ? formatDate(so.receivedAt) : formatDate(so.openedAt)}</span>
-                </div>
-                {so.expectedDeliveryDate && (
-                  <div>
-                    <span className="text-muted-foreground">Previsao de Entrega:</span>{" "}
-                    <span>{formatDate(so.expectedDeliveryDate)}</span>
-                  </div>
-                )}
-                {so.completedAt && (
-                  <div>
-                    <span className="text-muted-foreground">Concluida em:</span>{" "}
-                    <span>{formatDate(so.completedAt)}</span>
-                  </div>
-                )}
-                {so.finishedAt && !so.completedAt && (
-                  <div>
-                    <span className="text-muted-foreground">Finalizada em:</span>{" "}
-                    <span>{formatDate(so.finishedAt)}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Itens</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground pb-2 border-b">
-                  <div className="col-span-5">Descricao</div>
-                  <div className="col-span-2 text-center">Qtd</div>
-                  <div className="col-span-2 text-right">Preco Unit.</div>
-                  <div className="col-span-3 text-right">Total</div>
-                </div>
-                {so.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-12 gap-2 text-sm py-1"
-                  >
-                    <div className="col-span-5">
-                      {item.description}
-                      {item.product && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          ({item.product.name})
-                        </span>
+                    <div className="flex items-center gap-2 text-base">
+                      <span className="text-muted-foreground/60 font-medium">Equipamento:</span>
+                      <span className="text-foreground font-medium">{so.equipmentName}</span>
+                      {so.equipmentBrand && (
+                        <span className="text-muted-foreground">{so.equipmentBrand}</span>
+                      )}
+                      {so.equipmentModel && (
+                        <span className="text-muted-foreground/60">({so.equipmentModel})</span>
                       )}
                     </div>
-                    <div className="col-span-2 text-center">{Number(item.quantity)}</div>
-                    <div className="col-span-2 text-right">
-                      {formatCurrency(Number(item.unitPrice))}
-                    </div>
-                    <div className="col-span-3 text-right font-medium">
-                      {formatCurrency(Number(item.total))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col items-end gap-2 pt-4 border-t mt-4">
-                <div className="flex items-center gap-4 text-base font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(Number(so.total))}</span>
-                </div>
-                {so.finalAmount !== null && so.finalAmount !== undefined && Number(so.finalAmount) !== Number(so.total) && (
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">Valor Final:</span>
-                    <span className="font-semibold">{formatCurrency(Number(so.finalAmount))}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Pagamento
-                {so.status !== "CANCELLED" && so.paymentStatus === "PENDING" && !showPayment && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPayment(true)}
-                  >
-                    Registrar Pagamento
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 text-sm flex-wrap">
-                <span className="text-muted-foreground">Status:</span>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPaymentStatusVariant(so.paymentStatus as any)}`}>
-                  {getPaymentStatusLabel(so.paymentStatus as any)}
-                </span>
-                {so.paymentMethod && (
-                  <>
-                    <span className="text-muted-foreground">Metodo:</span>
-                    <span className="font-medium">{getPaymentMethodLabel(so.paymentMethod as any)}</span>
-                  </>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-sm mt-3">
-                <span className="text-muted-foreground">Total:</span>
-                <span className="font-medium">{formatCurrency(Number(so.total))}</span>
-                <span className="text-muted-foreground ml-4">Pago:</span>
-                <span className="font-medium">{formatCurrency(Number(so.paidAmount))}</span>
-                <span className="text-muted-foreground ml-4">Restante:</span>
-                <span className="font-medium">{formatCurrency(Number(so.total) - Number(so.paidAmount))}</span>
-              </div>
-
-              {showPayment && (
-                <div className="flex items-end gap-3 mt-4">
-                  <div className="space-y-2 flex-1 max-w-xs">
-                    <Label htmlFor="paymentAmount">Valor do Pagamento</Label>
-                    <Input
-                      id="paymentAmount"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <Button onClick={handlePayment}>Registrar</Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowPayment(false);
-                      setPaymentAmount("");
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── Stock Card (Etapa 6) ── */}
-          {so.inventoryActive && itemsWithProduct.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PackageCheck className="size-4" />
-                  Estoque
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {hasStockDeducted ? (
-                  <>
-                    <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                      ✅ Produtos baixados do estoque em{" "}
-                      {so.inventoryDeductedAt
-                        ? formatDate(so.inventoryDeductedAt)
-                        : "—"}
-                    </p>
-                    <div className="space-y-2">
-                      {stockMovements.map((sm) => (
-                        <div
-                          key={sm.id}
-                          className="flex items-center justify-between text-sm border-b pb-2 last:border-0 last:pb-0"
-                        >
-                          <span className="font-medium">{sm.product.name}</span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-muted-foreground">
-                              Qtd: {sm.quantity}
-                            </span>
-                            <span className="text-muted-foreground">
-                              Antes: {sm.previousQuantity} → {sm.newQuantity}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      ℹ️ O estoque será baixado automaticamente ao finalizar a Ordem de Serviço.
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      {itemsWithProduct.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                        >
-                          <span className="font-medium">
-                            {item.product?.name || item.description}
-                          </span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-muted-foreground">
-                              Qtd: {Number(item.quantity)}
-                            </span>
-                            {item.product && (
-                              <span className="text-muted-foreground">
-                                Disponível: {Number(item.product.quantity)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Finance Integration (Etapa 5) */}
-          {so.status !== "CANCELLED" && !so.financeActive && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Financeiro</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Ative o módulo Financeiro para lançar receitas automaticamente.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-          {so.financeActive && so.transactions && so.transactions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Lançamento Financeiro</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm flex-wrap">
-                  <span className="text-muted-foreground">Valor:</span>
-                  <span className="font-semibold">{formatCurrency(so.transactions[0].amount)}</span>
-                  {(() => {
-                    const s = so.transactions[0].status;
-                    const colors: Record<string, string> = {
-                      PENDING: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                      PAID: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                      OVERDUE: "bg-destructive/10 text-destructive border-destructive/20",
-                      CANCELLED: "bg-muted text-muted-foreground border-border",
-                    };
-                    const labels: Record<string, string> = {
-                      PENDING: "Pendente",
-                      PAID: "Pago",
-                      OVERDUE: "Vencido",
-                      CANCELLED: "Cancelado",
-                    };
-                    return (
-                      <Badge variant="outline" className={colors[s] || ""}>
-                        {labels[s] || s}
-                      </Badge>
-                    );
-                  })()}
-                  {so.transactions[0].paidAt && (
-                    <>
-                      <span className="text-muted-foreground">Pago em:</span>
-                      <span>{formatDate(so.transactions[0].paidAt)}</span>
-                    </>
                   )}
-                  {so.transactions[0].dueDate && !so.transactions[0].paidAt && (
-                    <>
-                      <span className="text-muted-foreground">Vencimento:</span>
-                      <span>{formatDate(so.transactions[0].dueDate)}</span>
-                    </>
+                  {so.customer.email && (
+                    <div className="flex items-center gap-2 text-base text-muted-foreground">
+                      {so.customer.email}
+                    </div>
                   )}
                 </div>
-                <div className="mt-3">
-                  <Link
-                    href={`/financeiro/${so.transactions[0].id}`}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Ver no Financeiro →
-                  </Link>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground/50" />
+                    <span>Entrada: {formatDate(so.receivedAt || so.openedAt)}</span>
+                  </div>
+                  {so.expectedDeliveryDate && (
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground/50" />
+                      <span>Previsão: {formatDate(so.expectedDeliveryDate)}</span>
+                    </div>
+                  )}
+                  {so.completedAt && (
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Concluída: {formatDate(so.completedAt)}</span>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
 
-          {/* Warranty */}
-          {so.warrantyEnabled && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Garantia</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${warrantyInfo.variant}`}>
-                    {warrantyInfo.label}
-                  </span>
+              {/* Right: value + actions */}
+              <div className="flex flex-col items-start lg:items-end gap-4">
+                <div className="text-left lg:text-right">
+                  <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Valor Total
+                  </div>
+                  <div className="text-4xl font-extrabold tracking-tight text-foreground tabular-nums mt-1">
+                    {formatCurrency(so.finalAmount !== null && so.finalAmount !== undefined ? Number(so.finalAmount) : Number(so.total))}
+                  </div>
                 </div>
-                {so.warrantyStartDate && (
-                  <div>
-                    <span className="text-muted-foreground">Inicio:</span>{" "}
-                    <span>{formatDate(so.warrantyStartDate)}</span>
+                <ActionBar
+                  primaryActions={primaryActions}
+                  secondaryActions={secondaryActions}
+                  align="right"
+                />
+              </div>
+            </div>
+          </div>
+
+          {so.technician && (
+            <div className="px-6 py-2.5 border-t border-border/40 bg-muted/20 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Técnico:</span>
+              <span>{so.technician.name}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Edit Mode */}
+      {editing && canEdit ? (
+        <motion.div variants={itemVariants}>
+          <ServiceOrderForm
+            customers={customers}
+            quotes={quotes}
+            products={products}
+            inventoryActive={so.inventoryActive}
+            initialData={{
+              customerId: so.customerId,
+              quoteId: so.quoteId || "",
+              problemDescription: so.problemDescription || "",
+              serviceDescription: so.serviceDescription || "",
+              equipmentName: so.equipmentName || "",
+              equipmentBrand: so.equipmentBrand || "",
+              equipmentModel: so.equipmentModel || "",
+              serialNumber: so.serialNumber || "",
+              accessories: so.accessories || "",
+              priority: so.priority,
+              expectedDeliveryDate: so.expectedDeliveryDate ? so.expectedDeliveryDate.split("T")[0] : "",
+              warrantyEnabled: so.warrantyEnabled,
+              warrantyTerms: so.warrantyTerms || "",
+              internalNotes: so.internalNotes || "",
+              customerNotes: so.customerNotes || "",
+              notes: so.notes || "",
+              items: so.items.map((item) => ({
+                description: item.description,
+                quantity: Number(item.quantity),
+                unitPrice: Number(item.unitPrice),
+                productId: item.productId || undefined,
+              })),
+            }}
+            onSubmit={handleUpdate}
+            submitLabel="Salvar Alteracoes"
+            paymentStatus={so.paymentStatus}
+            paymentMethod={so.paymentMethod || undefined}
+            paidAmount={Number(so.paidAmount)}
+            total={Number(so.total)}
+            warrantyEnabled={so.warrantyEnabled}
+            warrantyEndDate={so.warrantyEndDate}
+          />
+        </motion.div>
+      ) : (
+        <>
+          {/* ZONA 2: Atendimento */}
+          {(so.problemDescription || so.serviceDescription || so.customerNotes) && (
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+                <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                      <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">Atendimento</h3>
+                      <p className="text-base text-muted-foreground">Problema, diagnóstico e observações</p>
+                    </div>
                   </div>
-                )}
-                {so.warrantyEndDate && (
-                  <div>
-                    <span className="text-muted-foreground">Validade:</span>{" "}
-                    <span>{formatDate(so.warrantyEndDate)}</span>
-                  </div>
-                )}
-                {so.warrantyTerms && (
-                  <div>
-                    <span className="text-muted-foreground">Termos:</span>
-                    <p className="mt-1 whitespace-pre-wrap">{so.warrantyTerms}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+                <div className="p-6 space-y-5">
+                  {so.problemDescription && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        <span className="text-base font-semibold uppercase tracking-wider text-foreground">Problema Relatado</span>
+                      </div>
+                      <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {so.problemDescription}
+                      </p>
+                    </div>
+                  )}
+                  {so.serviceDescription && (
+                    <div className={so.problemDescription ? "pt-4 border-t border-border/30" : ""}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                        <span className="text-base font-semibold uppercase tracking-wider text-foreground">Serviço Realizado</span>
+                      </div>
+                      <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {so.serviceDescription}
+                      </p>
+                    </div>
+                  )}
+                  {so.customerNotes && (
+                    <div className={so.problemDescription || so.serviceDescription ? "pt-4 border-t border-border/30" : ""}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="w-4 h-4 text-blue-500" />
+                        <span className="text-base font-semibold uppercase tracking-wider text-foreground">Observações para o Cliente</span>
+                      </div>
+                      <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {so.customerNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
           )}
 
-          {/* Internal Notes */}
-          {so.internalNotes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observacoes Internas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{so.internalNotes}</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* ZONA 3: Operacional / Comercial */}
+          <motion.div variants={itemVariants}>
+            <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">Itens e Pagamento</h3>
+                    <p className="text-base text-muted-foreground">Produtos, serviços e financeiro</p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Customer Notes */}
-          {so.customerNotes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observacoes para o Cliente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{so.customerNotes}</p>
-              </CardContent>
-            </Card>
-          )}
+              <div className="p-6 space-y-6">
+                {/* Itens */}
+                <div>
+                  <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-3">Itens da OS</h4>
+                  <div className="rounded-xl border border-border/40 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/40">
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Descrição</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-center w-16">Qtd</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right w-24">Unitário</TableHead>
+                          <TableHead className="py-3 px-4 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right w-24">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {so.items.map((item) => (
+                          <TableRow key={item.id} className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors duration-150">
+                            <TableCell className="py-3 px-4 text-base text-foreground">
+                              {item.description}
+                              {item.product && (
+                                <span className="ml-2 text-sm text-muted-foreground">
+                                  ({item.product.name})
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-center text-base text-muted-foreground tabular-nums">{Number(item.quantity)}</TableCell>
+                            <TableCell className="py-3 px-4 text-right text-base text-muted-foreground tabular-nums">{formatCurrency(Number(item.unitPrice))}</TableCell>
+                            <TableCell className="py-3 px-4 text-right text-base font-semibold text-foreground tabular-nums">{formatCurrency(Number(item.total))}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex justify-end pt-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base text-muted-foreground">Total:</span>
+                      <span className="text-2xl font-extrabold text-foreground tabular-nums">{formatCurrency(Number(so.total))}</span>
+                    </div>
+                  </div>
+                </div>
 
-          {/* General Notes */}
-          {so.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observacoes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{so.notes}</p>
-              </CardContent>
-            </Card>
+                {/* Pagamento */}
+                <div className="pt-4 border-t border-border/30">
+                  <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-3">Pagamento</h4>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <StatusPill kind="payment" value={so.paymentStatus} />
+                    {so.paymentMethod && (
+                      <span className="text-base text-muted-foreground">{getPaymentMethodLabel(so.paymentMethod as any)}</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 max-w-md">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-0.5">Total</div>
+                      <div className="text-base font-semibold text-foreground tabular-nums">{formatCurrency(Number(so.total))}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-0.5">Pago</div>
+                      <div className="text-base font-semibold text-emerald-600 tabular-nums">{formatCurrency(Number(so.paidAmount))}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-0.5">Restante</div>
+                      <div className="text-base font-semibold text-foreground tabular-nums">{formatCurrency(Number(so.total) - Number(so.paidAmount))}</div>
+                    </div>
+                  </div>
+
+                  {so.status !== "CANCELLED" && so.paymentStatus === "PENDING" && !showPayment && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPayment(true)}
+                      className="gap-1.5 mt-4 h-9 rounded-lg active:scale-[0.97] transition-transform"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                      Registrar Pagamento
+                    </Button>
+                  )}
+
+                  {showPayment && (
+                    <div className="flex items-end gap-3 pt-3">
+                      <div className="space-y-2 flex-1 max-w-xs">
+                        <Label htmlFor="paymentAmount" className="text-sm">Valor do Pagamento</Label>
+                        <Input
+                          id="paymentAmount"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="h-9 rounded-lg"
+                        />
+                      </div>
+                      <Button onClick={handlePayment} size="sm" className="h-9 rounded-lg active:scale-[0.97] transition-transform">Registrar</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowPayment(false);
+                          setPaymentAmount("");
+                        }}
+                        className="h-9 rounded-lg active:scale-[0.97] transition-transform"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Financeiro */}
+                {so.status !== "CANCELLED" && !so.financeActive && (
+                  <div className="pt-4 border-t border-border/30 flex items-center gap-2 text-base text-muted-foreground">
+                    <Info className="w-4 h-4" />
+                    <p>Ative o módulo Financeiro para lançar receitas automaticamente.</p>
+                  </div>
+                )}
+                {so.financeActive && so.transactions && so.transactions.length > 0 && (
+                  <div className="pt-4 border-t border-border/30">
+                    <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-3">Lançamento Financeiro</h4>
+                    <div className="flex flex-wrap items-center gap-3 text-base">
+                      <span className="text-muted-foreground">Valor:</span>
+                      <span className="font-semibold tabular-nums">{formatCurrency(so.transactions[0].amount)}</span>
+                      {(() => {
+                        const s = so.transactions[0].status;
+                        const colors: Record<string, string> = {
+                          PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+                          PAID: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                          OVERDUE: "bg-red-50 text-red-700 border-red-200",
+                          CANCELLED: "bg-muted text-muted-foreground border-border",
+                        };
+                        const labels: Record<string, string> = {
+                          PENDING: "Pendente",
+                          PAID: "Pago",
+                          OVERDUE: "Vencido",
+                          CANCELLED: "Cancelado",
+                        };
+                        return (
+                          <Badge variant="outline" className={cn("rounded-md px-2 py-0.5 text-xs font-medium", colors[s] || "")}>
+                            {labels[s] || s}
+                          </Badge>
+                        );
+                      })()}
+                      {so.transactions[0].paidAt && (
+                        <>
+                          <span className="text-muted-foreground">Pago em:</span>
+                          <span>{formatDate(so.transactions[0].paidAt)}</span>
+                        </>
+                      )}
+                      {so.transactions[0].dueDate && !so.transactions[0].paidAt && (
+                        <>
+                          <span className="text-muted-foreground">Vencimento:</span>
+                          <span>{formatDate(so.transactions[0].dueDate)}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-3">
+                      <Link
+                        href={`/financeiro/${so.transactions[0].id}`}
+                        className="text-base text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-0.5 hover:gap-1 transition-all"
+                      >
+                        Ver no Financeiro
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* Estoque */}
+                {so.inventoryActive && itemsWithProduct.length > 0 && (
+                  <div className="pt-4 border-t border-border/30">
+                    <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-3 flex items-center gap-2">
+                      <PackageCheck className="w-4 h-4 text-emerald-600" />
+                      Estoque
+                    </h4>
+                    {hasStockDeducted ? (
+                      <>
+                        <p className="text-base text-emerald-700 dark:text-emerald-400 font-medium mb-3">
+                          Produtos baixados do estoque em {so.inventoryDeductedAt ? formatDate(so.inventoryDeductedAt) : "—"}
+                        </p>
+                        <div className="space-y-2">
+                          {stockMovements.map((sm) => (
+                            <div
+                              key={sm.id}
+                              className="flex items-center justify-between text-base border-b border-border/20 pb-2 last:border-0 last:pb-0"
+                            >
+                              <span className="font-medium text-foreground">{sm.product.name}</span>
+                              <div className="flex items-center gap-4 text-muted-foreground tabular-nums">
+                                <span>Qtd: {sm.quantity}</span>
+                                <span>{sm.previousQuantity} → {sm.newQuantity}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-base text-muted-foreground mb-3">
+                          O estoque sera baixado automaticamente ao finalizar a Ordem de Servico.
+                        </p>
+                        <div className="space-y-2 text-sm">
+                          {itemsWithProduct.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between border-b border-border/20 pb-2 last:border-0 last:pb-0"
+                            >
+                              <span className="font-medium text-foreground">{item.product?.name || item.description}</span>
+                              <div className="flex items-center gap-4 text-muted-foreground tabular-nums">
+                                <span>Qtd: {Number(item.quantity)}</span>
+                                {item.product && (
+                                  <span>Disponivel: {Number(item.product.quantity)}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ZONA 4: Pós-venda */}
+          {(so.warrantyEnabled || so.internalNotes || so.notes) && (
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+                <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">Pós-venda</h3>
+                      <p className="text-base text-muted-foreground">Garantia e observações finais</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  {/* Garantia */}
+                  {so.warrantyEnabled && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Shield className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-base font-semibold uppercase tracking-wider text-foreground">Garantia</h4>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={cn("rounded-md px-2 py-0.5 text-xs font-medium", warrantyInfo.variant)}>
+                            {warrantyInfo.label}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-base text-muted-foreground pt-1">
+                          {so.warrantyStartDate && (
+                            <div>
+                              <span className="font-medium text-foreground">Início:</span>{" "}
+                              <span>{formatDate(so.warrantyStartDate)}</span>
+                            </div>
+                          )}
+                          {so.warrantyEndDate && (
+                            <div>
+                              <span className="font-medium text-foreground">Validade:</span>{" "}
+                              <span>{formatDate(so.warrantyEndDate)}</span>
+                            </div>
+                          )}
+                        </div>
+                        {so.warrantyTerms && (
+                          <div className="pt-2">
+                            <span className="font-medium text-foreground">Termos:</span>
+                            <p className="mt-1 whitespace-pre-wrap text-base text-muted-foreground">{so.warrantyTerms}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Observações Internas */}
+                  {so.internalNotes && (
+                    <div className={so.warrantyEnabled ? "pt-4 border-t border-border/30" : ""}>
+                      <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-2">Observações Internas</h4>
+                      <p className="text-base text-muted-foreground whitespace-pre-wrap">{so.internalNotes}</p>
+                    </div>
+                  )}
+
+                  {/* Observações Gerais */}
+                  {so.notes && (
+                    <div className={so.warrantyEnabled || so.internalNotes ? "pt-4 border-t border-border/30" : ""}>
+                      <h4 className="text-base font-semibold uppercase tracking-wider text-foreground mb-2">Observações</h4>
+                      <p className="text-base text-muted-foreground whitespace-pre-wrap">{so.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
           )}
         </>
       )}
@@ -1114,12 +1097,11 @@ export default function OSDetailContent() {
         open={closeDialogOpen}
         onOpenChange={setCloseDialogOpen}
         serviceOrder={so}
-        onSuccess={(updated) => {
-          // Reload OS to get fresh data (stockMovements, etc.)
+        onSuccess={() => {
           loadServiceOrder();
           setCloseDialogOpen(false);
         }}
       />
-    </div>
+    </motion.div>
   );
 }

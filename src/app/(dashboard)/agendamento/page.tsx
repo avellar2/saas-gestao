@@ -1,10 +1,10 @@
-﻿import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isModuleActive } from "@/lib/module-guard";
 import { tenantPrisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -17,7 +17,6 @@ import {
 import { formatDate } from "@/lib/utils";
 import { SortSelect } from "@/components/sort-select";
 import { EmptyState } from "@/components/empty-state";
-import { Calendar } from "lucide-react";
 
 interface SearchParams {
   search?: string;
@@ -33,21 +32,21 @@ const STATUS_TABS = [
   { value: "SCHEDULED", label: "Agendado" },
   { value: "CONFIRMED", label: "Confirmado" },
   { value: "CANCELLED", label: "Cancelado" },
-  { value: "COMPLETED", label: "Concluido" },
+  { value: "COMPLETED", label: "Concluído" },
 ];
 
-const STATUS_BADGE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  SCHEDULED: "secondary",
-  CONFIRMED: "default",
-  CANCELLED: "destructive",
-  COMPLETED: "outline",
+const STATUS_CLASSES: Record<string, string> = {
+  SCHEDULED: "bg-slate-50 text-slate-700 border-slate-200",
+  CONFIRMED: "bg-blue-50 text-blue-700 border-blue-200",
+  CANCELLED: "bg-red-50 text-red-700 border-red-200",
+  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   SCHEDULED: "Agendado",
   CONFIRMED: "Confirmado",
   CANCELLED: "Cancelado",
-  COMPLETED: "Concluido",
+  COMPLETED: "Concluído",
 };
 
 function formatDateTime(date: Date): string {
@@ -119,18 +118,23 @@ export default async function AgendamentoPage({
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Agendamentos</h1>
-        <div className="flex items-center gap-2">
+    <div className="max-w-[1400px] mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-extrabold tracking-tight text-foreground leading-none">Agendamentos</h1>
+          <p className="text-base text-muted-foreground mt-2 font-medium">{total} {total === 1 ? "agendamento" : "agendamentos"}</p>
+        </div>
+        <div className="flex items-center gap-2.5">
           <a href="/api/exportar?entity=appointments" download>
-            <Button variant="outline">
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="gap-2 h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
+              <FileDown className="h-4 w-4" />
               Exportar CSV
             </Button>
           </a>
           <Link href="/agendamento/novo">
-            <Button>Novo Agendamento</Button>
+            <Button size="sm" className="gap-2 h-9 px-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-150 active:scale-[0.97]">
+              Novo Agendamento
+            </Button>
           </Link>
         </div>
       </div>
@@ -140,25 +144,25 @@ export default async function AgendamentoPage({
           <input
             name="search"
             type="text"
-            placeholder="Buscar por titulo..."
+            placeholder="Buscar por título..."
             defaultValue={search}
-            className="flex-1 h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 placeholder:text-muted-foreground"
+            className="flex-1 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 placeholder:text-muted-foreground/60"
           />
           <input
             name="dateFrom"
             type="date"
             defaultValue={dateFrom}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
           />
-          <span className="text-sm text-muted-foreground">ate</span>
+          <span className="text-sm text-muted-foreground self-center">até</span>
           <input
             name="dateTo"
             type="date"
             defaultValue={dateTo}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
           />
           {status && <input type="hidden" name="status" value={status} />}
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" size="sm" className="h-9 px-3.5 rounded-lg border-border/80 hover:bg-muted/50 transition-all duration-150">
             Buscar
           </Button>
         </form>
@@ -166,14 +170,14 @@ export default async function AgendamentoPage({
           options={[
             { value: "dateTime_desc", label: "Mais recentes" },
             { value: "dateTime_asc", label: "Mais antigos" },
-            { value: "title_asc", label: "Titulo A-Z" },
+            { value: "title_asc", label: "Título A-Z" },
           ]}
           defaultValue={sort}
         />
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => {
           const isActive = status === tab.value;
           const linkParams = new URLSearchParams();
@@ -186,16 +190,20 @@ export default async function AgendamentoPage({
           const href = `/agendamento?${linkParams.toString()}`;
           return (
             <Link key={tab.value} href={href}>
-              <Button variant={isActive ? "default" : "outline"} size="sm">
+              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-150 border cursor-pointer select-none ${
+                isActive
+                  ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+              }`}>
                 {tab.label}
-              </Button>
+              </span>
             </Link>
           );
         })}
       </div>
 
       {appointments.length === 0 ? (
-        <EmptyState icon={Calendar}
+        <EmptyState icon="Calendar"
           title={search ? "Nenhum resultado" : "Nenhum agendamento"}
           description={search ? "Tente ajustar os termos da busca." : "Crie seu primeiro agendamento para começar."}
           actionLabel="Novo Agendamento"
@@ -203,49 +211,43 @@ export default async function AgendamentoPage({
         />
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Titulo</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Duracao</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Acoes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointments.map((appointment) => (
-                  <TableRow key={appointment.id}>
-                    <TableCell className="font-medium">
-                      {appointment.title}
-                    </TableCell>
-                    <TableCell>
-                      {appointment.customer?.name || "-"}
-                    </TableCell>
-                    <TableCell>{formatDateTime(appointment.dateTime)}</TableCell>
-                    <TableCell>{appointment.duration} min</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          STATUS_BADGE[appointment.status] || "secondary"
-                        }
-                      >
-                        {STATUS_LABEL[appointment.status] || appointment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/agendamento/${appointment.id}`}>
-                        <Button variant="outline" size="sm">
-                          Ver
-                        </Button>
-                      </Link>
-                    </TableCell>
+          <div className="rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/25 hover:bg-muted/25 border-b border-border/50">
+                    <TableHead className="py-3.5 pl-5 pr-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Título</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Cliente</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Data/Hora</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Duração</TableHead>
+                    <TableHead className="py-3.5 px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70">Status</TableHead>
+                    <TableHead className="py-3.5 pl-3 pr-5 text-[11px] font-semibold uppercase tracking-[0.04em] text-muted-foreground/70 text-right"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {appointments.map((appointment) => (
+                    <TableRow key={appointment.id} className="group border-b border-border/30 transition-colors duration-150 hover:bg-indigo-50/30 last:border-b-0">
+                      <TableCell className="py-3.5 pl-5 pr-3 text-sm font-medium text-foreground">{appointment.title}</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">{appointment.customer?.name || "—"}</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">{formatDateTime(appointment.dateTime)}</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm text-muted-foreground">{appointment.duration} min</TableCell>
+                      <TableCell className="py-3.5 px-3 text-sm">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${STATUS_CLASSES[appointment.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                          {STATUS_LABEL[appointment.status] || appointment.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3.5 pl-3 pr-5 text-right">
+                        <Link href={`/agendamento/${appointment.id}`}>
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground/40 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-150">
+                            <ChevronRight className="h-4 w-4" />
+                          </span>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {totalPages > 1 && (
@@ -264,12 +266,13 @@ export default async function AgendamentoPage({
                       key={p}
                       href={`/agendamento?${linkParams.toString()}`}
                     >
-                      <Button
-                        variant={p === page ? "default" : "outline"}
-                        size="sm"
-                      >
+                      <span className={`inline-flex items-center justify-center min-w-[2.25rem] h-9 px-2.5 rounded-lg text-sm font-medium border transition-all cursor-pointer select-none ${
+                        p === page
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "bg-card border-border/60 text-muted-foreground hover:border-border hover:text-foreground hover:bg-muted/30"
+                      }`}>
                         {p}
-                      </Button>
+                      </span>
                     </Link>
                   );
                 }

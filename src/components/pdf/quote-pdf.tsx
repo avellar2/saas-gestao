@@ -82,227 +82,400 @@ function getStatusLabel(status: string): string {
   }
 }
 
+/* ────────────────────────────────
+   PALETA (azul para orçamentos)
+   ──────────────────────────────── */
+const C = {
+  pageBg: "#ffffff",
+  text: "#1a1a1a",
+  textMuted: "#5a5a5a",
+  textLight: "#8a8a8a",
+  border: "#e5e7eb",
+  headerBg: "#f8f9fa",
+  tableHeader: "#e9ecef",
+  tableAlt: "#f8f9fa",
+  accent: "#2563eb",
+  accentLight: "#eff6ff",
+  logoPlaceholder: "#e5e7eb",
+  logoPlaceholderText: "#9ca3af",
+};
+
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 30,
+    paddingBottom: 56,
     fontSize: 10,
     fontFamily: "Helvetica",
-    color: "#1a1a1a",
+    color: C.text,
+    backgroundColor: C.pageBg,
   },
-  // Header
-  headerContainer: {
+
+  /* ── Header ── */
+  headerBox: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: "#2563eb",
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: C.accent,
   },
-  headerLeft: {
+  logoArea: {
+    width: 64,
+    height: 64,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: C.logoPlaceholder,
+    borderRadius: 6,
+    backgroundColor: C.headerBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoText: {
+    fontSize: 7,
+    color: C.logoPlaceholderText,
+    textAlign: "center",
+    lineHeight: 1.3,
+  },
+  headerCenter: {
     flex: 1,
+    paddingHorizontal: 12,
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 13,
     fontFamily: "Helvetica-Bold",
-    color: "#1a1a1a",
-    marginBottom: 2,
+    color: C.text,
+    marginBottom: 1,
   },
   tradeName: {
-    fontSize: 11,
-    color: "#6b7280",
-    marginBottom: 6,
-  },
-  headerInfo: {
     fontSize: 9,
-    color: "#4b5563",
-    lineHeight: 1.5,
+    color: C.textMuted,
+    marginBottom: 2,
+  },
+  companyMeta: {
+    fontSize: 7.5,
+    color: C.textLight,
+    lineHeight: 1.3,
   },
   headerRight: {
     alignItems: "flex-end",
   },
-  headerDocTitle: {
-    fontSize: 20,
+  docTitle: {
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#2563eb",
-    marginBottom: 4,
+    color: C.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 2,
   },
-  // Sections
-  sectionTitle: {
-    fontSize: 11,
+  docCode: {
+    fontSize: 16,
     fontFamily: "Helvetica-Bold",
-    color: "#2563eb",
+    color: C.accent,
+  },
+
+  /* ── Section ── */
+  section: {
     marginBottom: 8,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
   },
-  sectionContainer: {
-    marginBottom: 16,
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.headerBg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
-  // Info grid
+  sectionTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: C.text,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  sectionBody: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+    borderTopWidth: 0,
+    padding: 8,
+    backgroundColor: C.pageBg,
+  },
+  sectionBodyOnly: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 6,
+    padding: 8,
+    backgroundColor: C.pageBg,
+  },
+
+  /* ── Info Grid ── */
   infoGrid: {
     flexDirection: "row",
-    gap: 20,
+    gap: 12,
   },
-  infoColumn: {
+  infoCol: {
     flex: 1,
   },
   infoRow: {
     flexDirection: "row",
-    marginBottom: 3,
-    lineHeight: 1.5,
+    marginBottom: 2,
+    lineHeight: 1.3,
   },
   infoLabel: {
-    fontSize: 9,
-    color: "#6b7280",
+    fontSize: 8,
+    color: C.textLight,
     width: 90,
   },
   infoValue: {
-    fontSize: 9,
-    color: "#1a1a1a",
+    fontSize: 8,
+    color: C.text,
+    flex: 1,
+    fontFamily: "Helvetica-Bold",
+  },
+  infoValueNormal: {
+    fontSize: 8,
+    color: C.text,
     flex: 1,
   },
-  // Items table
+  subSectionTitle: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: C.textMuted,
+    marginBottom: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  descriptionText: {
+    fontSize: 8,
+    color: C.textMuted,
+    lineHeight: 1.4,
+  },
+
+  /* ── Table ── */
+  table: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#f3f4f6",
-    paddingVertical: 6,
+    backgroundColor: C.tableHeader,
+    paddingVertical: 5,
     paddingHorizontal: 8,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
   },
   tableHeaderCell: {
-    fontSize: 9,
+    fontSize: 7.5,
     fontFamily: "Helvetica-Bold",
-    color: "#374151",
-  },
-  colDesc: {
-    flex: 4,
-  },
-  colQty: {
-    width: 60,
-    textAlign: "center",
-  },
-  colPrice: {
-    width: 90,
-    textAlign: "right",
-  },
-  colTotal: {
-    width: 90,
-    textAlign: "right",
+    color: C.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: C.border,
   },
-  tableRowCell: {
-    fontSize: 9,
+  tableRowLast: {
+    borderBottomWidth: 0,
   },
   tableRowAlt: {
-    backgroundColor: "#fafbfc",
+    backgroundColor: C.tableAlt,
   },
-  // Totals
-  totalsContainer: {
+  tableCell: {
+    fontSize: 8,
+    color: C.text,
+  },
+  colDesc: { flex: 4 },
+  colQty: { width: 45, textAlign: "center" },
+  colPrice: { width: 70, textAlign: "right" },
+  colTotal: { width: 70, textAlign: "right" },
+
+  /* ── Totals ── */
+  totalsSection: {
+    marginTop: 6,
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 12,
   },
   totalsBox: {
-    width: 220,
+    width: 200,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 6,
+    overflow: "hidden",
   },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 3,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  totalRowLast: {
+    borderBottomWidth: 0,
   },
   totalLabel: {
-    fontSize: 9,
-    color: "#6b7280",
+    fontSize: 8,
+    color: C.textMuted,
   },
   totalValue: {
-    fontSize: 9,
-    color: "#1a1a1a",
+    fontSize: 8,
+    color: C.text,
+    fontFamily: "Helvetica-Bold",
   },
-  totalRowFinal: {
+  totalRowHighlight: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderTopWidth: 2,
-    borderTopColor: "#2563eb",
-    marginTop: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: C.accent,
   },
-  totalLabelFinal: {
-    fontSize: 12,
+  totalLabelHighlight: {
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#1a1a1a",
+    color: "#ffffff",
   },
-  totalValueFinal: {
-    fontSize: 12,
+  totalValueHighlight: {
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#2563eb",
+    color: "#ffffff",
   },
-  // Notes
-  notesText: {
-    fontSize: 9,
-    color: "#4b5563",
-    lineHeight: 1.5,
-  },
-  // Footer
+
+  /* ── Footer ── */
   footer: {
     position: "absolute",
-    bottom: 30,
-    left: 40,
-    right: 40,
+    bottom: 18,
+    left: 30,
+    right: 30,
     flexDirection: "row",
     justifyContent: "center",
-    paddingBottom: 8,
+    alignItems: "center",
+    paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    paddingTop: 8,
+    borderTopColor: C.border,
   },
   footerText: {
-    fontSize: 8,
-    color: "#9ca3af",
+    fontSize: 7,
+    color: C.textLight,
   },
-  // Watermark
+
+  /* ── Watermark ── */
   watermark: {
     position: "absolute",
     top: "40%",
     left: "15%",
     transform: "rotate(-35deg)",
-    opacity: 0.08,
+    opacity: 0.06,
   },
   watermarkText: {
     fontSize: 72,
     fontFamily: "Helvetica-Bold",
     color: "#ef4444",
   },
+
+  /* ── Misc ── */
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 3,
+    fontSize: 7.5,
+    fontFamily: "Helvetica-Bold",
+  },
+  badgeGreen: {
+    backgroundColor: "#f0fdf4",
+    color: "#059669",
+  },
+  badgeRed: {
+    backgroundColor: "#fef2f2",
+    color: "#ef4444",
+  },
+  badgeAmber: {
+    backgroundColor: "#fffbeb",
+    color: "#b45309",
+  },
+  badgeBlue: {
+    backgroundColor: C.accentLight,
+    color: C.accent,
+  },
+  badgeGray: {
+    backgroundColor: C.headerBg,
+    color: C.textMuted,
+  },
+  flexRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  notesBox: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 6,
+    padding: 8,
+    backgroundColor: C.headerBg,
+  },
+  notesText: {
+    fontSize: 8,
+    color: C.textMuted,
+    lineHeight: 1.4,
+  },
 });
 
-export function QuotePDF({ company, customer, quote, items, isTrial }: QuotePDFProps) {
+/* ── helpers ── */
+function getStatusBadgeStyle(status: string) {
+  switch (status) {
+    case "APPROVED":
+      return styles.badgeGreen;
+    case "SENT":
+      return styles.badgeBlue;
+    case "REJECTED":
+      return styles.badgeRed;
+    case "EXPIRED":
+      return styles.badgeAmber;
+    default:
+      return styles.badgeGray;
+  }
+}
+
+/* ────────────────────────────────
+   COMPONENT — 1 página, tudo junto
+   ──────────────────────────────── */
+export function QuotePDF({
+  company,
+  customer,
+  quote,
+  items,
+  isTrial,
+}: QuotePDFProps) {
+  const hasItems = items.length > 0;
+
   return (
-    <Document title={`Orcamento #${quote.number}`} author={company.name}>
+    <Document title={`Orçamento #${quote.number}`} author={company.name}>
       <Page size="A4" style={styles.page}>
-        {/* Trial Watermark */}
         {isTrial && (
           <View style={styles.watermark} fixed>
             <Text style={styles.watermarkText}>PLANO TRIAL</Text>
           </View>
         )}
 
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <View style={styles.headerLeft}>
+        {/* ═══════ HEADER ═══════ */}
+        <View style={styles.headerBox}>
+          <View style={styles.logoArea}>
+            <Text style={styles.logoText}>LOGO DA{"\n"}EMPRESA</Text>
+          </View>
+          <View style={styles.headerCenter}>
             <Text style={styles.companyName}>{company.name}</Text>
             {company.tradeName && (
               <Text style={styles.tradeName}>{company.tradeName}</Text>
             )}
-            <View style={styles.headerInfo}>
+            <View style={styles.companyMeta}>
               {company.phone && <Text>Tel: {company.phone}</Text>}
               {company.email && <Text>{company.email}</Text>}
               {company.document && <Text>CNPJ/CPF: {company.document}</Text>}
@@ -310,131 +483,158 @@ export function QuotePDF({ company, customer, quote, items, isTrial }: QuotePDFP
             </View>
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.headerDocTitle}>ORCAMENTO</Text>
-            <Text style={{ fontSize: 10, color: "#6b7280" }}>
+            <Text style={styles.docTitle}>Orçamento</Text>
+            <Text style={styles.docCode}>
               #{String(quote.number).padStart(4, "0")}
             </Text>
           </View>
         </View>
 
-        {/* Quote + Customer Info */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Informacoes do Orcamento</Text>
-          <View style={styles.infoGrid}>
-            <View style={styles.infoColumn}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Numero:</Text>
-                <Text style={styles.infoValue}>#{String(quote.number).padStart(4, "0")}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Data:</Text>
-                <Text style={styles.infoValue}>{formatDatePDF(quote.createdAt)}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Validade:</Text>
-                <Text style={styles.infoValue}>
-                  {quote.validUntil ? formatDatePDF(quote.validUntil) : "-"}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Status:</Text>
-                <Text style={styles.infoValue}>{getStatusLabel(quote.status)}</Text>
-              </View>
-            </View>
-            <View style={styles.infoColumn}>
-              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 6, color: "#374151" }}>
-                Cliente
-              </Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Nome:</Text>
-                <Text style={styles.infoValue}>{customer.name}</Text>
-              </View>
-              {customer.phone && (
+        {/* ═══════ ORÇAMENTO + CLIENTE ═══════ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Informações do Orçamento</Text>
+          </View>
+          <View style={styles.sectionBody}>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoCol}>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Telefone:</Text>
-                  <Text style={styles.infoValue}>{customer.phone}</Text>
+                  <Text style={styles.infoLabel}>Número:</Text>
+                  <Text style={styles.infoValue}>#{String(quote.number).padStart(4, "0")}</Text>
                 </View>
-              )}
-              {customer.email && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>E-mail:</Text>
-                  <Text style={styles.infoValue}>{customer.email}</Text>
+                  <Text style={styles.infoLabel}>Data:</Text>
+                  <Text style={styles.infoValueNormal}>{formatDatePDF(quote.createdAt)}</Text>
                 </View>
-              )}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Validade:</Text>
+                  <Text style={styles.infoValueNormal}>
+                    {quote.validUntil ? formatDatePDF(quote.validUntil) : "-"}
+                  </Text>
+                </View>
+                <View style={[styles.flexRow, { marginBottom: 2 }]}>
+                  <Text style={styles.infoLabel}>Status:</Text>
+                  <View style={[styles.badge, getStatusBadgeStyle(quote.status)]}>
+                    <Text>{getStatusLabel(quote.status)}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.infoCol}>
+                <Text style={styles.subSectionTitle}>Cliente</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Nome:</Text>
+                  <Text style={styles.infoValue}>{customer.name}</Text>
+                </View>
+                {customer.phone && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Telefone:</Text>
+                    <Text style={styles.infoValueNormal}>{customer.phone}</Text>
+                  </View>
+                )}
+                {customer.email && (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>E-mail:</Text>
+                    <Text style={styles.infoValueNormal}>{customer.email}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Description */}
+        {/* ═══════ DESCRIÇÃO ═══════ */}
         {quote.description && (
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Descricao</Text>
-            <Text style={styles.notesText}>{quote.description}</Text>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Descrição</Text>
+            </View>
+            <View style={styles.sectionBody}>
+              <Text style={styles.descriptionText}>{quote.description}</Text>
+            </View>
           </View>
         )}
 
-        {/* Items Table */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Itens</Text>
-          {/* Table Header */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.colDesc]}>Descricao</Text>
-            <Text style={[styles.tableHeaderCell, styles.colQty]}>Qtd</Text>
-            <Text style={[styles.tableHeaderCell, styles.colPrice]}>Preco Unit.</Text>
-            <Text style={[styles.tableHeaderCell, styles.colTotal]}>Total</Text>
-          </View>
-          {/* Table Rows */}
-          {items.map((item, index) => (
-            <View
-              key={index}
-              style={[
-                styles.tableRow,
-                index % 2 === 1 ? styles.tableRowAlt : {},
-              ]}
-            >
-              <Text style={[styles.tableRowCell, styles.colDesc]}>{item.description}</Text>
-              <Text style={[styles.tableRowCell, styles.colQty]}>{Number(item.quantity)}</Text>
-              <Text style={[styles.tableRowCell, styles.colPrice]}>
-                {formatCurrencyPDF(Number(item.unitPrice))}
-              </Text>
-              <Text style={[styles.tableRowCell, styles.colTotal]}>
-                {formatCurrencyPDF(Number(item.total))}
-              </Text>
+        {/* ═══════ ITENS (tudo junto, não quebra no meio) ═══════ */}
+        {hasItems && (
+          <View style={styles.section} wrap={false}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Itens e Serviços</Text>
             </View>
-          ))}
-        </View>
-
-        {/* Totals */}
-        <View style={styles.totalsContainer}>
-          <View style={styles.totalsBox}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal:</Text>
-              <Text style={styles.totalValue}>{formatCurrencyPDF(Number(quote.subtotal))}</Text>
-            </View>
-            {Number(quote.discount) > 0 && (
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Desconto:</Text>
-                <Text style={styles.totalValue}>- {formatCurrencyPDF(Number(quote.discount))}</Text>
+            <View style={styles.sectionBodyOnly}>
+              <View style={styles.table}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, styles.colDesc]}>Descrição</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colQty]}>Qtd</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colPrice]}>Preço Unit.</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colTotal]}>Total</Text>
+                </View>
+                {items.map((item, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 1 ? styles.tableRowAlt : {},
+                      index === items.length - 1 ? styles.tableRowLast : {},
+                    ]}
+                  >
+                    <Text style={[styles.tableCell, styles.colDesc]}>{item.description}</Text>
+                    <Text style={[styles.tableCell, styles.colQty]}>{Number(item.quantity)}</Text>
+                    <Text style={[styles.tableCell, styles.colPrice]}>
+                      {formatCurrencyPDF(Number(item.unitPrice))}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colTotal]}>
+                      {formatCurrencyPDF(Number(item.total))}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            )}
-            <View style={styles.totalRowFinal}>
-              <Text style={styles.totalLabelFinal}>Total:</Text>
-              <Text style={styles.totalValueFinal}>{formatCurrencyPDF(Number(quote.total))}</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Notes */}
-        {quote.notes && (
-          <View style={[styles.sectionContainer, { marginTop: 20 }]}>
-            <Text style={styles.sectionTitle}>Observacoes</Text>
-            <Text style={styles.notesText}>{quote.notes}</Text>
+              {/* ── Totals (junto com a tabela, não separa) ── */}
+              <View style={styles.totalsSection}>
+                <View style={styles.totalsBox}>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Subtotal:</Text>
+                    <Text style={styles.totalValue}>
+                      {formatCurrencyPDF(Number(quote.subtotal))}
+                    </Text>
+                  </View>
+                  {Number(quote.discount) > 0 && (
+                    <View style={styles.totalRow}>
+                      <Text style={styles.totalLabel}>Desconto:</Text>
+                      <Text style={[styles.totalValue, { color: "#ef4444" }]}>
+                        - {formatCurrencyPDF(Number(quote.discount))}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.totalRowHighlight}>
+                    <Text style={styles.totalLabelHighlight}>Total:</Text>
+                    <Text style={styles.totalValueHighlight}>
+                      {formatCurrencyPDF(Number(quote.total))}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           </View>
         )}
 
-        {/* Footer */}
+        {/* ═══════ OBSERVAÇÕES ═══════ */}
+        {quote.notes && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Observações</Text>
+            </View>
+            <View style={styles.notesBox}>
+              <Text style={styles.notesText}>{quote.notes}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* ═══════ FOOTER ═══════ */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>Orcamento gerado pelo Gestor Local</Text>
+          <Text style={styles.footerText}>
+            {company.name} — Documento gerado pelo AVGESTÃO
+          </Text>
         </View>
       </Page>
     </Document>

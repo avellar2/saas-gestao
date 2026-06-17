@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   FinanceiroForm,
   type FinanceiroFormData,
 } from "@/components/modules/financeiro-form";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, Banknote } from "lucide-react";
 
 interface CustomerOption {
   id: string;
   name: string;
 }
+
+const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
 
 export default function NovoFinanceiroContent() {
   const router = useRouter();
@@ -26,7 +31,7 @@ export default function NovoFinanceiroContent() {
           setCustomers(data.customers || []);
         }
       } catch {
-        // Silently fail - customers are optional
+        // Silently fail
       }
     }
     loadCustomers();
@@ -47,7 +52,7 @@ export default function NovoFinanceiroContent() {
 
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error || "Erro ao criar transacao");
+      setError(body.error || "Erro ao criar transação");
       return;
     }
 
@@ -56,20 +61,51 @@ export default function NovoFinanceiroContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Nova Transacao Financeira</h1>
+    <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-5">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg h-9 text-sm font-semibold border-border/80 hover:bg-muted/50 transition-all duration-150"
+          onClick={() => router.push("/financeiro")}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1.5" />
+          Voltar
+        </Button>
+      </div>
 
-      {error && (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
-          {error}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: easeOut }}
+        className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
+      >
+        <div className="px-6 py-5 bg-emerald-50/40 border-b border-border/30">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-emerald-100 text-emerald-600">
+              <Banknote className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold text-foreground">Nova Transação Financeira</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Registre uma nova movimentação</p>
+            </div>
+          </div>
         </div>
-      )}
 
-      <FinanceiroForm
-        onSubmit={handleSubmit}
-        submitLabel="Criar Transacao"
-        customers={customers}
-      />
+        <div className="p-6">
+          {error && (
+            <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm">
+              {error}
+            </div>
+          )}
+
+          <FinanceiroForm
+            onSubmit={handleSubmit}
+            submitLabel="Criar Transação"
+            customers={customers}
+          />
+        </div>
+      </motion.div>
     </div>
   );
 }
