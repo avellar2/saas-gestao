@@ -1,25 +1,170 @@
-name: Deploy
+# =================================================================
+# AVGESTAO - CI/CD automatico
+# =================================================================
+# Em todo push para main:
+#   1. Roda typecheck
+#   2. Roda build
+#   3. Roda testes E2E
+#   4. Builda imagem Docker
+#   5. Pusha imagem para GHCR (ghcr.io/SEU_USUARIO/avgestao-app)
+#   6. Watchtower na VPS detecta e atualiza sozinho
+#
+# Para ativar:
+#   1. Faca push deste arquivo para o GitHub
+#   2. No GitHub: Settings > Actions > General > Workflow permissions:
+#      "Read and write permissions" + "Allow GitHub Actions to create and approve pull requests"
+#   3. Watchtower na VPS cuida do resto (veja docker-compose.prod.yml)
+#
+# Variaveis uteis (opcional):
+#   WATCHTOWER_NOTIFY_URL - webhook para alertas de update
+# =================================================================
+
+name: build-and-push
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/app
 
 jobs:
-  deploy:
+  # ---- 1. Validacao rapida (typecheck + lint) ----
+  validate:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            cd /opt/gestor-local
-            ./scripts/deploy.sh
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+  # ---- 2. Testes E2E (so em push, nao em PR de fork) ----
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: validate
+    if: github.event_name == 'push'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gestor
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: gestor_local
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gestor"
+          --health-interval 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci --no-audit --no-fund
+
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://gestor:test@localhost:5432/gestor_local
+
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://gestor:test@localhost:5432/gestor_local
+
+      - name: Setup .env for tests
+        run: |
+          cat > .env <<EOF
+          DATABASE_URL=postgresql://gestor:test@localhost:5432/gestor_local
+          AUTH_SECRET=ci-test-secret-32-chars-minimum-xx
+          NEXTAUTH_URL=http://localhost:3000
+          NEXT_PUBLIC_APP_URL=http://localhost:3000
+          CRON_SECRET=ci-cron-secret-16chars-xx
+          STRIPE_WEBHOOK_SECRET=whsec_ci_test_secret
+          POSTGRES_PASSWORD=test
+          EOF
+
+      - name: E2E Tests
+        run: npm run test:e2e
+        env:
+          CI: "true"
+        timeout-minutes: 15
+
+  # ---- 3. Build e push da imagem (so em push na main) ----
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [validate, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Build image
+        run: |
+          docker build \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            -f docker/Dockerfile .
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Image built
+        run: |
+          echo "AVGESTAO: Imagem publicada em ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "Watchtower na VPS ira atualizar em ate 5 minutos."
+          echo ""
+          echo "Para forcar update imediato:"
+          echo "  ssh root@86.48.24.70 'docker compose -f /opt/avgestao/docker-compose.prod.yml pull app && docker compose -f /opt/avgestao/docker-compose.prod.yml up -d app'"
+
+  # ---- 4. Notifica Watchtower via API (forca update imediato) ----
+  notify-watchtower:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Watchtower update
+        env:
+          WATCHTOWER_URL: ${{ secrets.WATCHTOWER_URL }}
+        run: |
+          if [ -n "$WATCHTOWER_URL" ]; then
+            echo "Triggering Watchtower..."
+            curl -X POST "$WATCHTOWER_URL/v1/update" || echo "Watchtower trigger failed (continua)"
+          else
+            echo "WATCHTOWER_URL nao configurado. Watchtower vai detectar sozinho (ate 5 min)."
+          fi

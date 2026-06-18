@@ -51,8 +51,13 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 
-# scripts with credentials
-/scripts/
+# scripts locais com credenciais (NUNCA commitar)
+# Os scripts versionados estao em /scripts/ e NAO tem credenciais hardcoded
+# (leem de .env que e gitignored). Esta regra e defensiva.
+scripts/*.local
+scripts/*.secret
+scripts/*.credentials
+/scripts/backups/
 
 # stray
 /nul
