@@ -256,7 +256,7 @@ export default function FinanceiroDetailContent() {
                 <div>
                   <h1 className="text-[2.25rem] font-extrabold text-foreground">{transaction.description}</h1>
                   <div className="flex items-center gap-3 mt-1 text-base text-muted-foreground">
-                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${STATUS_CLASSES[transaction.status] || "bg-slate-50 text-slate-700 border-slate-200"}">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${STATUS_CLASSES[transaction.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
                       {STATUS_LABELS[transaction.status] || transaction.status}
                     </span>
                     <span>{formatCurrency(Number(transaction.amount))}</span>
