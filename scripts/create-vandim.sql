@@ -27,17 +27,19 @@ VALUES (
 ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", active = true;
 
 -- Ativa todos os 10 modulos
-INSERT INTO company_modules (id, "companyId", "moduleKey", active, "activatedAt", "price")
+INSERT INTO company_modules (id, "companyId", "moduleKey", active, "activatedAt", "price", "createdAt", "updatedAt")
 SELECT
   'cm-vandim-' || m.key,
   'company-vandim',
   m.key,
   true,
   NOW(),
-  20
+  20,
+  NOW(),
+  NOW()
 FROM modules m
 WHERE m.active = true
-ON CONFLICT ("companyId", "moduleKey") DO UPDATE SET active = true, "activatedAt" = NOW();
+ON CONFLICT ("companyId", "moduleKey") DO UPDATE SET active = true, "activatedAt" = NOW(), "updatedAt" = NOW();
 
 -- Verifica
 SELECT u.email, u.name, u.role, c.name as company, c.status
