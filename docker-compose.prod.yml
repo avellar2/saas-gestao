@@ -15,7 +15,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-gestor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD deve estar definida no .env (sem fallback inseguro)}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD deve estar definida no .env (sem fallback inseguro)}"
       POSTGRES_DB: ${POSTGRES_DB:-gestor_local}
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
