@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ export default function Error({
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center p-4 grain">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
@@ -35,19 +35,19 @@ export default function Error({
           Ocorreu um erro inesperado. Tente recarregar a pagina.
         </p>
         <div className="flex justify-center gap-3">
-          <motion.div whileTap={{ scale: 0.97 }}>
+          <m.div whileTap={{ scale: 0.97 }}>
             <Button onClick={reset} className="rounded-xl">
               <RefreshCw className="w-4 h-4 mr-2" />
               Tentar novamente
             </Button>
-          </motion.div>
+          </m.div>
         </div>
         {error.digest && (
           <p className="mt-6 text-xs text-muted-foreground/50 font-mono">
             Error ID: {error.digest}
           </p>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }
