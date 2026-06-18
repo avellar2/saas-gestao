@@ -38,6 +38,9 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      # Next.js 16 standalone: bind em 0.0.0.0 (aceita conexao de 127.0.0.1)
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
       # Imagem customizada (quando CI/CD publica no GHCR)
       # Para usar: descomente e ajuste para seu usuario/org do GitHub
       # IMAGE: ghcr.io/SEU_USUARIO_GITHUB/avgestao/app:latest
@@ -49,7 +52,7 @@ services:
     networks:
       - gestor-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://$(hostname):3000/api/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -78,7 +81,7 @@ services:
   # Watchtower: detecta imagem nova no GHCR e reinicia container automaticamente
   # A cada 5 minutos checa; se houver nova tag, faz pull e restart
   watchtower:
-    image: containrrr/watchtower
+    image: ghcr.io/containrrr/watchtower:1.7.1
     container_name: gestor_watchtower
     restart: unless-stopped
     environment:
