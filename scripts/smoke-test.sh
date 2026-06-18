@@ -6,9 +6,9 @@
 set -e
 
 BASE_URL="${BASE_URL:-https://avgestao.com.br}"
-HEALTH_URL="${BASE_URL}/api/health"
-LOGIN_URL="${BASE_URL}/login"
-HOME_URL="${BASE_URL}/"
+HEALTH_PATH="${HEALTH_PATH:-/api/health}"
+LOGIN_PATH="${LOGIN_PATH:-/login}"
+HOME_PATH="${HOME_PATH:-/}"
 
 PASS=0
 FAIL=0
@@ -21,7 +21,7 @@ check() {
   local code
   code=$(curl -sk -o /dev/null -w "%{http_code}" --max-time 15 "$url" || echo "000")
 
-  if [ "$code" = "$expected_code" ]; then
+  if echo "$code" | grep -qE "^(${expected_code})$"; then
     echo "  OK   $label  ($code)"
     PASS=$((PASS + 1))
   else
@@ -33,9 +33,10 @@ check() {
 echo "Smoke test em ${BASE_URL}"
 echo "----------------------------------------------------"
 
-check "Health check"      "$HEALTH_URL" 200
-check "Pagina de login"   "$LOGIN_URL"  200
-check "Home (redirect)"   "$HOME_URL"   200
+check "Health check"      "${BASE_URL}${HEALTH_PATH}" 200
+check "Pagina de login"   "${BASE_URL}${LOGIN_PATH}"  200
+# Home redireciona para /login (307) - comportamento esperado
+check "Home (redirect)"   "${BASE_URL}${HOME_PATH}"   "200|307"
 
 echo "----------------------------------------------------"
 echo "Resultado: ${PASS} passou, ${FAIL} falhou"
