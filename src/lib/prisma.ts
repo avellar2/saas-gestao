@@ -49,43 +49,48 @@ export function tenantPrisma(companyId: string) {
       $allModels: {
         async $allOperations({ args, model, operation, query }) {
           // Set RLS session variable before each operation.
-          // This runs on the same connection as the subsequent query()
-          // because Prisma uses a single connection per query pipeline.
-          await prisma.$executeRawUnsafe(
-            `SELECT set_config('app.current_company_id', $1, true)`,
-            companyId
-          );
+          // Uses a transaction so the set_config and the subsequent query
+          // run on the SAME connection (PostgreSQL session variables are
+          // connection-local). Without $transaction, pg.Pool may give us
+          // different connections for the two statements, and the RLS
+          // context is lost.
+          return prisma.$transaction(async (tx) => {
+            await tx.$executeRawUnsafe(
+              `SELECT set_config('app.current_company_id', $1, true)`,
+              companyId
+            );
 
-          if (!TENANT_MODELS.has(model)) {
-            return query(args);
-          }
+            if (!TENANT_MODELS.has(model)) {
+              return query(args);
+            }
 
-          const typedArgs = args as AnyArgs;
+            const typedArgs = args as AnyArgs;
 
-          if (operation.startsWith("find") || operation === "aggregate" || operation === "count") {
-            typedArgs.where = { ...typedArgs.where, companyId };
-          }
+            if (operation.startsWith("find") || operation === "aggregate" || operation === "count") {
+              typedArgs.where = { ...typedArgs.where, companyId };
+            }
 
-          if (operation === "create") {
-            typedArgs.data = { ...typedArgs.data, companyId };
-          }
-
-          if (operation === "createMany") {
-            if (Array.isArray(typedArgs.data)) {
-              typedArgs.data = typedArgs.data.map((item: Record<string, unknown>) => ({
-                ...item,
-                companyId,
-              }));
-            } else {
+            if (operation === "create") {
               typedArgs.data = { ...typedArgs.data, companyId };
             }
-          }
 
-          if (operation.startsWith("update") || operation === "delete" || operation === "deleteMany") {
-            typedArgs.where = { ...typedArgs.where, companyId };
-          }
+            if (operation === "createMany") {
+              if (Array.isArray(typedArgs.data)) {
+                typedArgs.data = typedArgs.data.map((item: Record<string, unknown>) => ({
+                  ...item,
+                  companyId,
+                }));
+              } else {
+                typedArgs.data = { ...typedArgs.data, companyId };
+              }
+            }
 
-          return query(args);
+            if (operation.startsWith("update") || operation === "delete" || operation === "deleteMany") {
+              typedArgs.where = { ...typedArgs.where, companyId };
+            }
+
+            return query(args);
+          });
         },
       },
     },
