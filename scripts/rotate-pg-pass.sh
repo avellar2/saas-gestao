@@ -4,12 +4,13 @@
 
 set -e
 
-NEW_PASS=$(openssl rand -base64 24)
+# Gera senha sem caracteres especiais (evita problema com + em URL)
+NEW_PASS=$(openssl rand -hex 24)
 echo "Nova senha: $NEW_PASS"
 
-# 1. Atualiza .env
-sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=\"$NEW_PASS\"|" /opt/avgestao/.env
-sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"postgresql://gestor:$NEW_PASS@postgres:5432/gestor_local?schema=public\"|" /opt/avgestao/.env
+# 1. Atualiza .env (sem aspas - mais seguro)
+sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$NEW_PASS|" /opt/avgestao/.env
+sed -i "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://gestor:$NEW_PASS@postgres:5432/gestor_local?schema=public|" /opt/avgestao/.env
 
 # 2. Atualiza senha do usuario no Postgres
 echo "Atualizando senha no banco..."
