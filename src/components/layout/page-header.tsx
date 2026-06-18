@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -48,7 +48,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
@@ -112,6 +112,6 @@ export function PageHeader({
           </div>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { UsuarioForm, type UsuarioFormData } from "@/components/modules/usuario-form";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, UserPlus } from "lucide-react";
@@ -45,7 +45,7 @@ export default function NovoUsuariosContent() {
         </Button>
       </div>
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: easeOut }}
@@ -72,7 +72,7 @@ export default function NovoUsuariosContent() {
 
           <UsuarioForm onSubmit={handleSubmit} submitLabel="Criar Usuário" />
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

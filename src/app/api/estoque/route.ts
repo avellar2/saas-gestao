@@ -34,6 +34,8 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get("limit") || "20", 10);
   const skip = (page - 1) * limit;
   const sort = searchParams.get("sort") || "createdAt_desc";
+  const stockFilter = searchParams.get("stockFilter") || "";
+  // BUG-013: aceita ambos nomes para retrocompat
   const lowStock = searchParams.get("lowStock") === "true";
 
   const where: Record<string, unknown> = {};
@@ -45,10 +47,17 @@ export async function GET(request: Request) {
     ];
   }
 
+  // BUG-013 fix: filtros ativos/inativos no backend
+  if (stockFilter === "ativos") {
+    where.active = true;
+  } else if (stockFilter === "inativos") {
+    where.active = false;
+  }
+
   const [sortField, sortDir] = sort.split("_");
   const orderBy = { [sortField]: sortDir };
 
-  // Fetch all matching products, then apply lowStock and pagination in-memory
+  // Fetch all matching products, then apply lowStock / zerados and pagination in-memory
   // (Prisma does not support comparing two fields in where)
   const allProducts = await tenant.product.findMany({
     where,
@@ -58,7 +67,13 @@ export async function GET(request: Request) {
   let filtered = allProducts;
   if (lowStock) {
     filtered = allProducts.filter(
-      (p) => Number(p.quantity) <= Number(p.minStock)
+      (p) => Number(p.quantity) > 0 && Number(p.quantity) <= Number(p.minStock)
+    );
+  } else if (stockFilter === "zerados") {
+    filtered = allProducts.filter((p) => Number(p.quantity) <= 0);
+  } else if (stockFilter === "low") {
+    filtered = allProducts.filter(
+      (p) => Number(p.quantity) > 0 && Number(p.quantity) <= Number(p.minStock)
     );
   }
 

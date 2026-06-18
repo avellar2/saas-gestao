@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 import Link from "next/link";
 import {
   Building2,
@@ -106,12 +106,12 @@ export default function LandingPageClient() {
       <section className="relative min-h-[100dvh] flex items-center overflow-hidden">
         <div className="absolute inset-0 mesh-gradient" />
 
-        <motion.div
+        <m.div
           className="absolute top-20 right-20 w-[400px] h-[400px] rounded-full bg-primary/8 blur-[100px]"
           animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
-        <motion.div
+        <m.div
           className="absolute bottom-20 left-10 w-[500px] h-[500px] rounded-full bg-primary/6 blur-[120px]"
           animate={{ y: [0, 25, 0], x: [0, -15, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -120,37 +120,37 @@ export default function LandingPageClient() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-            <motion.div
+            <m.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
               className="max-w-xl"
             >
-              <motion.div variants={fadeUp} className="mb-6">
+              <m.div variants={fadeUp} className="mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Sistema completo para pequenas empresas
                 </div>
-              </motion.div>
+              </m.div>
 
-              <motion.h1
+              <m.h1
                 variants={fadeUp}
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.1] text-foreground"
               >
                 Gestao simplificada para{" "}
                 <span className="text-primary">pequenas empresas</span>
-              </motion.h1>
+              </m.h1>
 
-              <motion.p
+              <m.p
                 variants={fadeUp}
                 className="mt-5 text-lg text-muted-foreground leading-relaxed max-w-[60ch]"
               >
                 Clientes, orçamentos, ordens de serviço, estoque, financeiro e muito mais. Tudo em um so lugar, com controle multiempresa.
-              </motion.p>
+              </m.p>
 
-              <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-3">
+              <m.div variants={fadeUp} className="mt-8 flex flex-wrap gap-3">
                 <Link href="/login">
-                  <motion.div whileTap={{ scale: 0.97 }}>
+                  <m.div whileTap={{ scale: 0.97 }}>
                     <Button
                       size="lg"
                       className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 px-6 h-12 text-base"
@@ -158,7 +158,7 @@ export default function LandingPageClient() {
                       Acessar sistema
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
-                  </motion.div>
+                  </m.div>
                 </Link>
                 <Link href="#recursos">
                   <Button
@@ -169,9 +169,9 @@ export default function LandingPageClient() {
                     Ver recursos
                   </Button>
                 </Link>
-              </motion.div>
+              </m.div>
 
-              <motion.div variants={fadeUp} className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
+              <m.div variants={fadeUp} className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span>10 modulos</span>
@@ -184,11 +184,11 @@ export default function LandingPageClient() {
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span>Relatorios CSV</span>
                 </div>
-              </motion.div>
-            </motion.div>
+              </m.div>
+            </m.div>
 
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: 40, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.3 }}
@@ -197,7 +197,7 @@ export default function LandingPageClient() {
               <div className="relative">
                 <div className="grid grid-cols-2 gap-3">
                   {features.slice(0, 4).map((feature, i) => (
-                    <motion.div
+                    <m.div
                       key={feature.title}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -209,20 +209,20 @@ export default function LandingPageClient() {
                       </div>
                       <p className="font-semibold text-sm text-foreground">{feature.title}</p>
                       <p className="text-xs text-muted-foreground mt-1">{feature.description.slice(0, 45)}...</p>
-                    </motion.div>
+                    </m.div>
                   ))}
                 </div>
 
 
-                <motion.div
+                <m.div
                   className="absolute -top-4 -right-4 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg"
                   animate={{ y: [0, -6, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 >
                   10 modulos
-                </motion.div>
+                </m.div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </div>
       </section>
@@ -230,7 +230,7 @@ export default function LandingPageClient() {
       {/* Features - Zig Zag layout */}
       <section id="recursos" className="py-24 lg:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
@@ -242,11 +242,11 @@ export default function LandingPageClient() {
               Tudo que voce precisa{" "}
               <span className="text-muted-foreground">em uma plataforma</span>
             </h2>
-          </motion.div>
+          </m.div>
 
           <div className="space-y-20">
             {features.slice(0, 6).map((feature, i) => (
-              <motion.div
+              <m.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -268,7 +268,7 @@ export default function LandingPageClient() {
                     <feature.icon className="w-16 h-16 text-muted-foreground/20" />
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function LandingPageClient() {
       {/* Benefits grid */}
       <section className="py-24 border-t border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -285,11 +285,11 @@ export default function LandingPageClient() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Por que escolher o Gestor Local?</h2>
-          </motion.div>
+          </m.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {benefits.map((benefit, i) => (
-              <motion.div
+              <m.div
                 key={benefit}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -299,7 +299,7 @@ export default function LandingPageClient() {
               >
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-sm font-medium text-foreground">{benefit}</p>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </div>
@@ -308,7 +308,7 @@ export default function LandingPageClient() {
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 mesh-gradient opacity-50" />
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -321,7 +321,7 @@ export default function LandingPageClient() {
             Comece agora e tenha acesso a todos os modulos. Sem complicação.
           </p>
           <Link href="/login">
-            <motion.div whileTap={{ scale: 0.97 }}>
+            <m.div whileTap={{ scale: 0.97 }}>
               <Button
                 size="lg"
                 className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 px-8 h-12 text-base"
@@ -329,9 +329,9 @@ export default function LandingPageClient() {
                 Acessar o sistema
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-            </motion.div>
+            </m.div>
           </Link>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* Footer */}

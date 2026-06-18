@@ -45,14 +45,14 @@ export async function GET(request: Request) {
       where: { type: "PAYABLE", status: "PAID", paidAt: { gte: start, lte: end } },
     }).then(r => Number(r._sum.amount) || 0),
 
-    // Contas vencidas (PENDING + dueDate < hoje)
+    // BUG-002 fix: contas vencidas/pendentes respeitam o mês selecionado (dueDate)
     tenant.financialTransaction.count({
-      where: { status: "PENDING", dueDate: { lt: now } },
+      where: { status: "PENDING", dueDate: { lt: now, gte: start, lte: end } },
     }),
 
-    // Contas pendentes (PENDING + dueDate >= hoje)
+    // Contas pendentes (PENDING + dueDate >= hoje, dentro do mês)
     tenant.financialTransaction.count({
-      where: { status: "PENDING", dueDate: { gte: now } },
+      where: { status: "PENDING", dueDate: { gte: now, lte: end } },
     }),
 
     // Receitas por dia

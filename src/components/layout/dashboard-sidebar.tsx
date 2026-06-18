@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -92,16 +92,16 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
-          <motion.div
+          <m.div
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0"
             whileHover={{ scale: 1.05, rotate: 2 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
             <Building2 className="w-5 h-5 text-primary-foreground" />
-          </motion.div>
+          </m.div>
           <AnimatePresence>
             {!collapsed && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
@@ -109,7 +109,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                 className="overflow-hidden whitespace-nowrap"
               >
                 <h1 className="text-sm font-bold text-sidebar-foreground leading-tight tracking-tight">Gestor Local</h1>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </Link>
@@ -128,7 +128,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
           const Icon = item.icon;
           return (
             <Link key={item.key} href={item.href}>
-              <motion.div
+              <m.div
                 initial={false}
                 className={`
                   relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-160 ease-out
@@ -142,7 +142,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
               >
                 {/* Active indicator */}
                 {active && (
-                  <motion.div
+                  <m.div
                     layoutId="activeIndicator"
                     className="absolute inset-0 rounded-xl bg-primary/10"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -151,7 +151,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                 <Icon className={`w-[18px] h-[18px] shrink-0 relative z-10 ${active ? "text-primary" : ""}`} />
                 <AnimatePresence>
                   {!collapsed && (
-                    <motion.span
+                    <m.span
                       initial={{ opacity: 0, width: 0 }}
                       animate={{ opacity: 1, width: "auto" }}
                       exit={{ opacity: 0, width: 0 }}
@@ -159,17 +159,17 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                       className="relative z-10 overflow-hidden whitespace-nowrap"
                     >
                       {item.label}
-                    </motion.span>
+                    </m.span>
                   )}
                 </AnimatePresence>
                 {active && !collapsed && (
-                  <motion.div
+                  <m.div
                     layoutId="activeDot"
                     className="ml-auto w-1.5 h-1.5 rounded-full bg-primary relative z-10"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-              </motion.div>
+              </m.div>
             </Link>
           );
         })}
@@ -185,7 +185,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
           </Avatar>
           <AnimatePresence>
             {!collapsed && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
@@ -194,7 +194,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
               >
                 <p className="text-sm font-medium text-sidebar-foreground truncate leading-tight">{name || "Usuario"}</p>
                 <p className="text-xs text-sidebar-foreground/40 truncate mt-0.5">{email}</p>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -207,7 +207,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
             <LogOut className="w-[18px] h-[18px] shrink-0" />
             <AnimatePresence>
               {!collapsed && (
-                <motion.span
+                <m.span
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
@@ -215,7 +215,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                   className="overflow-hidden whitespace-nowrap"
                 >
                   Sair
-                </motion.span>
+                </m.span>
               )}
             </AnimatePresence>
           </button>
@@ -232,7 +232,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
       {/* Mobile overlay */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -252,7 +252,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
       </button>
 
       {/* Sidebar */}
-      <motion.aside
+      <m.aside
         className={`
           fixed lg:sticky top-0 left-0 z-40 h-[100dvh] bg-sidebar text-sidebar-foreground flex flex-col shrink-0
           border-r border-sidebar-border
@@ -273,7 +273,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
         }}
       >
         {sidebarContent}
-      </motion.aside>
+      </m.aside>
     </>
   );
 }

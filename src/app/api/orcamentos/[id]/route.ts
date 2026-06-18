@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/activity-log";
 import { QuoteStatus } from "@/generated/prisma/client";
 import { quoteUpdateSchema } from "@/lib/validations";
 import { sendBudgetApprovedEmail } from "@/lib/email";
+import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -116,11 +117,10 @@ export async function PUT(
 
   const { customerId, items, discount, notes, validUntil } = result.data;
 
+  // P23 fix: validar customerId pertence à empresa
   if (customerId) {
-    const customer = await tenant.customer.findUnique({ where: { id: customerId } });
-    if (!customer) {
-      return NextResponse.json({ error: "Cliente nao encontrado" }, { status: 404 });
-    }
+    const customer = await findCustomerInCompany(tenant, customerId);
+    if (!customer) return notFoundResponse("Cliente");
   }
 
   let subtotal = Number(existing.subtotal);

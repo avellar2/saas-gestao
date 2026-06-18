@@ -62,8 +62,10 @@ export const osSchema = z.object({
 export const osUpdateSchema = osSchema.partial();
 
 export const closeServiceOrderSchema = z.object({
+  // P25 fix: CANCELLED não é finalStatus válido no fechamento.
+  // Cancelamento é feito via PATCH /api/ordens-servico/[id] (PUT de status).
   finalStatus: z.enum(["READY", "DELIVERED", "COMPLETED"], {
-    message: "Status final inválido",
+    message: "Status final inválido. Use READY, DELIVERED ou COMPLETED.",
   }),
   finalAmount: z.coerce.number().nonnegative("Valor final não pode ser negativo"),
   paymentStatus: z.enum(["PENDING", "PARTIAL", "PAID", "CANCELLED"], {
@@ -78,6 +80,9 @@ export const closeServiceOrderSchema = z.object({
   warrantyEndDate: z.string().optional().default(""),
   warrantyTerms: z.string().optional().default(""),
   sendEmail: z.coerce.boolean().optional().default(true),
+  // BUG-003/018/022 fix: paidAmount e existingPaidAmount para sincronizar financeiro
+  paidAmount: z.coerce.number().nonnegative().optional(),
+  existingPaidAmount: z.coerce.number().nonnegative().optional(),
 });
 
 // ─── Produtos (Estoque) ────────────────────────────────────────────

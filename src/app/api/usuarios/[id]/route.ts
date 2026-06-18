@@ -204,6 +204,22 @@ export async function DELETE(
     );
   }
 
+  // P04 fix: bloquear exclusão do último COMPANY_ADMIN ativo
+  if (existing.role === "COMPANY_ADMIN" && existing.active) {
+    const adminCount = await tenant.user.count({
+      where: { role: "COMPANY_ADMIN", active: true },
+    });
+    if (adminCount <= 1) {
+      return NextResponse.json(
+        {
+          error:
+            "Nao e possivel excluir o unico administrador da empresa. Promova outro usuario a administrador antes.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   await tenant.user.delete({ where: { id } });
 
   const userId = (session.user as Record<string, unknown>).id as string;

@@ -9,6 +9,7 @@ import {
   deductStockForServiceOrder,
   InsufficientStockError,
 } from "@/lib/stock-deduction";
+import { upsertFinancialTx } from "@/lib/financial-tx";
 
 async function checkModuleAccess(
   companyId: string,
@@ -214,81 +215,106 @@ export async function PATCH(
     // ── Finance Module Integration (Etapa 5) ──
     if (financeActive && data.finalAmount > 0) {
       try {
-        const existingTx = await tenant.financialTransaction.findFirst({
-          where: { serviceOrderId: id },
-        });
+        // P05 fix: o find+create/update de tx agora é feito dentro de
+        // uma transação SERIALIZABLE (ver lib/financial-tx.ts).
 
         if (data.paymentStatus === "CANCELLED") {
-          if (existingTx) {
-            await tenant.financialTransaction.update({
-              where: { id: existingTx.id },
-              data: { status: "CANCELLED" },
-            });
-
+          // P05 fix: usar upsertFinancialTx SERIALIZABLE para cancelar tx
+          const cancelResult = await upsertFinancialTx({
+            companyId,
+            serviceOrderId: id,
+            type: "RECEIVABLE",
+            description: "Cancelado",
+            category: "Ordem de Serviço",
+            amount: 0,
+            customerId: existing.customerId,
+            status: "CANCELLED",
+            paidAt: null,
+            dueDate: new Date(),
+            notes: `OS ${osCode} cancelada`,
+            ignoreCancelled: false, // P12 fix: permite cancelar tx existente
+          });
+          if (cancelResult) {
             await logActivity({
               tenant,
               userId,
               userName,
-              action: "UPDATE",
+              action: cancelResult.created ? "CREATE" : "UPDATE",
               entity: "financial",
-              entityId: existingTx.id,
+              entityId: cancelResult.id,
               details: `Receita financeira cancelada a partir da OS ${osCode}`,
             });
           }
         } else {
-          const isPaid = data.paymentStatus === "PAID";
-          const isPartial = data.paymentStatus === "PARTIAL";
+      const isPaid = data.paymentStatus === "PAID";
+      const isPartial = data.paymentStatus === "PARTIAL";
+      const finalPaidAmount = data.paidAmount !== undefined
+        ? data.paidAmount
+        : (isPaid ? data.finalAmount : (data.existingPaidAmount ?? 0));
 
-          const txData: Record<string, unknown> = {
-            type: "RECEIVABLE",
-            description: isPaid
-              ? `Receita da OS ${osCode}`
-              : isPartial
-                ? `Pagamento parcial da OS ${osCode}`
-                : `Conta a receber da OS ${osCode}`,
-            category: "Ordem de Serviço",
-            amount: data.finalAmount,
-            customerId: existing.customerId,
-            status: isPaid ? "PAID" : "PENDING",
-          };
+      // BUG-003/018/022 fix: amount da tx = valor PAGO, não total.
+      // Para PARTIAL, o amount é o que já foi pago.
+      // Para PAID, é o finalAmount.
+      const txAmount = isPartial
+        ? finalPaidAmount
+        : isPaid
+          ? data.finalAmount
+          : data.finalAmount; // PENDING: amount total a receber
 
-          if (isPaid) {
-            txData.paidAt = data.completedAt
-              ? new Date(data.completedAt)
-              : new Date();
-          } else {
-            txData.dueDate = data.completedAt
-              ? new Date(data.completedAt)
-              : new Date();
-          }
+      const description = isPaid
+        ? `Receita da OS ${osCode}`
+        : isPartial
+          ? `Pagamento parcial da OS ${osCode}`
+          : `Conta a receber da OS ${osCode}`;
 
-          if (isPartial) {
-            txData.notes = `Pagamento parcial registrado na OS. Valor pago: R$ ${Number(existing.paidAmount).toFixed(2)} de R$ ${data.finalAmount.toFixed(2)}`;
-          }
+      const paidAtDate = isPaid
+        ? (data.completedAt ? new Date(data.completedAt) : new Date())
+        : null;
+      const dueDateDate = data.completedAt
+        ? new Date(data.completedAt)
+        : new Date();
 
-          if (existingTx) {
-            await tenant.financialTransaction.update({
-              where: { id: existingTx.id },
-              data: txData as any,
-            });
-          } else {
-            await tenant.financialTransaction.create({
-              data: { ...txData, serviceOrderId: id } as any,
-            });
-          }
+      const notes = isPartial
+        ? `Pagamento parcial: R$ ${finalPaidAmount.toFixed(2)} de R$ ${data.finalAmount.toFixed(2)}`
+        : null;
 
-          await logActivity({
-            tenant,
-            userId,
-            userName,
-            action: existingTx ? "UPDATE" : "CREATE",
-            entity: "financial",
-            entityId: existingTx?.id ?? id,
-            details: existingTx
-              ? `Receita financeira atualizada a partir da OS ${osCode}`
-              : `Receita financeira criada a partir da OS ${osCode}`,
-          });
-        }
+      const txStatus: "PENDING" | "PAID" | "PARTIAL" | "CANCELLED" | "OVERDUE" = isPaid
+        ? "PAID"
+        : isPartial
+          ? "PARTIAL"
+          : "PENDING";
+
+      // P05 fix: usar upsertFinancialTx com SERIALIZABLE para evitar
+      // criação duplicada em fechamentos simultâneos.
+      const txResult = await upsertFinancialTx({
+        companyId,
+        serviceOrderId: id,
+        type: "RECEIVABLE",
+        description,
+        category: "Ordem de Serviço",
+        amount: txAmount,
+        customerId: existing.customerId,
+        status: txStatus,
+        paidAt: paidAtDate,
+        dueDate: dueDateDate,
+        notes,
+        ignoreCancelled: true, // P12 fix: ignora tx canceladas
+      });
+
+      if (txResult) {
+        await logActivity({
+          tenant,
+          userId,
+          userName,
+          action: txResult.created ? "CREATE" : "UPDATE",
+          entity: "financial",
+          entityId: txResult.id,
+          details: txResult.created
+            ? `Receita financeira criada a partir da OS ${osCode}`
+            : `Receita financeira atualizada a partir da OS ${osCode}`,
+        });
+      }
+    }
       } catch (financeErr) {
         console.error(
           "Failed to create/update financial transaction for OS:",

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileDown, MessageCircle, Phone, Mail } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -29,14 +29,14 @@ function AnimatedCard({
   className?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: "spring", stiffness: 100, damping: 20 }}
       className={className}
     >
       <Card>{children}</Card>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -60,7 +60,7 @@ export function PortalOSContent({ data }: PortalOSContentProps) {
     <div className="space-y-6">
       {/* Cancelled Banner */}
       {isCancelled && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/30 px-4 py-3 text-center"
@@ -68,7 +68,7 @@ export function PortalOSContent({ data }: PortalOSContentProps) {
           <p className="text-sm font-medium text-red-700 dark:text-red-400">
             Esta ordem de serviço foi cancelada
           </p>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Header Card */}

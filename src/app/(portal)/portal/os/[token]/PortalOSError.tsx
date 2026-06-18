@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { FileSearch, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -29,7 +29,7 @@ export function PortalOSError({ type }: PortalOSErrorProps) {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
@@ -49,7 +49,7 @@ export function PortalOSError({ type }: PortalOSErrorProps) {
             </Button>
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

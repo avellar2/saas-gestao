@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ClientForm, type ClientFormData } from "@/components/modules/client-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, UserPlus } from "lucide-react";
@@ -50,14 +50,14 @@ export default function NovoClienteContent() {
   }
 
   return (
-    <motion.div
+    <m.div
       className="max-w-[1400px] mx-auto px-6 py-8 space-y-5"
       variants={containerVariants}
       initial="hidden"
       animate="show"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <m.div variants={itemVariants} className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
             <UserPlus className="h-6 w-6" />
@@ -73,21 +73,21 @@ export default function NovoClienteContent() {
             Voltar
           </Button>
         </Link>
-      </motion.div>
+      </m.div>
 
       {/* Error */}
       {error && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-base font-medium"
         >
           {error}
-        </motion.div>
+        </m.div>
       )}
 
       {/* Form Card */}
-      <motion.div variants={itemVariants}>
+      <m.div variants={itemVariants}>
         <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
           <div className="px-6 py-5 bg-blue-50/40 dark:bg-blue-950/20 border-b border-border/40 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
@@ -102,7 +102,7 @@ export default function NovoClienteContent() {
             <ClientForm onSubmit={handleSubmit} submitLabel="Criar Cliente" />
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }

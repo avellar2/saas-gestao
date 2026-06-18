@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { EnvelopeSimple, ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -38,14 +38,14 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 px-4">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 backdrop-blur-xl">
           {sent ? (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center"
@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
                 <ArrowLeft className="w-4 h-4" />
                 Voltar para o login
               </Link>
-            </motion.div>
+            </m.div>
           ) : (
             <>
               <div className="text-center mb-8">
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
             </>
           )}
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

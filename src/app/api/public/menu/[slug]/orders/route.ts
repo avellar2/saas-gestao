@@ -49,6 +49,14 @@ export async function POST(
 
   const { tableToken, orderType, customerName, customerPhone, items, notes } = parsed.data;
 
+  // BUG-014 fix: TABLE exige tableToken
+  if (orderType === "TABLE" && !tableToken) {
+    return NextResponse.json(
+      { error: "Para pedidos na mesa, escaneie o QR Code da mesa" },
+      { status: 400 }
+    );
+  }
+
   // Valida mesa, se informada
   let tableId: string | null = null;
   if (tableToken) {

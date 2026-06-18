@@ -5,6 +5,7 @@ import { isTrialLimitReached } from "@/lib/company-limits";
 import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus } from "@/generated/prisma/client";
 import { quoteSchema } from "@/lib/validations";
+import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -100,10 +101,9 @@ export async function POST(request: Request) {
 
   const { customerId, items, discount, notes, validUntil } = result.data;
 
+  // P23 fix: validar customerId pertence à empresa (e buscar nome para log)
   const customer = await tenant.customer.findUnique({ where: { id: customerId } });
-  if (!customer) {
-    return NextResponse.json({ error: "Cliente nao encontrado" }, { status: 404 });
-  }
+  if (!customer) return notFoundResponse("Cliente");
 
   const lastQuote = await tenant.quote.findFirst({
     orderBy: { number: "desc" },

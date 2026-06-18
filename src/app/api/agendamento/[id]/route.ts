@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
+import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -90,6 +91,12 @@ export async function PUT(
       { error: "Titulo e obrigatorio" },
       { status: 400 }
     );
+  }
+
+  // P23 fix: validar customerId pertence à empresa
+  if (customerId !== undefined && customerId !== null && customerId !== "") {
+    const customer = await findCustomerInCompany(tenant, customerId);
+    if (!customer) return notFoundResponse("Cliente");
   }
 
   const data: Record<string, unknown> = {

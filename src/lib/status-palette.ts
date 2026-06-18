@@ -18,6 +18,7 @@ export type StatusKind =
   | "serviceOrderPriority"
   | "quote"
   | "finance"
+  | "financeType"
   | "payment"
   | "stock"
   | "menuOrder"
@@ -134,21 +135,42 @@ export const QUOTE_STATUS_CONFIG: Record<string, StatusConfig> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Finance Status (fluxo de caixa)
+// Finance Status (status de pagamento de transação)
 // ─────────────────────────────────────────────────────────────────────────────
+// BUG-006 fix: PAID nunca é "Despesa". É só o status de pagamento.
+// Para tipo, use FINANCE_TYPE_CONFIG abaixo.
 
 export const FINANCE_STATUS_CONFIG: Record<string, StatusConfig> = {
-  RECEIVED: {
-    label: "Receita",
-    variant: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  PAID: {
-    label: "Despesa",
-    variant: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
   PENDING: {
     label: "Pendente",
     variant: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  PAID: {
+    label: "Pago",
+    variant: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  OVERDUE: {
+    label: "Vencido",
+    variant: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  },
+  CANCELLED: {
+    label: "Cancelado",
+    variant: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900/30 dark:text-zinc-400",
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Finance Type (RECEIVABLE / PAYABLE)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const FINANCE_TYPE_CONFIG: Record<string, StatusConfig> = {
+  RECEIVABLE: {
+    label: "A receber",
+    variant: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  PAYABLE: {
+    label: "A pagar",
+    variant: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   },
 };
 
@@ -209,15 +231,17 @@ export const STOCK_STATUS_CONFIG: Record<string, StatusConfig> = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Menu Order Status
 // ─────────────────────────────────────────────────────────────────────────────
+// BUG-009 fix: enums reais são RECEIVED, PREPARING, READY, DELIVERED, CANCELLED.
+// PENDING foi removido (não existia nesse módulo).
 
 export const MENU_ORDER_STATUS_CONFIG: Record<string, StatusConfig> = {
-  PENDING: {
-    label: "Pendente",
-    variant: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  RECEIVED: {
+    label: "Recebido",
+    variant: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   },
   PREPARING: {
-    label: "Preparando",
-    variant: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    label: "Em preparo",
+    variant: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   },
   READY: {
     label: "Pronto",
@@ -296,6 +320,7 @@ export const STATUS_PALETTE: Record<StatusKind, Record<string, StatusConfig>> = 
   serviceOrderPriority: SERVICE_ORDER_PRIORITY_CONFIG,
   quote: QUOTE_STATUS_CONFIG,
   finance: FINANCE_STATUS_CONFIG,
+  financeType: FINANCE_TYPE_CONFIG,
   payment: PAYMENT_STATUS_CONFIG,
   stock: STOCK_STATUS_CONFIG,
   menuOrder: MENU_ORDER_STATUS_CONFIG,

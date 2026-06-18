@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import { SERVICE_ORDER_STATUS, getStatusLabel } from "@/lib/os-status";
 import { PORTAL_STATUS_ORDER } from "@/lib/portal";
@@ -40,7 +40,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
             <div key={status} className="flex items-center flex-1">
               {/* Step dot */}
               <div className="flex flex-col items-center">
-                <motion.div
+                <m.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -66,7 +66,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
                   {current && (
                     <span className="absolute inset-0 rounded-full animate-pulse border-2 border-primary/50" />
                   )}
-                </motion.div>
+                </m.div>
                 <span
                   className={`mt-1.5 text-xs font-medium text-center leading-tight ${
                     reached
@@ -105,7 +105,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
             <div key={status} className="flex items-center gap-3">
               {/* Step indicator */}
               <div className="flex flex-col items-center">
-                <motion.div
+                <m.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{
@@ -124,7 +124,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
                 >
                   {reached && !current && <Check className="h-3.5 w-3.5" />}
                   {current && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                </motion.div>
+                </m.div>
                 {index < PORTAL_STATUS_ORDER.length - 1 && (
                   <div
                     className={`w-0.5 flex-1 my-0.5 min-h-[12px] ${

@@ -51,19 +51,31 @@ export async function POST(request: Request) {
     whatsapp,
     email,
     address,
-    status = "TRIAL",
-    trialDays = 15,
   } = body;
 
   if (!name) {
     return NextResponse.json({ error: "Nome e obrigatorio" }, { status: 400 });
   }
 
-  const trialStartsAt = status === "TRIAL" ? new Date() : null;
-  const trialEndsAt =
-    status === "TRIAL"
-      ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
-      : null;
+  // P18 fix: validar trialDays entre 1 e 90. Default 15.
+  const rawTrialDays = body.trialDays;
+  let trialDays = 15;
+  if (rawTrialDays !== undefined && rawTrialDays !== null) {
+    const n = Number(rawTrialDays);
+    if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1 || n > 90) {
+      return NextResponse.json(
+        { error: "trialDays deve ser um número inteiro entre 1 e 90" },
+        { status: 400 }
+      );
+    }
+    trialDays = n;
+  }
+
+  // P19 fix: empresa nova sempre nasce TRIAL. Não é possível criar ACTIVE
+  // direto sem fluxo Stripe. Ativação manual deve ser via PUT separado.
+  const status = "TRIAL";
+  const trialStartsAt = new Date();
+  const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
 
   const company = await prisma.company.create({
     data: {
@@ -94,7 +106,7 @@ export async function POST(request: Request) {
   await prisma.subscription.create({
     data: {
       companyId: company.id,
-      status: status === "TRIAL" ? "TRIAL" : "ACTIVE",
+      status: "TRIAL",
       planName: "Inicial",
       basePrice: 49.0,
       modulesCount: 0,
@@ -102,6 +114,9 @@ export async function POST(request: Request) {
       trialEndsAt: trialEndsAt,
     },
   });
+
+  // Log de auditoria
+  console.log(`[ADMIN] Nova empresa criada: ${company.id} (${company.name}) — TRIAL ${trialDays} dias`);
 
   return NextResponse.json(company, { status: 201 });
 }

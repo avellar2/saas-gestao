@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS } from "@/lib/menu-helpers";
+import { getStatusLabel } from "@/lib/status-palette";
 import { Button } from "@/components/ui/button";
 import { Clock, UtensilsCrossed, Store, ChevronRight, XCircle, Banknote, Smartphone, CreditCard, ArrowLeftRight, HelpCircle } from "lucide-react";
 
@@ -37,19 +38,11 @@ interface Order {
 }
 
 const STATUS_COLUMNS = [
-  { key: "RECEIVED", label: "Recebidos", color: "bg-blue-500" },
-  { key: "PREPARING", label: "Em Preparo", color: "bg-yellow-500" },
-  { key: "READY", label: "Prontos", color: "bg-green-500" },
-  { key: "DELIVERED", label: "Entregues", color: "bg-gray-500" },
+  { key: "RECEIVED", color: "bg-blue-500" },
+  { key: "PREPARING", color: "bg-amber-500" },
+  { key: "READY", color: "bg-emerald-500" },
+  { key: "DELIVERED", color: "bg-zinc-500" },
 ];
-
-const STATUS_LABELS: Record<string, string> = {
-  RECEIVED: "Recebido",
-  PREPARING: "Em Preparo",
-  READY: "Pronto",
-  DELIVERED: "Entregue",
-  CANCELLED: "Cancelado",
-};
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   RECEIVED: ["PREPARING", "CANCELLED"],
@@ -169,7 +162,7 @@ export function CozinhaContent() {
             <div key={col.key} className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${col.color}`} />
-                <h2 className="font-semibold text-sm">{col.label}</h2>
+                <h2 className="font-semibold text-sm">{getStatusLabel("menuOrder", col.key)}</h2>
                 <span className="text-xs text-muted-foreground">
                   ({colOrders.length})
                 </span>
@@ -330,7 +323,7 @@ function OrderCard({
               ) : (
                 <ChevronRight className="h-3 w-3" />
               )}
-              {STATUS_LABELS[status] || status}
+              {getStatusLabel("menuOrder", status)}
             </button>
           ))}
         </div>

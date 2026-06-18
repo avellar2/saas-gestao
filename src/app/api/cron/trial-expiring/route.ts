@@ -6,11 +6,19 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized access
+  // P02 fix: cron sempre exige CRON_SECRET. Sem secret, rota é bloqueada.
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[CRON] CRON_SECRET não configurado. Cron bloqueado por segurança.");
+    return NextResponse.json(
+      { error: "CRON_SECRET não configurado. Configure no .env para habilitar." },
+      { status: 503 }
+    );
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
   }
 

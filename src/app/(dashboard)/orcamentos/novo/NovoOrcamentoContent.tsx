@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -69,7 +69,7 @@ export default function NovoOrcamentoContent() {
         </Button>
       </div>
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] as [number, number, number, number] }}
@@ -102,7 +102,7 @@ export default function NovoOrcamentoContent() {
             submitLabel="Criar Orcamento"
           />
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

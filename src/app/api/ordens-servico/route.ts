@@ -6,6 +6,12 @@ import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus, ServiceOrderStatus } from "@/generated/prisma/client";
 import { generateOSCode } from "@/lib/os-status";
 import crypto from "crypto";
+import {
+  findCustomerInCompany,
+  findQuoteInCompany,
+  findProductsInCompany,
+  notFoundResponse,
+} from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -111,26 +117,27 @@ export async function POST(request: Request) {
     );
   }
 
-  // Verify customer exists in tenant
-  const customer = await tenant.customer.findUnique({
-    where: { id: customerId },
-  });
-  if (!customer) {
-    return NextResponse.json(
-      { error: "Cliente nao encontrado" },
-      { status: 404 }
-    );
+  // P23 fix: validar que customerId pertence à empresa
+  const customer = await findCustomerInCompany(tenant, customerId);
+  if (!customer) return notFoundResponse("Cliente");
+
+  // P23 fix: validar que quoteId (se informado) pertence à empresa
+  if (quoteId) {
+    const quote = await findQuoteInCompany(tenant, quoteId);
+    if (!quote) return notFoundResponse("Orcamento");
   }
 
-  // Verify quote exists and is approved if linking
-  if (quoteId) {
-    const quote = await tenant.quote.findUnique({
-      where: { id: quoteId },
-    });
-    if (!quote) {
+  // P23 fix: validar que todos os productId dos items pertencem à empresa
+  const productIds = items
+    .map((it: { productId?: string }) => it.productId)
+    .filter((p: string | undefined): p is string => !!p);
+  if (productIds.length > 0) {
+    const validProductIds = await findProductsInCompany(tenant, productIds);
+    const invalidIds = productIds.filter((id) => !validProductIds.includes(id));
+    if (invalidIds.length > 0) {
       return NextResponse.json(
-        { error: "Orcamento nao encontrado" },
-        { status: 404 }
+        { error: "Um ou mais produtos nao pertencem a sua empresa" },
+        { status: 400 }
       );
     }
   }

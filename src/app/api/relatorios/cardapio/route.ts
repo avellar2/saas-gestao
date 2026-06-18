@@ -46,14 +46,14 @@ export async function GET(request: Request) {
       where: { status: "DELIVERED", paidAt: { gte: start, lte: end } },
     }).then(r => Number(r._sum.total) || 0),
 
-    // Vendas por forma de pagamento
+    // Vendas por forma de pagamento (inclui null como "Não informado")
     tenant.menuOrder.groupBy({
       by: ["paymentMethod"],
-      where: { status: "DELIVERED", paidAt: { gte: start, lte: end }, paymentMethod: { not: null } },
+      where: { status: "DELIVERED", paidAt: { gte: start, lte: end } },
       _count: true,
       _sum: { total: true },
     }).then(rows => rows.map(r => ({
-      metodo: r.paymentMethod || "OUTRO",
+      metodo: r.paymentMethod || "UNINFORMED",
       total: r._count,
       valor: Number(r._sum.total) || 0,
     }))),

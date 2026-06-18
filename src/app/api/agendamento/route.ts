@@ -5,6 +5,7 @@ import { isTrialLimitReached } from "@/lib/company-limits";
 import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus } from "@/generated/prisma/client";
 import { appointmentSchema } from "@/lib/validations";
+import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -99,6 +100,12 @@ export async function POST(request: Request) {
   }
 
   const { title, description, dateTime, duration, status, customerId, notes } = result.data;
+
+  // P23 fix: validar customerId pertence à empresa
+  if (customerId) {
+    const customer = await findCustomerInCompany(tenant, customerId);
+    if (!customer) return notFoundResponse("Cliente");
+  }
 
   const appointment = await tenant.appointment.create({
     data: {

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { menuConfigSchema } from "@/lib/validations";
+import { findMenuItemInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(
   companyId: string,
@@ -67,6 +68,20 @@ export async function PUT(request: Request) {
   }
 
   const slug = parsed.data.slug;
+
+  // BUG-033 fix: validar formato do slug (minúsculo, sem espaço, sem acento, só letras/números/hífen)
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return NextResponse.json(
+      { error: "O slug deve conter apenas letras minúsculas, números e hífen (sem espaços ou acentos)" },
+      { status: 400 }
+    );
+  }
+  if (slug.length < 3 || slug.length > 50) {
+    return NextResponse.json(
+      { error: "O slug deve ter entre 3 e 50 caracteres" },
+      { status: 400 }
+    );
+  }
 
   // Verifica se slug já está em uso por outra empresa
   const existing = await prisma.company.findUnique({ where: { slug } });

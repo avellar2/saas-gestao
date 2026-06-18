@@ -4,6 +4,11 @@ import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { PaymentStatus } from "@/generated/prisma/client";
 import { sendOSCompletedEmail } from "@/lib/email";
+import {
+  findCustomerInCompany,
+  findProductsInCompany,
+  notFoundResponse,
+} from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -150,10 +155,18 @@ export async function PUT(
       WAITING_PARTS: ["IN_PROGRESS", "CANCELLED"],
       IN_PROGRESS: ["READY", "WAITING_PARTS", "CANCELLED"],
       READY: ["DELIVERED", "CANCELLED"],
-      DELIVERED: ["COMPLETED", "CANCELLED"],
+      DELIVERED: ["COMPLETED"],
       COMPLETED: [],
       CANCELLED: [],
     };
+
+    // BUG-011 fix: bloquear cancelamento de OS já DELIVERED/COMPLETED
+    if (body.status === "CANCELLED" && (existing.status === "DELIVERED" || existing.status === "COMPLETED")) {
+      return NextResponse.json(
+        { error: "OS já entregue ou concluída não pode ser cancelada. Entre em contato com o suporte se necessário." },
+        { status: 400 }
+      );
+    }
 
     const allowed = allowedTransitions[existing.status] || [];
     if (!allowed.includes(body.status)) {
@@ -311,15 +324,23 @@ export async function PUT(
       );
     }
 
-    // Verify customer exists in tenant
-    const customer = await tenant.customer.findUnique({
-      where: { id: customerId },
-    });
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Cliente nao encontrado" },
-        { status: 404 }
-      );
+    // P23 fix: validar que customerId pertence à empresa
+    const customer = await findCustomerInCompany(tenant, customerId);
+    if (!customer) return notFoundResponse("Cliente");
+
+    // P23 fix: validar productIds
+    const productIds = items
+      .map((it: { productId?: string }) => it.productId)
+      .filter((p: string | undefined): p is string => !!p);
+    if (productIds.length > 0) {
+      const validProductIds = await findProductsInCompany(tenant, productIds);
+      const invalidIds = productIds.filter((id) => !validProductIds.includes(id));
+      if (invalidIds.length > 0) {
+        return NextResponse.json(
+          { error: "Um ou mais produtos nao pertencem a sua empresa" },
+          { status: 400 }
+        );
+      }
     }
 
     // Recalculate total from items

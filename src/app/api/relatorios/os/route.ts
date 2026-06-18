@@ -22,6 +22,43 @@ export async function GET(request: Request) {
   const { start, end } = getMonthRange(month);
   const tenant = tenantPrisma(companyId);
 
+  // BUG-004 fix: usar finalAmount quando existir, senão total
+  const receitaGeradaAggPromise = (async () => {
+    const rows = await tenant.serviceOrder.findMany({
+      where: {
+        OR: [
+          { completedAt: { gte: start, lte: end } },
+          { updatedAt: { gte: start, lte: end }, status: "COMPLETED" },
+        ],
+      },
+      select: { total: true, finalAmount: true },
+    });
+    return rows.reduce((sum, r) => sum + (r.finalAmount !== null && r.finalAmount !== undefined ? Number(r.finalAmount) : Number(r.total)), 0);
+  })();
+
+  const topClientesPromise = (async () => {
+    const rows = await tenant.serviceOrder.findMany({
+      where: { createdAt: { gte: start, lte: end } },
+      select: {
+        total: true,
+        finalAmount: true,
+        customer: { select: { name: true } },
+      },
+    });
+    const map: Record<string, { valor: number; os: number }> = {};
+    for (const r of rows) {
+      const name = r.customer?.name || "Sem nome";
+      if (!map[name]) map[name] = { valor: 0, os: 0 };
+      const valor = r.finalAmount !== null && r.finalAmount !== undefined ? Number(r.finalAmount) : Number(r.total);
+      map[name].valor += valor;
+      map[name].os += 1;
+    }
+    return Object.entries(map)
+      .sort(([, a], [, b]) => b.valor - a.valor)
+      .slice(0, 5)
+      .map(([cliente, data]) => ({ cliente, ...data }));
+  })();
+
   const [
     totalOS,
     abertas,
@@ -57,16 +94,8 @@ export async function GET(request: Request) {
       where: { status: "CANCELLED", updatedAt: { gte: start, lte: end } },
     }),
 
-    // Receita gerada pelas OS concluídas no mês
-    tenant.serviceOrder.aggregate({
-      _sum: { total: true },
-      where: {
-        OR: [
-          { completedAt: { gte: start, lte: end } },
-          { updatedAt: { gte: start, lte: end }, status: "COMPLETED" },
-        ],
-      },
-    }).then(r => Number(r._sum.total) || 0),
+    // BUG-004 fix: receita gerada usa finalAmount || total
+    receitaGeradaAggPromise,
 
     // Distribuição por status (contagem atual)
     tenant.serviceOrder.groupBy({
@@ -74,26 +103,8 @@ export async function GET(request: Request) {
       _count: true,
     }).then(rows => rows.map(r => ({ status: r.status, count: r._count }))),
 
-    // Top 5 clientes por receita de OS no mês
-    tenant.serviceOrder.findMany({
-      where: { createdAt: { gte: start, lte: end } },
-      select: {
-        total: true,
-        customer: { select: { name: true } },
-      },
-    }).then(rows => {
-      const map: Record<string, { valor: number; os: number }> = {};
-      for (const r of rows) {
-        const name = r.customer?.name || "Sem nome";
-        if (!map[name]) map[name] = { valor: 0, os: 0 };
-        map[name].valor += Number(r.total);
-        map[name].os += 1;
-      }
-      return Object.entries(map)
-        .sort(([, a], [, b]) => b.valor - a.valor)
-        .slice(0, 5)
-        .map(([cliente, data]) => ({ cliente, ...data }));
-    }),
+    // BUG-004 fix: top clientes usa finalAmount || total
+    topClientesPromise,
 
     // Por técnico (se existir technicianId)
     tenant.serviceOrder.groupBy({

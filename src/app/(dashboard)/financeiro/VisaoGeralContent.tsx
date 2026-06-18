@@ -18,7 +18,7 @@ interface ResumoData {
   month: string;
   receivable: { total: number; paid: number; pending: number; overdue: number };
   payable: { total: number; paid: number; pending: number; overdue: number };
-  balance: number;
+  balance: number; // saldo realizado (só PAID)
   byOrigin: Record<string, number>;
   byCategory: Array<{ category: string; type: string; amount: number }>;
   daily: Array<{ date: string; receivable: number; payable: number }>;
@@ -110,12 +110,12 @@ export function VisaoGeralContent() {
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <ArrowUpFromLine className="h-4 w-4 text-emerald-600" />
               </div>
-              <span className="text-sm font-semibold text-foreground">Receita do Mês</span>
+              <span className="text-sm font-semibold text-foreground">Receita Realizada</span>
             </div>
           </div>
           <div className="p-5">
-            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.receivable.total)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.receivable.paid)} recebido</p>
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.receivable.paid)}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.receivable.total)} previsto</p>
           </div>
         </div>
 
@@ -125,30 +125,31 @@ export function VisaoGeralContent() {
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <ArrowDownFromLine className="h-4 w-4 text-emerald-600" />
               </div>
-              <span className="text-sm font-semibold text-foreground">Despesa do Mês</span>
+              <span className="text-sm font-semibold text-foreground">Despesa Realizada</span>
             </div>
           </div>
           <div className="p-5">
-            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.payable.total)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.payable.paid)} pago</p>
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.payable.paid)}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.payable.total)} previsto</p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px(rgba(0,0,0,0.02)]">
           <div className="px-5 py-4 bg-emerald-50/40 border-b border-border/40">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <DollarSign className="h-4 w-4 text-emerald-600" />
               </div>
-              <span className="text-sm font-semibold text-foreground">Saldo do Mês</span>
+              <span className="text-sm font-semibold text-foreground">Saldo Realizado</span>
             </div>
           </div>
           <div className="p-5">
             <p className={`text-3xl font-extrabold tracking-tight tabular-nums ${data.balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(data.balance)}</p>
+            <p className="text-xs text-muted-foreground mt-1">apenas pagos</p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px(rgba(0,0,0,0.04),0_1px_2px(rgba(0,0,0,0.02)]">
           <div className="px-5 py-4 bg-emerald-50/40 border-b border-border/40">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -159,7 +160,7 @@ export function VisaoGeralContent() {
           </div>
           <div className="p-5">
             <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{data.receivable.overdue + data.payable.overdue}</p>
-            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.receivable.overdue)} a receber</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.receivable.overdue)} a receber vencido</p>
           </div>
         </div>
       </div>

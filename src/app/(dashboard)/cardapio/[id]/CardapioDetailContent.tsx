@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   CardapioForm,
   type MenuItemFormData,
@@ -134,24 +134,24 @@ export default function CardapioDetailContent() {
   }
 
   return (
-    <motion.div
+    <m.div
       className="max-w-[1400px] mx-auto px-6 py-8 space-y-5"
       variants={containerVariants}
       initial="hidden"
       animate="show"
     >
       {error && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-base font-medium"
         >
           {error}
-        </motion.div>
+        </m.div>
       )}
 
       {editing ? (
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-[2.25rem] font-extrabold text-foreground">Editar Item</h1>
@@ -187,10 +187,10 @@ export default function CardapioDetailContent() {
               />
             </div>
           </div>
-        </motion.div>
+        </m.div>
       ) : (
         <>
-          <motion.div variants={itemVariants}>
+          <m.div variants={itemVariants}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-700 dark:text-orange-400">
@@ -216,10 +216,10 @@ export default function CardapioDetailContent() {
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <motion.div variants={itemVariants} className="md:col-span-2">
+            <m.div variants={itemVariants} className="md:col-span-2">
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
                 <div className="px-6 py-5 bg-orange-50/40 dark:bg-orange-950/20 border-b border-border/40 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-700 dark:text-orange-400">
@@ -259,9 +259,9 @@ export default function CardapioDetailContent() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
 
-            <motion.div variants={itemVariants}>
+            <m.div variants={itemVariants}>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-orange-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
                 <div className="px-6 py-5 bg-orange-50/40 dark:bg-orange-950/20 border-b border-border/40 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-700 dark:text-orange-400">
@@ -303,10 +303,10 @@ export default function CardapioDetailContent() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </>
       )}
-    </motion.div>
+    </m.div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   ServiceOrderForm,
   type ServiceOrderFormData,
@@ -567,7 +567,7 @@ export default function OSDetailContent() {
   });
 
   return (
-    <motion.div
+    <m.div
       className="max-w-[1400px] mx-auto space-y-5"
       variants={containerVariants}
       initial="hidden"
@@ -575,16 +575,16 @@ export default function OSDetailContent() {
     >
       {/* Error Banner */}
       {error && (
-        <motion.div
+        <m.div
           variants={itemVariants}
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
         >
           {error}
-        </motion.div>
+        </m.div>
       )}
 
       {/* ZONA 1: Hero Premium */}
-      <motion.div variants={itemVariants}>
+      <m.div variants={itemVariants}>
         <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
@@ -679,11 +679,11 @@ export default function OSDetailContent() {
             </div>
           )}
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Edit Mode */}
       {editing && canEdit ? (
-        <motion.div variants={itemVariants}>
+        <m.div variants={itemVariants}>
           <ServiceOrderForm
             customers={customers}
             quotes={quotes}
@@ -722,12 +722,12 @@ export default function OSDetailContent() {
             warrantyEnabled={so.warrantyEnabled}
             warrantyEndDate={so.warrantyEndDate}
           />
-        </motion.div>
+        </m.div>
       ) : (
         <>
           {/* ZONA 2: Atendimento */}
           {(so.problemDescription || so.serviceDescription || so.customerNotes) && (
-            <motion.div variants={itemVariants}>
+            <m.div variants={itemVariants}>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                   <div className="flex items-center gap-3">
@@ -776,11 +776,11 @@ export default function OSDetailContent() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {/* ZONA 3: Operacional / Comercial */}
-          <motion.div variants={itemVariants}>
+          <m.div variants={itemVariants}>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
               <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-3">
@@ -1014,11 +1014,11 @@ export default function OSDetailContent() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* ZONA 4: Pós-venda */}
           {(so.warrantyEnabled || so.internalNotes || so.notes) && (
-            <motion.div variants={itemVariants}>
+            <m.div variants={itemVariants}>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                   <div className="flex items-center gap-3">
@@ -1087,7 +1087,7 @@ export default function OSDetailContent() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </>
       )}
@@ -1102,6 +1102,6 @@ export default function OSDetailContent() {
           setCloseDialogOpen(false);
         }}
       />
-    </motion.div>
+    </m.div>
   );
 }

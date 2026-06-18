@@ -82,16 +82,25 @@ export async function GET(request: Request) {
     byCategory[catKey].amount += amount;
 
     // Totais por tipo
+    // BUG-001/007 fix: separar realizado (PAID) de previsto (PENDING/OVERDUE)
     if (tx.type === "RECEIVABLE") {
-      receivableTotal += amount;
-      if (isPaid) receivablePaid += amount;
-      else if (overdue) receivableOverdue += amount;
-      else if (!isCancelled) receivablePending += amount;
+      if (isPaid) {
+        receivablePaid += amount;
+      } else if (!isCancelled) {
+        // PENDING ou OVERDUE
+        receivableTotal += amount;
+        if (overdue) receivableOverdue += amount;
+        else receivablePending += amount;
+      }
+      // CANCELLED: ignorado
     } else if (tx.type === "PAYABLE") {
-      payableTotal += amount;
-      if (isPaid) payablePaid += amount;
-      else if (overdue) payableOverdue += amount;
-      else if (!isCancelled) payablePending += amount;
+      if (isPaid) {
+        payablePaid += amount;
+      } else if (!isCancelled) {
+        payableTotal += amount;
+        if (overdue) payableOverdue += amount;
+        else payablePending += amount;
+      }
     }
 
     // Dados diários (apenas PAID usa paidAt, PENDING usa dueDate)
@@ -117,13 +126,14 @@ export async function GET(request: Request) {
     .map(([date, values]) => ({ date, ...values }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const balance = receivableTotal - payableTotal;
+  // BUG-001 fix: saldo realizado = receitas pagas - despesas pagas
+  const balance = receivablePaid - payablePaid;
 
   return NextResponse.json({
     month,
     receivable: {
-      total: receivableTotal,
-      paid: receivablePaid,
+      total: receivableTotal, // previsto (PENDING + OVERDUE)
+      paid: receivablePaid,    // realizado
       pending: receivablePending,
       overdue: receivableOverdue,
     },
@@ -133,7 +143,7 @@ export async function GET(request: Request) {
       pending: payablePending,
       overdue: payableOverdue,
     },
-    balance,
+    balance, // saldo realizado
     byOrigin,
     byCategory: Object.values(byCategory).sort((a, b) => b.amount - a.amount),
     daily,

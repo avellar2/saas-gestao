@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     }).then(r => Number(r._sum.amount) || 0);
 
     contasVencidasP = tenant.financialTransaction.count({
-      where: { status: "PENDING", dueDate: { lt: now } },
+      where: { status: "PENDING", dueDate: { lt: now, gte: start, lte: end } },
     });
 
     // Receitas por dia

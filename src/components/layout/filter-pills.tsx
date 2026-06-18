@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 export interface FilterOption {
   /** Valor do filtro */
@@ -85,7 +85,7 @@ export function FilterPills({
             )}
           >
             {isActive && (
-              <motion.span
+              <m.span
                 layoutId="filterPillIndicator"
                 className="absolute inset-0 bg-primary rounded-full"
                 initial={false}

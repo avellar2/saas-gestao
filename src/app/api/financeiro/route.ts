@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus } from "@/generated/prisma/client";
 import { financialTransactionSchema } from "@/lib/validations";
 import { getMonthRange } from "@/lib/finance-helpers";
+import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
   const companyModule = await prisma.companyModule.findUnique({
@@ -120,6 +121,12 @@ export async function POST(request: Request) {
   }
 
   const { type, description, category, amount, dueDate, customerId, notes, status } = result.data;
+
+  // P23 fix: validar que customerId (se informado) pertence à empresa
+  if (customerId) {
+    const customer = await findCustomerInCompany(tenant, customerId);
+    if (!customer) return notFoundResponse("Cliente");
+  }
 
   const transaction = await tenant.financialTransaction.create({
     data: {

@@ -52,7 +52,7 @@ export function ProdutosContent() {
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
-      if (stockFilter === "low") params.set("lowStock", "true");
+      if (stockFilter) params.set("stockFilter", stockFilter);
       params.set("page", String(page));
       params.set("limit", "20");
 
@@ -72,13 +72,6 @@ export function ProdutosContent() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
-
-  const filteredProducts = products.filter((p) => {
-    if (stockFilter === "zerados") return Number(p.quantity) <= 0;
-    if (stockFilter === "ativos") return p.active;
-    if (stockFilter === "inativos") return !p.active;
-    return true;
-  });
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-5">
@@ -146,7 +139,7 @@ export function ProdutosContent() {
 
       {loading ? (
         <TableSkeleton rows={5} />
-      ) : filteredProducts.length === 0 ? (
+      ) : products.length === 0 ? (
         <EmptyState
           icon={Package}
           title="Nenhum produto encontrado"
@@ -171,7 +164,7 @@ export function ProdutosContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((p) => {
+                  {products.map((p) => {
                     const qty = Number(p.quantity);
                     const min = Number(p.minStock);
                     const status = getStockStatus(qty, min);

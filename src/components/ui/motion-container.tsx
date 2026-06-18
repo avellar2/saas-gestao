@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 import { type ReactNode } from "react";
 
 const containerVariants: Variants = {
@@ -44,7 +44,7 @@ export function MotionContainer({
   ...props
 }: MotionContainerProps) {
   return (
-    <motion.div
+    <m.div
       className={className}
       variants={containerVariants}
       initial={initial ? "hidden" : false}
@@ -53,7 +53,7 @@ export function MotionContainer({
       {...props}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -66,13 +66,13 @@ interface MotionItemProps {
 
 export function MotionItem({ children, className = "", delay = 0, ...props }: MotionItemProps) {
   return (
-    <motion.div
+    <m.div
       className={className}
       variants={itemVariants}
       transition={{ delay }}
       {...props}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

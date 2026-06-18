@@ -4,6 +4,7 @@ import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { updateMenuOrderStatusSchema } from "@/lib/validations";
 import { PAYMENT_METHOD_LABELS } from "@/lib/menu-helpers";
+import { upsertFinancialTx } from "@/lib/financial-tx";
 
 // Transições de status permitidas
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -134,12 +135,9 @@ export async function PATCH(
   // ── Integração Financeira (best-effort) ──────────────────────────────
   if (financeActive) {
     try {
+      // P05 fix: usar upsertFinancialTx com SERIALIZABLE para evitar
+      // duplicação quando dois clientes entregam o mesmo pedido ao mesmo tempo.
       if (newStatus === "DELIVERED") {
-        // Busca transação existente para evitar duplicidade
-        const existingTx = await tenant.financialTransaction.findFirst({
-          where: { menuOrderId: id },
-        });
-
         const now = new Date();
         const tableName = existing.table?.name || null;
         const paymentLabel = parsed.data.paymentMethod
@@ -149,47 +147,32 @@ export async function PATCH(
           ? `Mesa ${tableName}`
           : "Para viagem";
 
-        const txData = {
+        const txResult = await upsertFinancialTx({
+          companyId,
+          menuOrderId: id,
           type: "RECEIVABLE",
-          status: "PAID",
-          amount: existing.total,
           description: `Receita do Pedido #${existing.orderNumber}`,
           category: "Cardápio",
+          amount: Number(existing.total),
+          customerId: null,
+          status: "PAID",
           paidAt: now,
           dueDate: now,
           notes: `Pedido #${existing.orderNumber} - ${orderTypeLabel} - Pagamento: ${paymentLabel}`,
-          menuOrderId: id,
-          companyId,
-        };
+          ignoreCancelled: true, // P12 fix: ignora tx canceladas
+        });
 
-        if (existingTx) {
-          await tenant.financialTransaction.update({
-            where: { id: existingTx.id },
-            data: txData,
-          });
-
+        if (txResult) {
           await logActivity({
             tenant,
             userId,
             userName,
-            action: "UPDATE",
+            action: txResult.created ? "CREATE" : "UPDATE",
             entity: "financial",
-            entityId: existingTx.id,
-            details: `Receita financeira atualizada a partir do Pedido #${existing.orderNumber}`,
-          });
-        } else {
-          const created = await tenant.financialTransaction.create({
-            data: txData,
-          });
-
-          await logActivity({
-            tenant,
-            userId,
-            userName,
-            action: "CREATE",
-            entity: "financial",
-            entityId: created.id,
-            details: `Receita financeira criada a partir do Pedido #${existing.orderNumber}`,
+            entityId: txResult.id,
+            details: txResult.created
+              ? `Receita financeira criada a partir do Pedido #${existing.orderNumber}`
+              : `Receita financeira atualizada a partir do Pedido #${existing.orderNumber}`,
           });
         }
 
@@ -203,24 +186,29 @@ export async function PATCH(
           details: `Pedido #${existing.orderNumber} entregue e lançado no caixa`,
         });
       } else if (newStatus === "CANCELLED") {
-        // Se cancelar pedido que já foi entregue, marcar transação como CANCELLED
-        const existingTx = await tenant.financialTransaction.findFirst({
-          where: { menuOrderId: id, status: { not: "CANCELLED" } },
+        // P12 fix: cancelar tx existente (se houver) via SERIALIZABLE
+        const cancelResult = await upsertFinancialTx({
+          companyId,
+          menuOrderId: id,
+          type: "RECEIVABLE",
+          description: "Cancelado",
+          category: "Cardápio",
+          amount: 0,
+          customerId: null,
+          status: "CANCELLED",
+          paidAt: null,
+          dueDate: new Date(),
+          notes: `Pedido #${existing.orderNumber} cancelado`,
+          ignoreCancelled: false, // permite cancelar a tx existente
         });
-
-        if (existingTx) {
-          await tenant.financialTransaction.update({
-            where: { id: existingTx.id },
-            data: { status: "CANCELLED" },
-          });
-
+        if (cancelResult) {
           await logActivity({
             tenant,
             userId,
             userName,
             action: "UPDATE",
             entity: "financial",
-            entityId: existingTx.id,
+            entityId: cancelResult.id,
             details: `Pedido #${existing.orderNumber} entregue foi cancelado; receita financeira cancelada`,
           });
         }

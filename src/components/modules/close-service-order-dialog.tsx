@@ -205,9 +205,21 @@ export function CloseServiceOrderDialog({
     setSubmitting(true);
     setError(null);
 
+    const existingPaid = Number(serviceOrder.paidAmount ?? 0);
+    // Se o status final é PARTIAL, o paidAmount = existingPaid (sem novo pagamento agora)
+    // Se é PAID, paidAmount = finalAmount (total)
+    // Se é PENDING/CANCELLED, paidAmount = existingPaid (sem mudança)
+    const newPaidAmount = paymentStatus === "PAID"
+      ? parseFloat(finalAmount)
+      : paymentStatus === "PARTIAL"
+        ? existingPaid
+        : existingPaid;
+
     const payload: Record<string, unknown> = {
       finalStatus,
       finalAmount: parseFloat(finalAmount),
+      paidAmount: newPaidAmount,
+      existingPaidAmount: existingPaid,
       paymentStatus,
       paymentMethod: paymentStatus === "PENDING" ? null : (paymentMethod || null),
       completedAt,

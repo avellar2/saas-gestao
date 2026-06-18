@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -289,7 +289,7 @@ export default function OrcamentoDetailContent() {
 
       <AnimatePresence mode="wait">
         {editing ? (
-          <motion.div
+          <m.div
             key="edit"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -328,9 +328,9 @@ export default function OrcamentoDetailContent() {
                 />
               </div>
             </div>
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="view"
             variants={containerVariants}
             initial="hidden"
@@ -341,19 +341,19 @@ export default function OrcamentoDetailContent() {
             {/* Error */}
             <AnimatePresence>
               {error && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
                 >
                   {error}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
 
             {/* Hero Card */}
-            <motion.div variants={itemVariants}
+            <m.div variants={itemVariants}
             >
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
               >
@@ -412,10 +412,10 @@ export default function OrcamentoDetailContent() {
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
 
             {/* Items */}
-            <motion.div variants={itemVariants}
+            <m.div variants={itemVariants}
             >
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
               >
@@ -502,11 +502,11 @@ export default function OrcamentoDetailContent() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
 
             {/* Notes */}
             {quote.notes && (
-              <motion.div variants={itemVariants}
+              <m.div variants={itemVariants}
               >
                 <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
                 >
@@ -520,9 +520,9 @@ export default function OrcamentoDetailContent() {
                     {quote.notes}
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

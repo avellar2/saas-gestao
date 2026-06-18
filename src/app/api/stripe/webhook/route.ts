@@ -4,17 +4,23 @@ import { prisma } from "@/lib/prisma";
 import { CORE_MODULES } from "@/lib/modules";
 
 export async function POST(request: Request) {
+  // P17 fix: webhook sempre exige STRIPE_WEBHOOK_SECRET. Sem secret, bloqueia.
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret || webhookSecret.length < 16) {
+    console.error("[STRIPE] STRIPE_WEBHOOK_SECRET não configurado. Webhook bloqueado.");
+    return NextResponse.json(
+      { error: "STRIPE_WEBHOOK_SECRET não configurado." },
+      { status: 503 }
+    );
+  }
+
   const body = await request.text();
   const signature = request.headers.get("stripe-signature") || "";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let event: any;
   try {
-    event = getStripe().webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET || ""
-    );
+    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error("Stripe webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
