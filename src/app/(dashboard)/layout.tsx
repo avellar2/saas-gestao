@@ -36,14 +36,14 @@ export default async function DashboardLayout({
         user={(session.user || {}) as Record<string, unknown>}
         activeModules={activeModuleKeys}
       />
-      <div className="flex-1 flex flex-col ml-0 lg:ml-64">
+      <div className="flex-1 min-w-0 flex flex-col lg:ml-64">
         {/* Header mobile + theme toggle */}
         <header className="lg:hidden h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
           <span className="font-semibold text-sm tracking-tight">Gestor Local</span>
           <ThemeToggle />
         </header>
-        <main className="flex-1 overflow-auto">
-          <div className="p-5 lg:p-8 max-w-7xl mx-auto">
+        <main className="flex-1 overflow-auto w-full">
+          <div className="p-5 lg:p-8 w-full max-w-7xl mx-auto">
             {children}
           </div>
         </main>
