@@ -123,26 +123,15 @@ EOF
 echo "  Atualizacoes de seguranca: ATIVAS"
 echo "  Reboot automatico: DESATIVADO (voce decide quando reiniciar)"
 
-# 6. Sobe o Watchtower
+# 6. Watchtower (opcional - pode ter problemas com Docker 29.x)
 echo ""
-echo "[6/7] Iniciando Watchtower..."
-if docker compose -f docker-compose.prod.yml ps --services 2>/dev/null | grep -q watchtower; then
-  echo "  Watchtower ja configurado, subindo..."
-  docker compose -f docker-compose.prod.yml up -d watchtower
-else
-  echo "  AVISO: Watchtower ainda nao esta no docker-compose.prod.yml"
-  echo "  Fazendo pull e subindo standalone..."
-  docker run -d \
-    --name gestor_watchtower \
-    --restart unless-stopped \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -e WATCHTOWER_LABEL_ENABLE=true \
-    -e WATCHTOWER_CLEANUP=true \
-    -e WATCHTOWER_POLL_INTERVAL=300 \
-    -e TZ=America/Sao_Paulo \
-    --network gestor_network \
-    containrrr/watchtower
+echo "[6/7] Watchtower (auto-update)..."
+if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^gestor_watchtower$"; then
+  echo "  Watchtower antigo encontrado, removendo..."
+  docker rm -f gestor_watchtower 2>&1
 fi
+echo "  Watchtower desabilitado. Use 'remote.ps1 update' para atualizar manualmente."
+echo "  (Auto-update tinha bug de compatibilidade com Docker 29.x)"
 
 # 7. Verificacao final
 echo ""

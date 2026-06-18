@@ -32,7 +32,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("deploy","backup","restore","smoke","exec","ssh","status","logs","restart","setup","env","help")]
+    [ValidateSet("deploy","backup","restore","smoke","exec","ssh","status","logs","restart","setup","update","env","help")]
     [string]$Command,
 
     [Parameter(Mandatory = $false, Position = 1)]
@@ -246,9 +246,8 @@ switch ($Command) {
     }
 
     "smoke" {
-        Write-Log "Rodando smoke test remoto..."
-        $ServerName = [Environment]::GetEnvironmentVariable("VPS_SERVER")
-        $RemoteCmd = "cd $AppDir && BASE_URL=https://$ServerName ./scripts/smoke-test.sh"
+        Write-Log "Rodando smoke test remoto (via dominio)..."
+        $RemoteCmd = "cd $AppDir && BASE_URL=https://avgestao.com.br ./scripts/smoke-test.sh"
         Invoke-Remote -RemoteCmd $RemoteCmd
     }
 
@@ -287,8 +286,14 @@ switch ($Command) {
     "setup" {
         Write-Log "Instalando automacoes na VPS (setup inicial)..."
         Write-Warn "Este comando roda scripts/vps-setup.sh na VPS."
-        Write-Warn "Instala: Watchtower, cron de backup/heal/manutencao, logrotate, unattended-upgrades."
+        Write-Warn "Instala: cron de backup/heal/manutencao, logrotate, unattended-upgrades."
         $RemoteCmd = "cd $AppDir && bash scripts/vps-setup.sh"
+        Invoke-Remote -RemoteCmd $RemoteCmd
+    }
+
+    "update" {
+        Write-Log "Atualizando app na VPS (git pull + rebuild + restart)..."
+        $RemoteCmd = "cd $AppDir && git pull && docker compose -f docker-compose.prod.yml build app && docker compose -f docker-compose.prod.yml up -d app"
         Invoke-Remote -RemoteCmd $RemoteCmd
     }
 }
