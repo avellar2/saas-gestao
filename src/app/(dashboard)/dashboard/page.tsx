@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { MotionContainer, MotionItem } from "@/components/ui/motion-container";
-import { m } from "framer-motion";
+import { MotionDiv } from "@/components/ui/motion-div";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
 
       {/* Trial Alert */}
       {isTrial && (
-        <m.div
+        <MotionDiv
           initial={{ opacity: 0, y: 12, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring" as const, stiffness: 100, damping: 20, delay: 0.1 }}
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
                   `Expira em ${new Date(trialEndsAt).toLocaleDateString("pt-BR")}. Contate o administrador para ativar modulos adicionais.`}
             </p>
           </div>
-        </m.div>
+        </MotionDiv>
       )}
 
       {/* Metrics - Bento Grid */}
