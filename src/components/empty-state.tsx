@@ -1,6 +1,5 @@
 "use client";
 
-import { m } from "framer-motion";
 import {
   PackageOpen,
   Users,
@@ -241,10 +240,7 @@ export function EmptyState({
 
   if (variant === "compact") {
     return (
-      <m.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 120, damping: 20 }}
+      <div
         className={cn(
           "flex flex-col items-center justify-center py-10 px-4 text-center",
           className
@@ -260,22 +256,19 @@ export function EmptyState({
           </p>
         )}
         {hasPrimaryAction && (
-          <m.div whileTap={{ scale: 0.97 }}>
+          <div>
             <Button variant="outline" size="sm" onClick={onAction}>
               {actionLabel}
             </Button>
-          </m.div>
+          </div>
         )}
-      </m.div>
+      </div>
     );
   }
 
   // Default variant (full)
   return (
-    <m.div
-      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+    <div
       className={cn(
         "flex flex-col items-center justify-center py-16 px-4 text-center",
         className
@@ -318,7 +311,7 @@ export function EmptyState({
             )
           )}
           {hasPrimaryAction && (
-            <m.div whileTap={{ scale: 0.97 }}>
+            <div>
               {actionHref ? (
                 <a href={actionHref}>
                   <Button variant="outline" className="rounded-xl">
@@ -334,10 +327,10 @@ export function EmptyState({
                   {actionLabel}
                 </Button>
               )}
-            </m.div>
+            </div>
           )}
         </div>
       )}
-    </m.div>
+    </div>
   );
 }

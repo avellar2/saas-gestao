@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import {
   AppointmentForm,
   type AppointmentFormData,
@@ -14,8 +13,6 @@ interface CustomerOption {
   id: string;
   name: string;
 }
-
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
 
 export default function NovoAgendamentoContent() {
   const router = useRouter();
@@ -79,10 +76,7 @@ export default function NovoAgendamentoContent() {
         </Button>
       </div>
 
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: easeOut }}
+      <div
         className="rounded-2xl border border-border/60 border-t-2 border-t-indigo-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
       >
         <div className="px-6 py-5 bg-indigo-50/40 border-b border-border/30">
@@ -116,7 +110,7 @@ export default function NovoAgendamentoContent() {
             />
           )}
         </div>
-      </m.div>
+      </div>
     </div>
   );
 }

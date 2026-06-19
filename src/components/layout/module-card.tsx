@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { m } from "framer-motion";
 import {
   Users,
   FileText,
@@ -77,13 +76,10 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
   if (active) {
     return (
       <Link href={getModuleRoute(moduleKey)} className="block group">
-        <m.div
+        <div
           ref={cardRef}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          whileHover={{ y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="h-full rounded-[1.5rem] bg-card border border-border/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-shadow duration-300 cursor-pointer relative overflow-hidden"
         >
           {/* Spotlight border on hover */}
@@ -97,28 +93,24 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
           )}
 
           <CardContent className="p-5 flex items-start gap-4 relative">
-            <m.div
+            <div
               className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${colorClass}`}
-              whileHover={{ scale: 1.1, rotate: 3 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
             >
               <Icon className="w-5 h-5" />
-            </m.div>
+            </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors duration-200">
                 {displayName}
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{displayDesc}</p>
             </div>
-            <m.div
+            <div
               className="shrink-0 mt-1"
-              initial={{ opacity: 0, x: -4 }}
-              whileHover={{ opacity: 1, x: 0 }}
             >
               <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
-            </m.div>
+            </div>
           </CardContent>
-        </m.div>
+        </div>
       </Link>
     );
   }
@@ -126,9 +118,7 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
   // Inactive module — link to upgrade (or show coming soon badge)
   return (
     <Link href={isComingSoon ? "#" : `/upgrade?module=${moduleKey}`} className="block group" onClick={isComingSoon ? (e) => e.preventDefault() : undefined}>
-      <m.div
-        whileTap={isComingSoon ? undefined : { scale: 0.97 }}
-        transition={{ duration: 0.1 }}
+      <div
         className="h-full rounded-[1.5rem] bg-muted/40 border border-border/40 opacity-60 hover:opacity-80 transition-opacity duration-300 cursor-pointer relative"
       >
         <CardContent className="p-5 flex items-start gap-4">
@@ -147,7 +137,7 @@ export function ModuleCard({ moduleKey, name, description, active }: ModuleCardP
             <Lock className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1" />
           )}
         </CardContent>
-      </m.div>
+      </div>
     </Link>
   );
 }

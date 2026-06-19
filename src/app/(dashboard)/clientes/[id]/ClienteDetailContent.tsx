@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import { ClientForm, type ClientFormData } from "@/components/modules/client-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,24 +19,6 @@ import { EmptyState } from "@/components/empty-state";
 import { User, Phone, Mail, MapPin, FileText, Briefcase, ArrowLeft, Pencil, Trash2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
-const easeOut = [0.23, 1, 0.32, 1] as const;
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: easeOut },
-  },
-};
 
 interface QuoteHistory {
   id: string;
@@ -164,25 +145,20 @@ export default function ClienteDetailContent() {
   }
 
   return (
-    <m.div
+    <div
       className="max-w-[1400px] mx-auto px-6 py-8 space-y-5"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
     >
       {/* Error */}
       {error && (
-        <m.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-base font-medium"
         >
           {error}
-        </m.div>
+        </div>
       )}
 
       {editing ? (
-        <m.div variants={itemVariants}>
+        <div>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-[2.25rem] font-extrabold text-foreground">Editar Cliente</h1>
@@ -218,11 +194,11 @@ export default function ClienteDetailContent() {
               />
             </div>
           </div>
-        </m.div>
+        </div>
       ) : (
         <>
           {/* Hero */}
-          <m.div variants={itemVariants}>
+          <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
@@ -261,10 +237,10 @@ export default function ClienteDetailContent() {
                 </Link>
               </div>
             </div>
-          </m.div>
+          </div>
 
           {/* Informações do Cliente */}
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="px-6 py-5 bg-blue-50/40 dark:bg-blue-950/20 border-b border-border/40 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
@@ -306,10 +282,10 @@ export default function ClienteDetailContent() {
                 </div>
               </div>
             </div>
-          </m.div>
+          </div>
 
           {/* Orçamentos */}
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="px-6 py-5 bg-blue-50/40 dark:bg-blue-950/20 border-b border-border/40 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
@@ -364,10 +340,10 @@ export default function ClienteDetailContent() {
                 )}
               </div>
             </div>
-          </m.div>
+          </div>
 
           {/* Ordens de Serviço */}
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="px-6 py-5 bg-blue-50/40 dark:bg-blue-950/20 border-b border-border/40 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
@@ -422,9 +398,9 @@ export default function ClienteDetailContent() {
                 )}
               </div>
             </div>
-          </m.div>
+          </div>
         </>
       )}
-    </m.div>
+    </div>
   );
 }

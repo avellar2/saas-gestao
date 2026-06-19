@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import {
   ServiceOrderForm,
   type ServiceOrderFormData,
@@ -179,22 +178,6 @@ interface ProductOption {
   quantity: number;
 }
 
-// Easing custom (Emil) — cubic-bezier tuple
-const easeOut = [0.23, 1, 0.32, 1] as const;
-
-// Stagger children
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, ease: easeOut },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
-};
 
 export default function OSDetailContent() {
   const params = useParams();
@@ -567,24 +550,20 @@ export default function OSDetailContent() {
   });
 
   return (
-    <m.div
+    <div
       className="max-w-[1400px] mx-auto space-y-5"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
     >
       {/* Error Banner */}
       {error && (
-        <m.div
-          variants={itemVariants}
+        <div
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
         >
           {error}
-        </m.div>
+        </div>
       )}
 
       {/* ZONA 1: Hero Premium */}
-      <m.div variants={itemVariants}>
+      <div>
         <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
@@ -679,11 +658,11 @@ export default function OSDetailContent() {
             </div>
           )}
         </div>
-      </m.div>
+      </div>
 
       {/* Edit Mode */}
       {editing && canEdit ? (
-        <m.div variants={itemVariants}>
+        <div>
           <ServiceOrderForm
             customers={customers}
             quotes={quotes}
@@ -722,12 +701,12 @@ export default function OSDetailContent() {
             warrantyEnabled={so.warrantyEnabled}
             warrantyEndDate={so.warrantyEndDate}
           />
-        </m.div>
+        </div>
       ) : (
         <>
           {/* ZONA 2: Atendimento */}
           {(so.problemDescription || so.serviceDescription || so.customerNotes) && (
-            <m.div variants={itemVariants}>
+            <div>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                   <div className="flex items-center gap-3">
@@ -776,11 +755,11 @@ export default function OSDetailContent() {
                   )}
                 </div>
               </div>
-            </m.div>
+            </div>
           )}
 
           {/* ZONA 3: Operacional / Comercial */}
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
               <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-3">
@@ -1014,11 +993,11 @@ export default function OSDetailContent() {
                 )}
               </div>
             </div>
-          </m.div>
+          </div>
 
           {/* ZONA 4: Pós-venda */}
           {(so.warrantyEnabled || so.internalNotes || so.notes) && (
-            <m.div variants={itemVariants}>
+            <div>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 dark:border-t-emerald-500/20 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 border-b border-border/40 bg-emerald-50/40 dark:bg-emerald-950/20">
                   <div className="flex items-center gap-3">
@@ -1087,7 +1066,7 @@ export default function OSDetailContent() {
                   )}
                 </div>
               </div>
-            </m.div>
+            </div>
           )}
         </>
       )}
@@ -1102,6 +1081,6 @@ export default function OSDetailContent() {
           setCloseDialogOpen(false);
         }}
       />
-    </m.div>
+    </div>
   );
 }

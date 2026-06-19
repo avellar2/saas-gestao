@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import { EstoqueForm, type EstoqueFormData } from "@/components/modules/estoque-form";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, PackagePlus } from "lucide-react";
-
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
 
 export default function NovoEstoqueContent() {
   const router = useRouter();
@@ -45,10 +42,7 @@ export default function NovoEstoqueContent() {
         </Button>
       </div>
 
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: easeOut }}
+      <div
         className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
       >
         <div className="px-6 py-5 bg-amber-50/40 border-b border-border/30">
@@ -72,7 +66,7 @@ export default function NovoEstoqueContent() {
 
           <EstoqueForm onSubmit={handleSubmit} submitLabel="Criar Produto" />
         </div>
-      </m.div>
+      </div>
     </div>
   );
 }

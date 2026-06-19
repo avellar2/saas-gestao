@@ -1,8 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { m } from "framer-motion";
-
 export interface FilterOption {
   /** Valor do filtro */
   value: string;
@@ -85,15 +83,8 @@ export function FilterPills({
             )}
           >
             {isActive && (
-              <m.span
-                layoutId="filterPillIndicator"
-                className="absolute inset-0 bg-primary rounded-full"
-                initial={false}
-                transition={{
-                  type: "spring",
-                  stiffness: 500,
-                  damping: 35,
-                }}
+              <span
+                               className="absolute inset-0 bg-primary rounded-full"
               />
             )}
             <span className={cn("relative z-10", isActive && "text-primary-foreground")}>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import { EstoqueForm, type EstoqueFormData } from "@/components/modules/estoque-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,20 +20,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, duration: 0.3, ease: easeOut },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
-};
 
 interface ProductDetail {
   id: string;
@@ -256,24 +241,20 @@ export default function EstoqueDetailContent() {
         />
       </div>
 
-      <m.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
+      <div
         className="space-y-6"
       >
         {/* Error */}
         {error && (
-          <m.div
-            variants={itemVariants}
+          <div
             className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
           >
             {error}
-          </m.div>
+          </div>
         )}
 
         {editing ? (
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
                 <h2 className="text-lg font-bold text-foreground">Editar Produto</h2>
@@ -296,11 +277,11 @@ export default function EstoqueDetailContent() {
                 />
               </div>
             </div>
-          </m.div>
+          </div>
         ) : (
           <>
             {/* Hero Card */}
-            <m.div variants={itemVariants}>
+            <div>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -346,10 +327,10 @@ export default function EstoqueDetailContent() {
                   )}
                 </div>
               </div>
-            </m.div>
+            </div>
 
             {/* Movimentações */}
-            <m.div variants={itemVariants}>
+            <div>
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
                 <div className="px-6 py-5 bg-amber-50/40 border-b border-border/40">
                   <div className="flex items-center gap-2">
@@ -423,10 +404,10 @@ export default function EstoqueDetailContent() {
                   </div>
                 )}
               </div>
-            </m.div>
+            </div>
           </>
         )}
-      </m.div>
+      </div>
 
       {/* Dialog de Entrada/Saída/Ajuste */}
       {dialog && (

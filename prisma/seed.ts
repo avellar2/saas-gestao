@@ -42,12 +42,25 @@ async function main() {
     },
   });
 
-  const adminPasswordHash = await bcryptjs.hash("admin123", 10);
+  // P33 fix: senha do admin seed vem de variável de ambiente em produção.
+  // Em dev, usa a senha padrão "admin123" para facilitar testes locais.
+  const isProd = process.env.NODE_ENV === "production";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@gestorlocal.com";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || (isProd ? "" : "admin123");
+  const adminName = process.env.SEED_ADMIN_NAME || "Admin Gestor Local";
+
+  if (isProd && !adminPassword) {
+    throw new Error(
+      "Em produção, SEED_ADMIN_PASSWORD é obrigatório. Defina no .env antes de rodar o seed."
+    );
+  }
+
+  const adminPasswordHash = await bcryptjs.hash(adminPassword, 12);
 
   await prisma.user.create({
     data: {
-      email: "admin@gestorlocal.com",
-      name: "Admin Gestor Local",
+      email: adminEmail,
+      name: adminName,
       passwordHash: adminPasswordHash,
       role: "SUPER_ADMIN",
       companyId: superAdminCompany.id,
@@ -55,7 +68,11 @@ async function main() {
     },
   });
 
-  console.log("Super admin created: admin@gestorlocal.com / admin123");
+  if (isProd) {
+    console.log(`Super admin created: ${adminEmail} (senha definida via SEED_ADMIN_PASSWORD)`);
+  } else {
+    console.log(`Super admin created: ${adminEmail} / ${adminPassword} (dev only)`);
+  }
 
   // ── 3. Trial Company ───────────────────────────────────────────────────
   console.log("Creating trial company (Eletronica Silva)...");

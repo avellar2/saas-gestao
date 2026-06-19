@@ -1,6 +1,5 @@
 "use client";
 
-import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import { SERVICE_ORDER_STATUS, getStatusLabel } from "@/lib/os-status";
 import { PORTAL_STATUS_ORDER } from "@/lib/portal";
@@ -40,15 +39,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
             <div key={status} className="flex items-center flex-1">
               {/* Step dot */}
               <div className="flex flex-col items-center">
-                <m.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    delay: index * 0.05,
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 20,
-                  }}
+                <div
                   className={`relative flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors ${
                     reached
                       ? current
@@ -66,7 +57,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
                   {current && (
                     <span className="absolute inset-0 rounded-full animate-pulse border-2 border-primary/50" />
                   )}
-                </m.div>
+                </div>
                 <span
                   className={`mt-1.5 text-xs font-medium text-center leading-tight ${
                     reached
@@ -105,15 +96,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
             <div key={status} className="flex items-center gap-3">
               {/* Step indicator */}
               <div className="flex flex-col items-center">
-                <m.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    delay: index * 0.05,
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 20,
-                  }}
+                <div
                   className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                     reached
                       ? current
@@ -124,7 +107,7 @@ export function OsStatusTimeline({ currentStatus }: OsStatusTimelineProps) {
                 >
                   {reached && !current && <Check className="h-3.5 w-3.5" />}
                   {current && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                </m.div>
+                </div>
                 {index < PORTAL_STATUS_ORDER.length - 1 && (
                   <div
                     className={`w-0.5 flex-1 my-0.5 min-h-[12px] ${

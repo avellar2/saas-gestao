@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { m, AnimatePresence } from "framer-motion";
 import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,20 +12,6 @@ import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { ActionBar } from "@/components/layout/action-bar";
 
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, duration: 0.3, ease: easeOut },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: easeOut } },
-};
 
 interface QuoteItem {
   id: string;
@@ -287,15 +272,10 @@ export default function OrcamentoDetailContent() {
         />
       </div>
 
-      <AnimatePresence mode="wait">
         {editing ? (
-          <m.div
+          <div
             key="edit"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-          >
+                     >
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
             >
               <div className="px-6 py-4 bg-blue-50/40 border-b border-border/30"
@@ -328,32 +308,23 @@ export default function OrcamentoDetailContent() {
                 />
               </div>
             </div>
-          </m.div>
+          </div>
         ) : (
-          <m.div
+          <div
             key="view"
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            exit={{ opacity: 0, y: -12, transition: { duration: 0.2 } }}
-            className="space-y-6"
+                       className="space-y-6"
           >
             {/* Error */}
-            <AnimatePresence>
-              {error && (
-                <m.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
+            {error && (
+                <div
+                                   className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-sm"
                 >
                   {error}
-                </m.div>
+                </div>
               )}
-            </AnimatePresence>
 
             {/* Hero Card */}
-            <m.div variants={itemVariants}
+            <div
             >
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
               >
@@ -412,10 +383,10 @@ export default function OrcamentoDetailContent() {
                   ))}
                 </div>
               </div>
-            </m.div>
+            </div>
 
             {/* Items */}
-            <m.div variants={itemVariants}
+            <div
             >
               <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
               >
@@ -502,11 +473,11 @@ export default function OrcamentoDetailContent() {
                   </div>
                 </div>
               </div>
-            </m.div>
+            </div>
 
             {/* Notes */}
             {quote.notes && (
-              <m.div variants={itemVariants}
+              <div
               >
                 <div className="rounded-2xl border border-border/60 border-t-2 border-t-blue-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
                 >
@@ -520,11 +491,10 @@ export default function OrcamentoDetailContent() {
                     {quote.notes}
                   </div>
                 </div>
-              </m.div>
+              </div>
             )}
-          </m.div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 }

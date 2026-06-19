@@ -1,7 +1,133 @@
-avgestao.com.br {
-    reverse_proxy app:3000
+# =================================================================
+# Caddyfile - AVGESTAO Producao
+# =================================================================
+# - HTTPS automatico via Let's Encrypt
+# - Renovacao automatica
+# - Headers de seguranca
+# - Compressao gzip + zstd
+# - Reverse proxy para app
+# - Logs estruturados
+# =================================================================
+
+# Opcoes globais
+{
+    admin off
+    # Auto-https habilitado por default
 }
 
-www.avgestao.com.br {
-    redir https://avgestao.com.br{uri} permanent
+# Dominio principal
+avgestao.com.br, www.avgestao.com.br {
+
+    # Redireciona www -> apex
+    @www host www.avgestao.com.br
+    redir @www https://avgestao.com.br{uri} permanent
+
+    # Encodificacao
+    encode zstd gzip
+
+    # Headers de seguranca
+    header {
+        # HSTS - 2 anos + subdominios + preload
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+
+        # Anti-sniff
+        X-Content-Type-Options "nosniff"
+
+        # Anti-clickjacking
+        X-Frame-Options "SAMEORIGIN"
+
+        # Privacidade
+        Referrer-Policy "origin-when-cross-origin"
+
+        # Permissoes (camera, mic, geo desabilitados)
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+        # XSS legacy
+        X-XSS-Protection "1; mode=block"
+
+        # Remove server header
+        -Server
+        -X-Powered-By
+
+        # CSP basica (ajustar conforme necessario)
+        Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
+    }
+
+    # Limite de body
+    request_body {
+        max_size 10MB
+    }
+
+    # Rate limit basico
+    @api path /api/*
+    rate_limit @api 100r/m
+
+    # Health check publico (sem auth, sem rate limit agressivo)
+    @health path /api/health
+    handle @health {
+        reverse_proxy app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Webhook Stripe - sem rate limit
+    @stripe path /api/stripe/webhook
+    handle @stripe {
+        reverse_proxy app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Cron jobs - sem rate limit
+    @cron path /api/cron/*
+    handle @cron {
+        reverse_proxy app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Portal publico (cardapio, etc) - sem rate limit agressivo
+    @public path /api/public/* /portal/* /c/*
+    handle @public {
+        reverse_proxy app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Resto do app
+    handle {
+        reverse_proxy app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+
+            # Timeouts
+            transport http {
+                dial_timeout 30s
+                response_header_timeout 30s
+                read_timeout 60s
+                write_timeout 60s
+            }
+        }
+    }
+
+    # Logs
+    log {
+        output stdout
+        level INFO
+        format console
+    }
 }

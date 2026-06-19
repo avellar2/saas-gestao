@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { m } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 
 export interface TabConfig {
@@ -87,29 +86,15 @@ export function SectionTabs({
             >
               {/* Background hover/active */}
               {active && (
-                <m.div
-                  layoutId="sectionTabIndicator"
+                <div
                   className="absolute inset-0 bg-primary/10 rounded-t-lg"
-                  initial={false}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                  }}
                 />
               )}
 
               {/* Indicator line */}
               {active && (
-                <m.div
-                  layoutId="sectionTabLine"
+                <div
                   className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  initial={false}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                  }}
                 />
               )}
 

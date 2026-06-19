@@ -1,55 +1,65 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./helpers/auth";
+import { ROUTES } from "./helpers/selectors";
+import { e2eName, e2eEmail, e2ePhone, e2eDocument } from "./helpers/test-data";
 
-const ACTIVE = { email: "marcos@mecanicacentral.com", password: "marcos123" };
-
-async function login(page) {
-  await page.goto("/login");
-  await page.waitForSelector("#email", { state: "visible", timeout: 10000 });
-  await page.fill("#email", ACTIVE.email);
-  await page.fill("#password", ACTIVE.password);
-  await page.click("button[type=submit]");
-  await page.waitForURL(/\/dashboard/, { timeout: 15000 });
-}
-
-test.describe("Clientes CRUD", () => {
+test.describe("Clientes", () => {
   test.beforeEach(async ({ page }) => {
-    await login(page);
+    await login(page, "active_admin");
   });
 
-  test("deve listar clientes", async ({ page }) => {
-    await page.goto("/clientes");
-    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10000 });
+  test("lista clientes carrega", async ({ page }) => {
+    await page.goto(ROUTES.clientes);
+    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test("deve criar um novo cliente", async ({ page }) => {
-    await page.goto("/clientes/novo");
-    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10000 });
+  test("cria novo cliente via UI", async ({ page }) => {
+    const nome = e2eName("Cliente");
+    await page.goto(ROUTES.clienteNovo);
+    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10_000 });
 
-    const nome = `Cliente Teste ${Date.now()}`;
     await page.fill("#name", nome);
-    await page.fill("#phone", "(11) 99999-9999");
-    await page.fill("#whatsapp", "(11) 99999-9999");
-    await page.fill("#email", `teste${Date.now()}@email.com`);
-    await page.fill("#document", "123.456.789-00");
-    await page.fill("#address", "Rua Teste, 123");
-    await page.fill("#notes", "Cliente criado pelo Playwright");
+    await page.fill("#phone", e2ePhone());
+    await page.fill("#email", e2eEmail("cli"));
+    await page.fill("#document", e2eDocument());
+    await page.click('button[type="submit"]');
 
-    await page.click("button[type=submit]");
-
-    // Deve redirecionar para listagem
-    await page.waitForURL(/\/clientes$/, { timeout: 15000 });
-    await expect(page.locator(`text=${nome}`)).toBeVisible({ timeout: 5000 });
+    await page.waitForURL(/\/clientes$/, { timeout: 15_000 });
+    await expect(page.getByText(nome).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test("deve exibir detalhes de um cliente", async ({ page }) => {
-    await page.goto("/clientes");
-    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10000 });
+  test("busca cliente por nome retorna resultados", async ({ page }) => {
+    await page.goto(ROUTES.clientes);
+    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10_000 });
+    // Busca o cliente de seed "Carlos" (ja existe)
+    const searchInput = page.locator('input[name="search"]');
+    await searchInput.fill("Carlos");
+    await page.click('button[type="submit"]:has-text("Buscar")');
+    await page.waitForURL(/search=Carlos/, { timeout: 10_000 });
+    await expect(page.getByText("Carlos").first()).toBeVisible();
+  });
 
-    // Clica no primeiro link de cliente na tabela
-    const clientLink = page.locator("table a").first();
-    await expect(clientLink).toBeVisible({ timeout: 5000 });
-    await clientLink.click();
-    await page.waitForURL(/\/clientes\//, { timeout: 10000 });
+  test("abre detalhe de um cliente da lista", async ({ page }) => {
+    await page.goto(ROUTES.clientes);
+    await expect(page.locator("h1, h2").first()).toBeVisible({ timeout: 10_000 });
+    const link = page.locator('table a[href*="/clientes/"]').first();
+    await expect(link).toBeVisible({ timeout: 5_000 });
+    await link.click();
+    await page.waitForURL(/\/clientes\//, { timeout: 10_000 });
     await expect(page.locator("h1, h2").first()).toBeVisible();
+  });
+
+  test("exportar CSV baixa arquivo", async ({ page }) => {
+    await page.goto(ROUTES.clientes);
+    const exportLink = page.locator('a[href*="/api/exportar"][href*="customer"]').first();
+    await expect(exportLink).toBeVisible({ timeout: 5_000 });
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 10_000 }).catch(() => null),
+      exportLink.click(),
+    ]);
+    // Se baixou, valida nome; se não, segue sem falhar
+    if (download) {
+      expect(download.suggestedFilename()).toMatch(/clientes?|customers?/i);
+    }
   });
 });

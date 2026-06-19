@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, FormEvent, Suspense } from "react";
-import { m } from "framer-motion";
 import { Lock, CheckCircle, XCircle } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -71,9 +70,7 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <m.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
         className="text-center"
       >
         <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
@@ -89,7 +86,7 @@ function ResetPasswordForm() {
         >
           Ir para o login
         </Link>
-      </m.div>
+      </div>
     );
   }
 
@@ -158,9 +155,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 px-4">
-      <m.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="w-full max-w-md"
       >
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 backdrop-blur-xl">
@@ -173,7 +168,7 @@ export default function ResetPasswordPage() {
             <ResetPasswordForm />
           </Suspense>
         </div>
-      </m.div>
+      </div>
     </div>
   );
 }

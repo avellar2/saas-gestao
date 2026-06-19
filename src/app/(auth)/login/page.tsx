@@ -4,7 +4,6 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { m, type Variants } from "framer-motion";
 import {
   Loader2,
   Eye,
@@ -18,24 +17,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: easeOut },
-  },
-};
 
 const leftPanelFeatures = [
   { icon: TrendingUp, label: "Controle financeiro" },
@@ -100,27 +81,19 @@ export default function LoginPage() {
         </div>
 
         {/* Floating orbs */}
-        <m.div
+        <div
           className="absolute top-1/4 -right-32 w-[500px] h-[500px] rounded-full bg-emerald-500/8 blur-[130px]"
-          animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
-        <m.div
+        <div
           className="absolute -bottom-32 left-1/4 w-[600px] h-[600px] rounded-full bg-teal-500/8 blur-[150px]"
-          animate={{ y: [0, 25, 0], x: [0, -15, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
-        <m.div
+        <div
           className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full bg-cyan-500/5 blur-[100px]"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
 
         {/* Floating mock dashboard cards */}
-        <m.div
+        <div
           className="absolute top-[22%] right-[12%] w-56 rounded-xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] p-4 shadow-2xl shadow-black/20"
-          animate={{ y: [0, -12, 0], rotate: [0, 1, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
@@ -133,12 +106,10 @@ export default function LoginPage() {
             <TrendingUp className="w-3 h-3 text-emerald-400" />
             <span className="text-[11px] font-medium text-emerald-400">+12,5% este mês</span>
           </div>
-        </m.div>
+        </div>
 
-        <m.div
+        <div
           className="absolute top-[48%] right-[22%] w-48 rounded-xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] p-4 shadow-2xl shadow-black/20"
-          animate={{ y: [0, 10, 0], rotate: [0, -1, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-md bg-blue-500/20 flex items-center justify-center">
@@ -151,12 +122,10 @@ export default function LoginPage() {
             <span className="text-[11px] text-white/40">Novos hoje: </span>
             <span className="text-[11px] font-medium text-blue-300">+8</span>
           </div>
-        </m.div>
+        </div>
 
-        <m.div
+        <div
           className="absolute top-[68%] right-[8%] w-52 rounded-xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] p-4 shadow-2xl shadow-black/20"
-          animate={{ y: [0, -8, 0], rotate: [0, 0.5, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-md bg-amber-500/20 flex items-center justify-center">
@@ -177,25 +146,22 @@ export default function LoginPage() {
               <span className="text-xs font-semibold text-amber-300">3</span>
             </div>
           </div>
-        </m.div>
+        </div>
 
         {/* Content */}
-        <m.div
+        <div
           className="relative z-10 flex flex-col justify-between h-full px-12 xl:px-16 py-10"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
         >
-          <m.div variants={itemVariants}>
+          <div>
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-white/15 flex items-center justify-center shadow-lg">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-bold text-white tracking-tight">Gestor Local</span>
             </div>
-          </m.div>
+          </div>
 
-          <m.div variants={itemVariants} className="space-y-10 max-w-md">
+          <div className="space-y-10 max-w-md">
             <div className="space-y-4">
               <h2 className="text-3xl xl:text-[2.75rem] font-extrabold text-white tracking-tight leading-[1.1]">
                 Tudo que sua empresa precisa em um só lugar
@@ -216,9 +182,8 @@ export default function LoginPage() {
                   "from-cyan-500/15 to-cyan-500/5 border-cyan-400/15",
                 ];
                 return (
-                  <m.div
+                  <div
                     key={feature.label}
-                    variants={itemVariants}
                     className={`rounded-xl bg-gradient-to-br ${colors[i]} backdrop-blur-sm border px-4 py-3.5`}
                   >
                     <feature.icon className={`w-4 h-4 mb-2 ${
@@ -227,13 +192,13 @@ export default function LoginPage() {
                       i === 2 ? "text-amber-300" : "text-cyan-300"
                     }`} />
                     <span className="text-sm font-semibold text-white/90 block">{feature.label}</span>
-                  </m.div>
+                  </div>
                 );
               })}
             </div>
-          </m.div>
+          </div>
 
-          <m.div variants={itemVariants} className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="flex -space-x-2">
               {[0, 1, 2, 3].map((i) => (
                 <div
@@ -247,8 +212,8 @@ export default function LoginPage() {
             <p className="text-sm text-emerald-200/50">
               <span className="font-semibold text-emerald-200/70">500+</span> empresas já confiam
             </p>
-          </m.div>
-        </m.div>
+          </div>
+        </div>
       </div>
 
       {/* Right panel — login form */}
@@ -256,24 +221,20 @@ export default function LoginPage() {
         {/* Subtle background texture */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,theme(colors.border/20)_1px,transparent_0)] [background-size:24px_24px]" />
 
-        <m.div
+        <div
           className="relative w-full max-w-lg px-8"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
         >
           {/* Mobile header */}
-          <m.div className="lg:hidden text-center mb-8" variants={itemVariants}>
+          <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-600 mb-3">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-foreground">Gestor Local</h1>
             <p className="text-muted-foreground text-sm mt-0.5">Sistema de gestão empresarial</p>
-          </m.div>
+          </div>
 
           {/* Form card */}
-          <m.div
-            variants={itemVariants}
+          <div
             className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden"
           >
             <div className="px-6 py-5 bg-emerald-50/40 border-b border-border/40">
@@ -287,14 +248,11 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="p-7 space-y-6">
               {error && (
-                <m.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.2, ease: easeOut }}
+                <div
                   className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
                 >
                   {error}
-                </m.div>
+                </div>
               )}
 
               <div className="space-y-2">
@@ -356,7 +314,7 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              <m.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.1 }}>
+              <div>
                 <Button
                   type="submit"
                   disabled={loading}
@@ -371,20 +329,19 @@ export default function LoginPage() {
                     "Entrar"
                   )}
                 </Button>
-              </m.div>
+              </div>
             </form>
-          </m.div>
+          </div>
 
-          <m.p
+          <p
             className="text-center text-xs text-muted-foreground/50 mt-6"
-            variants={itemVariants}
           >
             Não tem uma conta?{" "}
             <Link href="/" className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
               Saiba mais
             </Link>
-          </m.p>
-        </m.div>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { m } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -56,10 +55,7 @@ export function SectionCard({
   };
 
   return (
-    <m.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+    <div
       className={cn(
         "rounded-2xl overflow-hidden",
         variantClasses[variant],
@@ -107,7 +103,7 @@ export function SectionCard({
           {footer}
         </div>
       )}
-    </m.div>
+    </div>
   );
 }
 

@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { m } from "framer-motion";
 import { FileSearch, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
     <div className="min-h-[100dvh] flex items-center justify-center p-4 grain">
-      <m.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+      <div
         className="max-w-md w-full text-center"
       >
         <div className="w-16 h-16 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-5">
@@ -24,15 +20,15 @@ export default function NotFound() {
         </p>
         <div className="flex justify-center gap-3">
           <Link href="/dashboard">
-            <m.div whileTap={{ scale: 0.97 }}>
+            <div>
               <Button className="rounded-xl">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar ao Dashboard
               </Button>
-            </m.div>
+            </div>
           </Link>
         </div>
-      </m.div>
+      </div>
     </div>
   );
 }

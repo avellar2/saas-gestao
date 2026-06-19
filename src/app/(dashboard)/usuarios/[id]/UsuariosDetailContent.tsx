@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { m } from "framer-motion";
 import { UsuarioForm, type UsuarioFormData } from "@/components/modules/usuario-form";
 import { Button } from "@/components/ui/button";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
@@ -24,24 +23,6 @@ const ROLE_LABELS: Record<string, string> = {
   STAFF: "Colaborador",
 };
 
-const easeOut = [0.23, 1, 0.32, 1] as [number, number, number, number];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: easeOut },
-  },
-};
 
 export default function UsuariosDetailContent() {
   const params = useParams();
@@ -152,24 +133,19 @@ export default function UsuariosDetailContent() {
   }
 
   return (
-    <m.div
+    <div
       className="max-w-[1400px] mx-auto px-6 py-8 space-y-5"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
     >
       {error && (
-        <m.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className="rounded-xl border border-destructive/20 bg-destructive/10 text-destructive p-3 text-base font-medium"
         >
           {error}
-        </m.div>
+        </div>
       )}
 
       {editing ? (
-        <m.div variants={itemVariants}>
+        <div>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-[2.25rem] font-extrabold text-foreground">Editar Usuário</h1>
@@ -204,10 +180,10 @@ export default function UsuariosDetailContent() {
               />
             </div>
           </div>
-        </m.div>
+        </div>
       ) : (
         <>
-          <m.div variants={itemVariants}>
+          <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-900/50 flex items-center justify-center text-slate-700 dark:text-slate-400">
@@ -237,9 +213,9 @@ export default function UsuariosDetailContent() {
                 </Button>
               </div>
             </div>
-          </m.div>
+          </div>
 
-          <m.div variants={itemVariants}>
+          <div>
             <div className="rounded-2xl border border-border/60 border-t-2 border-t-slate-500/30 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="px-6 py-5 bg-slate-50/40 dark:bg-slate-950/20 border-b border-border/40 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900/50 flex items-center justify-center text-slate-700 dark:text-slate-400">
@@ -283,9 +259,9 @@ export default function UsuariosDetailContent() {
                 </div>
               </div>
             </div>
-          </m.div>
+          </div>
         </>
       )}
-    </m.div>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { m, type Variants } from "framer-motion";
 import Link from "next/link";
 import {
   Building2,
@@ -19,23 +18,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring" as const, stiffness: 100, damping: 20 },
-  },
-} satisfies Variants;
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-} satisfies Variants;
 
 const features = [
   {
@@ -106,51 +88,42 @@ export default function LandingPageClient() {
       <section className="relative min-h-[100dvh] flex items-center overflow-hidden">
         <div className="absolute inset-0 mesh-gradient" />
 
-        <m.div
+        <div
           className="absolute top-20 right-20 w-[400px] h-[400px] rounded-full bg-primary/8 blur-[100px]"
-          animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
-        <m.div
+        <div
           className="absolute bottom-20 left-10 w-[500px] h-[500px] rounded-full bg-primary/6 blur-[120px]"
-          animate={{ y: [0, 25, 0], x: [0, -15, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-            <m.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
+            <div
               className="max-w-xl"
             >
-              <m.div variants={fadeUp} className="mb-6">
+              <div className="mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Sistema completo para pequenas empresas
                 </div>
-              </m.div>
+              </div>
 
-              <m.h1
-                variants={fadeUp}
+              <h1
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.1] text-foreground"
               >
                 Gestao simplificada para{" "}
                 <span className="text-primary">pequenas empresas</span>
-              </m.h1>
+              </h1>
 
-              <m.p
-                variants={fadeUp}
+              <p
                 className="mt-5 text-lg text-muted-foreground leading-relaxed max-w-[60ch]"
               >
                 Clientes, orçamentos, ordens de serviço, estoque, financeiro e muito mais. Tudo em um so lugar, com controle multiempresa.
-              </m.p>
+              </p>
 
-              <m.div variants={fadeUp} className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/login">
-                  <m.div whileTap={{ scale: 0.97 }}>
+                  <div>
                     <Button
                       size="lg"
                       className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 px-6 h-12 text-base"
@@ -158,7 +131,7 @@ export default function LandingPageClient() {
                       Acessar sistema
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
-                  </m.div>
+                  </div>
                 </Link>
                 <Link href="#recursos">
                   <Button
@@ -169,9 +142,9 @@ export default function LandingPageClient() {
                     Ver recursos
                   </Button>
                 </Link>
-              </m.div>
+              </div>
 
-              <m.div variants={fadeUp} className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="mt-10 flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span>10 modulos</span>
@@ -184,24 +157,18 @@ export default function LandingPageClient() {
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span>Relatorios CSV</span>
                 </div>
-              </m.div>
-            </m.div>
+              </div>
+            </div>
 
 
-            <m.div
-              initial={{ opacity: 0, x: 40, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.3 }}
+            <div
               className="hidden lg:block"
             >
               <div className="relative">
                 <div className="grid grid-cols-2 gap-3">
                   {features.slice(0, 4).map((feature, i) => (
-                    <m.div
+                    <div
                       key={feature.title}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + i * 0.1, type: "spring", stiffness: 100, damping: 20 }}
                       className="rounded-2xl bg-card/80 border border-border/50 p-5 backdrop-blur-sm shadow-sm"
                     >
                       <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-3">
@@ -209,50 +176,40 @@ export default function LandingPageClient() {
                       </div>
                       <p className="font-semibold text-sm text-foreground">{feature.title}</p>
                       <p className="text-xs text-muted-foreground mt-1">{feature.description.slice(0, 45)}...</p>
-                    </m.div>
+                    </div>
                   ))}
                 </div>
 
 
-                <m.div
+                <div
                   className="absolute -top-4 -right-4 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg"
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 >
                   10 modulos
-                </m.div>
+                </div>
               </div>
-            </m.div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features - Zig Zag layout */}
+      {/* Features - Zig Zag */}
       <section id="recursos" className="py-24 lg:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-            className="text-left mb-16"
+          <div
+                                  className="text-left mb-16"
           >
             <p className="text-primary font-semibold text-sm mb-3">Recursos</p>
             <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
               Tudo que voce precisa{" "}
               <span className="text-muted-foreground">em uma plataforma</span>
             </h2>
-          </m.div>
+          </div>
 
           <div className="space-y-20">
             {features.slice(0, 6).map((feature, i) => (
-              <m.div
+              <div
                 key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                className={`grid lg:grid-cols-2 gap-10 items-center ${
+                                              className={`grid lg:grid-cols-2 gap-10 items-center ${
                   i % 2 === 1 ? "lg:flex-row-reverse" : ""
                 }`}
               >
@@ -268,7 +225,7 @@ export default function LandingPageClient() {
                     <feature.icon className="w-16 h-16 text-muted-foreground/20" />
                   </div>
                 </div>
-              </m.div>
+              </div>
             ))}
           </div>
         </div>
@@ -277,29 +234,21 @@ export default function LandingPageClient() {
       {/* Benefits grid */}
       <section className="py-24 border-t border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-            className="text-center mb-12"
+          <div
+                                  className="text-center mb-12"
           >
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Por que escolher o Gestor Local?</h2>
-          </m.div>
+          </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {benefits.map((benefit, i) => (
-              <m.div
+              <div
                 key={benefit}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05, type: "spring", stiffness: 100, damping: 20 }}
-                className="rounded-2xl bg-card border border-border/50 p-5 flex items-start gap-3"
+                                              className="rounded-2xl bg-card border border-border/50 p-5 flex items-start gap-3"
               >
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <p className="text-sm font-medium text-foreground">{benefit}</p>
-              </m.div>
+              </div>
             ))}
           </div>
         </div>
@@ -308,12 +257,8 @@ export default function LandingPageClient() {
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 mesh-gradient opacity-50" />
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ type: "spring", stiffness: 100, damping: 20 }}
-          className="relative max-w-3xl mx-auto px-4 text-center"
+        <div
+                            className="relative max-w-3xl mx-auto px-4 text-center"
         >
           <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-4">
             Pronto para organizar sua empresa?</h2>
@@ -321,7 +266,7 @@ export default function LandingPageClient() {
             Comece agora e tenha acesso a todos os modulos. Sem complicação.
           </p>
           <Link href="/login">
-            <m.div whileTap={{ scale: 0.97 }}>
+            <div>
               <Button
                 size="lg"
                 className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 px-8 h-12 text-base"
@@ -329,9 +274,9 @@ export default function LandingPageClient() {
                 Acessar o sistema
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-            </m.div>
+            </div>
           </Link>
-        </m.div>
+        </div>
       </section>
 
       {/* Footer */}

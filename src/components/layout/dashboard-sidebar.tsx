@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { m, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -92,27 +91,19 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
-          <m.div
+          <div
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0"
-            whileHover={{ scale: 1.05, rotate: 2 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
             <Building2 className="w-5 h-5 text-primary-foreground" />
-          </m.div>
-          <AnimatePresence>
-            {!collapsed && (
-              <m.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+          </div>
+{!collapsed && (
+              <div
                 className="overflow-hidden whitespace-nowrap"
               >
                 <h1 className="text-sm font-bold text-sidebar-foreground leading-tight tracking-tight">Gestor Local</h1>
-              </m.div>
+              </div>
             )}
-          </AnimatePresence>
-        </Link>
+</Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
@@ -128,8 +119,7 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
           const Icon = item.icon;
           return (
             <Link key={item.key} href={item.href}>
-              <m.div
-                initial={false}
+              <div
                 className={`
                   relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-160 ease-out
                   ${active
@@ -137,39 +127,27 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                   }
                 `}
-                whileTap={{ scale: 0.97 }}
-                transition={{ duration: 0.1 }}
               >
                 {/* Active indicator */}
                 {active && (
-                  <m.div
-                    layoutId="activeIndicator"
+                  <div
                     className="absolute inset-0 rounded-xl bg-primary/10"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
                 <Icon className={`w-[18px] h-[18px] shrink-0 relative z-10 ${active ? "text-primary" : ""}`} />
-                <AnimatePresence>
-                  {!collapsed && (
-                    <m.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+{!collapsed && (
+                    <span
                       className="relative z-10 overflow-hidden whitespace-nowrap"
                     >
                       {item.label}
-                    </m.span>
+                    </span>
                   )}
-                </AnimatePresence>
-                {active && !collapsed && (
-                  <m.div
-                    layoutId="activeDot"
+{active && !collapsed && (
+                  <div
                     className="ml-auto w-1.5 h-1.5 rounded-full bg-primary relative z-10"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-              </m.div>
+              </div>
             </Link>
           );
         })}
@@ -183,21 +161,15 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
               {initials}
             </AvatarFallback>
           </Avatar>
-          <AnimatePresence>
-            {!collapsed && (
-              <m.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+{!collapsed && (
+              <div
                 className="min-w-0 overflow-hidden"
               >
                 <p className="text-sm font-medium text-sidebar-foreground truncate leading-tight">{name || "Usuario"}</p>
                 <p className="text-xs text-sidebar-foreground/40 truncate mt-0.5">{email}</p>
-              </m.div>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
+</div>
 
         <div className="flex items-center gap-2">
           <button
@@ -205,20 +177,14 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
             className="flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-160"
           >
             <LogOut className="w-[18px] h-[18px] shrink-0" />
-            <AnimatePresence>
-              {!collapsed && (
-                <m.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: "auto" }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+{!collapsed && (
+                <span
                   className="overflow-hidden whitespace-nowrap"
                 >
                   Sair
-                </m.span>
+                </span>
               )}
-            </AnimatePresence>
-          </button>
+</button>
           <div className="shrink-0">
             <ThemeToggle />
           </div>
@@ -230,20 +196,13 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
   return (
     <>
       {/* Mobile overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+{mobileOpen && (
+          <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
         )}
-      </AnimatePresence>
-
-      {/* Mobile toggle */}
+{/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
         className="fixed top-3.5 left-4 z-50 lg:hidden w-9 h-9 rounded-xl bg-sidebar text-sidebar-foreground flex items-center justify-center shadow-lg"
@@ -252,28 +211,18 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
       </button>
 
       {/* Sidebar */}
-      <m.aside
+      <aside
         className={`
           fixed lg:sticky top-0 left-0 z-40 h-[100dvh] bg-sidebar text-sidebar-foreground flex flex-col shrink-0
           border-r border-sidebar-border
           ${collapsed ? "w-20" : "w-64"}
         `}
-        initial={false}
-        animate={{
-          x: mobileOpen ? 0 : 0,
-          width: collapsed ? 80 : 256,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 30,
-        }}
         style={{
           width: collapsed ? 80 : 256,
         }}
       >
         {sidebarContent}
-      </m.aside>
+      </aside>
     </>
   );
 }
