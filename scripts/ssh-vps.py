@@ -35,7 +35,7 @@ def main():
         print(f"ERR conectando: {ex}", file=sys.stderr)
         sys.exit(3)
 
-    stdin, stdout, stderr = cli.exec_command(cmd, timeout=180)
+    stdin, stdout, stderr = cli.exec_command(cmd, timeout=600)
     out = stdout.read().decode("utf-8", "replace")
     err = stderr.read().decode("utf-8", "replace")
     rc = stdout.channel.recv_exit_status()
