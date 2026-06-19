@@ -2,13 +2,14 @@ import { isCoreModule, getModuleConfig } from "./modules";
 
 export const BASE_PRICE = 49; // núcleo (Clientes) + 1 módulo incluso
 
-const EXTRA_MODULE_PRICES = [30, 25, 20]; // 2º, 3º, 4º módulo extra
-const ADDITIONAL_MODULE_PRICE = 20; // a partir do 5º módulo extra
-
 /**
  * Calcula o preço mensal com base nos módulos ativos.
  * O primeiro módulo não-core está incluso no plano base (R$49).
  * Módulos core são grátis. Módulos legacy não são cobrados.
+ *
+ * Cada módulo extra é cobrado pelo seu preço individual definido em modules.ts.
+ * O preço do plano base (R$49) inclui 1 módulo à escolha.
+ * Módulos adicionais são cobrados individualmente conforme o Price ID no Stripe.
  */
 export function calculateMonthlyPrice(activeModuleKeys: string[]): number {
   // Filtrar módulos core (são grátis) e legacy (não cobrar)
@@ -18,7 +19,7 @@ export function calculateMonthlyPrice(activeModuleKeys: string[]): number {
 
   if (purchasable.length === 0) return BASE_PRICE;
 
-  // Ordenar por preço descendente para cobrar os mais caros primeiro
+  // Ordenar por preço descendente — o módulo mais caro fica incluso no plano base
   const sortedPrices = purchasable
     .map((k) => getModuleConfig(k)?.monthlyPrice ?? 20)
     .sort((a, b) => b - a);
@@ -26,12 +27,7 @@ export function calculateMonthlyPrice(activeModuleKeys: string[]): number {
   // Primeiro módulo incluso no plano base
   let total = BASE_PRICE;
   for (let i = 1; i < sortedPrices.length; i++) {
-    const priceIndex = i - 1;
-    if (priceIndex < EXTRA_MODULE_PRICES.length) {
-      total += EXTRA_MODULE_PRICES[priceIndex];
-    } else {
-      total += ADDITIONAL_MODULE_PRICE;
-    }
+    total += sortedPrices[i];
   }
   return total;
 }

@@ -277,3 +277,81 @@ export async function sendPasswordResetEmail(
     return { success: false, error: "Erro ao enviar email. Tente novamente mais tarde." };
   }
 }
+
+/**
+ * Email de convite para novo administrador de empresa.
+ * Enviado quando o Super Admin cria uma empresa com responsável.
+ * Contém link para definição de senha.
+ */
+export async function sendCompanyInviteEmail(
+  email: string,
+  adminName: string,
+  companyName: string,
+  token: string
+): Promise<{ success: boolean; error?: string; inviteUrl?: string }> {
+  const inviteUrl = `${appUrl}/reset-password?token=${token}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+        .container { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px; text-align: center; }
+        .header h1 { color: #fff; margin: 0; font-size: 20px; }
+        .body { padding: 32px; }
+        .body p { color: #374151; line-height: 1.6; margin: 0 0 16px; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; }
+        .footer { padding: 24px 32px; border-top: 1px solid #e5e7eb; text-align: center; }
+        .footer p { color: #9ca3af; font-size: 13px; margin: 0; }
+        .token { background: #f3f4f6; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 14px; text-align: center; margin: 16px 0; color: #374151; word-break: break-all; }
+        .company-name { font-weight: 600; color: #6366f1; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>${appName}</h1>
+        </div>
+        <div class="body">
+          <p>Olá <strong>${adminName}</strong>,</p>
+          <p>Você foi adicionado(a) como administrador da empresa <span class="company-name">${companyName}</span> no ${appName}.</p>
+          <p>Para acessar sua conta, defina sua senha no link abaixo:</p>
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${inviteUrl}" class="btn">Definir Minha Senha</a>
+          </div>
+          <p style="font-size: 14px; color: #6b7280;">Se o botão não funcionar, copie o link abaixo no seu navegador:</p>
+          <div class="token">${inviteUrl}</div>
+          <p style="font-size: 14px; color: #6b7280;">Este link expira em 7 dias. Após esse prazo, solicite uma nova redefinição de senha.</p>
+          <p style="font-size: 14px; color: #6b7280;">Se você não espera receber este email, ignore-o.</p>
+        </div>
+        <div class="footer">
+          <p>${appName} &mdash; Todos os direitos reservados</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  if (!resend) {
+    // Dev mode: log the invite info instead of sending email
+    console.log(`\n[DEV] Company invite for ${adminName} (${email}) - Company: ${companyName}`);
+    console.log(`[DEV] Invite URL: ${inviteUrl}\n`);
+    return { success: true, inviteUrl };
+  }
+
+  try {
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `Convite: Acesse o ${appName} como administrador de ${companyName}`,
+      html,
+    });
+    return { success: true, inviteUrl };
+  } catch (error) {
+    console.error("Failed to send company invite email:", error);
+    return { success: false, error: "Erro ao enviar email de convite", inviteUrl };
+  }
+}

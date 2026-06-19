@@ -19,7 +19,8 @@ export interface LogActivityParams {
     | "user"
     | "stock_movement"
     | "menu_order"
-    | "restaurant_table";
+    | "restaurant_table"
+    | "company";
   entityId?: string;
   details?: string;
 }

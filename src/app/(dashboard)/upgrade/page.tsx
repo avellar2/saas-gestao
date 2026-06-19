@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock, ArrowLeft, Check, Loader2, Clock } from "lucide-react";
@@ -10,14 +10,38 @@ import { Badge } from "@/components/ui/badge";
 import { PURCHASABLE_MODULES, getModuleConfig, type ModuleKey } from "@/lib/modules";
 import { BASE_PRICE, calculateMonthlyPrice } from "@/lib/pricing";
 
+interface ActiveModule {
+  key: string;
+  name: string;
+}
+
 export default function UpgradePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const moduleKey = searchParams.get("module") as ModuleKey | null;
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [activeModules, setActiveModules] = useState<ActiveModule[]>([]);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   const moduleInfo = moduleKey ? getModuleConfig(moduleKey) : null;
+
+  // Fetch active modules to show which are already active
+  useEffect(() => {
+    async function fetchModules() {
+      try {
+        const res = await fetch("/api/empresas/me/modules");
+        if (res.ok) {
+          const data = await res.json();
+          setActiveModules(data.activeModules || []);
+          setHasSubscription(data.hasStripeSubscription || false);
+        }
+      } catch {
+        // Ignore - modules will just show as not active
+      }
+    }
+    fetchModules();
+  }, []);
 
   // Filter purchasable modules that are active (not coming_soon for purchase)
   const purchasableModules = PURCHASABLE_MODULES.filter((m) => m.status === "active");
@@ -27,27 +51,51 @@ export default function UpgradePage() {
     setError("");
 
     try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Legacy flow: send plan + moduleKey for backward compatibility
-        body: JSON.stringify({ plan: "basic", moduleKey: selectedModuleKey }),
-      });
+      // First checkout: create a new subscription with the base price
+      if (!hasSubscription) {
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ includedModuleKey: selectedModuleKey }),
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Erro ao iniciar pagamento");
-        return;
-      }
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Erro ao iniciar pagamento");
+          return;
+        }
 
-      if (data.url) {
-        window.location.href = data.url;
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        // Adding module to existing subscription
+        const res = await fetch("/api/stripe/modules/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ moduleKey: selectedModuleKey }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Erro ao adicionar modulo");
+          return;
+        }
+
+        // Refresh module list to show the new module status
+        // (it will be fully activated after payment confirmation)
+        setActiveModules((prev) => [...prev, { key: selectedModuleKey, name: data.moduleKey || selectedModuleKey }]);
       }
     } catch {
       setError("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(null);
     }
+  }
+
+  // Determine if a module is already active
+  function isModuleActive(key: string): boolean {
+    return activeModules.some((m) => m.key === key);
   }
 
   return (
@@ -110,6 +158,7 @@ export default function UpgradePage() {
           {PURCHASABLE_MODULES.map((mod) => {
             const isActive = mod.status === "active";
             const isComingSoon = mod.status === "coming_soon";
+            const isAlreadyActive = isModuleActive(mod.key);
 
             return (
               <Card
@@ -121,6 +170,11 @@ export default function UpgradePage() {
                 {isComingSoon && (
                   <Badge className="absolute -top-2.5 left-4 bg-primary text-primary-foreground text-[10px]">
                     Em breve
+                  </Badge>
+                )}
+                {isAlreadyActive && (
+                  <Badge className="absolute -top-2.5 right-4 bg-green-100 text-green-800 border-green-200 text-[10px]">
+                    Ativo
                   </Badge>
                 )}
                 <CardContent className="p-5 space-y-4">
@@ -152,10 +206,12 @@ export default function UpgradePage() {
                   <Button
                     className="w-full"
                     variant={mod.key === moduleKey ? "default" : "outline"}
-                    disabled={!isActive || loading !== null}
-                    onClick={() => isActive && handleCheckout(mod.key)}
+                    disabled={!isActive || loading !== null || isAlreadyActive}
+                    onClick={() => isActive && !isAlreadyActive && handleCheckout(mod.key)}
                   >
-                    {loading === mod.key ? (
+                    {isAlreadyActive ? (
+                      "Ativo"
+                    ) : loading === mod.key ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="size-4 animate-spin" />
                         Redirecionando...

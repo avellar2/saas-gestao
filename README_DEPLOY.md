@@ -298,9 +298,12 @@ Após o domínio estar funcionando:
 2. **Add endpoint**: `https://avgestao.com.br/api/stripe/webhook`
 3. **Eventos**:
    - `checkout.session.completed`
+   - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
+   - `invoice.paid`
    - `invoice.payment_failed`
+   - `invoice.payment_action_required`
 4. Copie o `whsec_...` para `STRIPE_WEBHOOK_SECRET` no `.env`
 5. Reinicie o app: `docker compose -f docker-compose.prod.yml restart app`
 

@@ -111,15 +111,16 @@ model Module {
 }
 
 model CompanyModule {
-  id            String    @id @default(cuid())
-  companyId     String
-  moduleKey     String
-  active        Boolean   @default(false)
-  price         Decimal?  @db.Decimal(10, 2)
-  activatedAt   DateTime?
-  deactivatedAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  companyId                String
+  moduleKey                String
+  active                   Boolean   @default(false)
+  price                    Decimal?  @db.Decimal(10, 2)
+  activatedAt              DateTime?
+  deactivatedAt            DateTime?
+  stripeSubscriptionItemId String?   // Vincula ao subscription_item no Stripe (apenas para módulos extras)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   module  Module  @relation(fields: [moduleKey], references: [key])
@@ -162,6 +163,7 @@ model Subscription {
   status                SubscriptionStatus @default(TRIAL)
   planName              String?
   basePrice             Decimal            @db.Decimal(10, 2) @default(49.00)
+  includedModuleKey     String?            // Qual módulo está incluso no plano base
   modulesCount          Int                @default(0)
   monthlyPrice          Decimal            @db.Decimal(10, 2) @default(49.00)
   trialEndsAt           DateTime?
@@ -177,6 +179,16 @@ model Subscription {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+model StripeWebhookEvent {
+  id          String   @id
+  type        String
+  status      String   @default("PROCESSING")
+  processedAt DateTime @default(now())
+  error       String?
+
+  @@map("stripe_webhook_events")
 }
 
 model Customer {
