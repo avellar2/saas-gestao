@@ -58,10 +58,6 @@ avgestao.com.br, www.avgestao.com.br {
         max_size 10MB
     }
 
-    # Rate limit basico
-    @api path /api/*
-    rate_limit @api 100r/m
-
     # Health check publico (sem auth, sem rate limit agressivo)
     @health path /api/health
     handle @health {

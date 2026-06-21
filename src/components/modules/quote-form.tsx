@@ -14,6 +14,7 @@ export interface QuoteItemData {
   description: string;
   quantity: number;
   unitPrice: number;
+  productId?: string;
 }
 
 export interface QuoteFormData {
@@ -30,8 +31,17 @@ interface CustomerOption {
   name: string;
 }
 
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+}
+
 interface QuoteFormProps {
   customers: CustomerOption[];
+  products?: ProductOption[];
+  inventoryActive?: boolean;
   initialData?: Partial<QuoteFormData>;
   onSubmit: (data: QuoteFormData) => Promise<void>;
   submitLabel?: string;
@@ -40,6 +50,8 @@ interface QuoteFormProps {
 
 export function QuoteForm({
   customers,
+  products = [],
+  inventoryActive = false,
   initialData,
   onSubmit,
   submitLabel = "Salvar",
@@ -55,6 +67,16 @@ export function QuoteForm({
     items: initialData?.items || [{ description: "", quantity: 1, unitPrice: 0 }],
   });
 
+  // Validate customerId when customers list loads
+  useEffect(() => {
+    if (formData.customerId && customers.length > 0) {
+      const isValid = customers.find(c => c.id === formData.customerId);
+      if (!isValid) {
+        setFormData(prev => ({ ...prev, customerId: "" }));
+      }
+    }
+  }, [customers, formData.customerId]);
+
   function handleChange(field: keyof QuoteFormData, value: string | number | QuoteItemData[]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
@@ -68,12 +90,44 @@ export function QuoteForm({
     if (field === "description") {
       newItems[index] = { ...newItems[index], description: value as string };
     } else if (field === "quantity") {
-      newItems[index] = { ...newItems[index], quantity: parseFloat(value as string) || 0 };
+      newItems[index] = {
+        ...newItems[index],
+        quantity: parseFloat(value as string) || 0,
+      };
     } else if (field === "unitPrice") {
-      newItems[index] = { ...newItems[index], unitPrice: parseFloat(value as string) || 0 };
+      newItems[index] = {
+        ...newItems[index],
+        unitPrice: parseFloat(value as string) || 0,
+      };
     }
     handleChange("items", newItems);
   }
+
+  function handleProductSelect(index: number, productId: string) {
+    const newItems = [...formData.items];
+    if (!productId) {
+      // Item manual — clear productId but keep description/price editable
+      newItems[index] = {
+        ...newItems[index],
+        productId: undefined,
+      };
+    } else {
+      const product = products.find((p) => p.id === productId);
+      if (product) {
+        newItems[index] = {
+          ...newItems[index],
+          productId: product.id,
+          description: product.name,
+          unitPrice: Number(product.salePrice),
+        };
+      }
+    }
+    handleChange("items", newItems);
+  }
+
+  const selectedProductId = (index: number) => {
+    return formData.items[index]?.productId || "";
+  };
 
   function addItem() {
     handleChange("items", [
@@ -129,7 +183,11 @@ export function QuoteForm({
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o cliente" />
+                    <SelectValue>
+                      {formData.customerId
+                        ? customers.find((c) => c.id === formData.customerId)?.name || "Selecione o cliente"
+                        : "Selecione o cliente"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((customer) => (
@@ -186,7 +244,38 @@ export function QuoteForm({
               key={index}
               className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end border-b pb-4 last:border-0 last:pb-0"
             >
-              <div className="md:col-span-5 space-y-2">
+              {/* Product selector (only when inventory active) */}
+              {inventoryActive && !readOnly && (
+                <div className="md:col-span-12 space-y-2">
+                  <Label className={index === 0 ? "" : "md:invisible"}>
+                    Produto
+                  </Label>
+                  <Select
+                    value={selectedProductId(index)}
+                    onValueChange={(value: string | null) =>
+                      handleProductSelect(index, value || "")
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {selectedProductId(index)
+                          ? products.find((p) => p.id === selectedProductId(index))?.name || "Selecione um produto"
+                          : "Selecione um produto ou item manual"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Item manual (sem produto)</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} ({Number(product.quantity)} un.) — {formatCurrency(Number(product.salePrice))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className={`${inventoryActive && !readOnly ? "md:col-span-5" : "md:col-span-5"} space-y-2`}>
                 <Label className={index === 0 ? "" : "md:invisible"}>
                   Descricao *
                 </Label>

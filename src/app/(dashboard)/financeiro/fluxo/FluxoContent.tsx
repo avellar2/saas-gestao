@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/ui/section-skeleton";
 import { CHART_SERIES } from "@/lib/chart-palette";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, DollarSign, ArrowUpFromLine, ArrowDownFromLine } from "lucide-react";
 import {
@@ -179,7 +179,7 @@ export function FluxoContent() {
             <div className="p-6">
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data.days}>
+                  <BarChart data={data.days}>
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 11 }}
@@ -188,24 +188,16 @@ export function FluxoContent() {
                         return `${d.getDate()}/${d.getMonth() + 1}`;
                       }}
                     />
-                    <YAxis tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                     <Tooltip
                       formatter={(value: unknown) => formatCurrency(value as number)}
                       labelFormatter={(label: unknown) =>
                         new Date(label as string).toLocaleDateString("pt-BR")
                       }
                     />
-                    <Bar dataKey="receivable" name="Entradas" fill={CHART_SERIES.entradas} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="payable" name="Saídas" fill={CHART_SERIES.saidas} radius={[4, 4, 0, 0]} />
-                    <Line
-                      type="monotone"
-                      dataKey="accumulated"
-                      name="Saldo Acumulado"
-                      stroke={CHART_SERIES.saldo}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </ComposedChart>
+                    <Bar dataKey="receivable" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Bar dataKey="payable" name="Saídas" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>

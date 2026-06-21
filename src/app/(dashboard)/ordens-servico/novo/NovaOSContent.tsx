@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ServiceOrderForm,
   type ServiceOrderFormData,
@@ -27,13 +27,23 @@ interface ProductOption {
   quantity: number;
 }
 
+interface QuoteItemData {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export default function NovaOSContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const quoteId = searchParams.get("quoteId");
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [quotes, setQuotes] = useState<QuoteOption[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [inventoryActive, setInventoryActive] = useState(false);
+  const [initialData, setInitialData] = useState<Partial<ServiceOrderFormData> | undefined>(undefined);
+  const [loadingQuote, setLoadingQuote] = useState(!!quoteId);
 
   useEffect(() => {
     async function loadData() {
@@ -41,12 +51,12 @@ export default function NovaOSContent() {
         const custRes = await fetch("/api/clientes?limit=100");
         if (custRes.ok) {
           const data = await custRes.json();
-          setCustomers(
-            (data.customers || []).map((c: { id: string; name: string }) => ({
-              id: c.id,
-              name: c.name,
-            }))
-          );
+          const customerList = (data.customers || []).map((c: { id: string; name: string }) => ({
+            id: c.id,
+            name: c.name,
+          }));
+          console.log("Clientes carregados:", customerList);
+          setCustomers(customerList);
         }
       } catch {
         // silently fail
@@ -95,6 +105,37 @@ export default function NovaOSContent() {
     }
     loadData();
   }, []);
+
+  // Carregar dados do orcamento quando quoteId estiver na URL
+  useEffect(() => {
+    if (!quoteId) return;
+
+    async function loadQuote() {
+      try {
+        const res = await fetch(`/api/orcamentos/${quoteId}`);
+        if (!res.ok) {
+          setError("Orcamento nao encontrado");
+          setLoadingQuote(false);
+          return;
+        }
+        const quote = await res.json();
+        setInitialData({
+          customerId: quote.customerId,
+          quoteId: quote.id,
+          items: (quote.items || []).map((item: QuoteItemData) => ({
+            description: item.description,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+          })),
+        });
+      } catch {
+        setError("Erro ao carregar orcamento");
+      } finally {
+        setLoadingQuote(false);
+      }
+    }
+    loadQuote();
+  }, [quoteId]);
 
   async function handleSubmit(data: ServiceOrderFormData) {
     setError(null);
@@ -150,14 +191,22 @@ export default function NovaOSContent() {
             </div>
           )}
 
-          <ServiceOrderForm
-            customers={customers}
-            quotes={quotes}
-            products={products}
-            inventoryActive={inventoryActive}
-            onSubmit={handleSubmit}
-            submitLabel="Criar OS"
-          />
+          {loadingQuote ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mr-3" />
+              Carregando dados do orcamento...
+            </div>
+          ) : (
+            <ServiceOrderForm
+              customers={customers}
+              quotes={quotes}
+              products={products}
+              inventoryActive={inventoryActive}
+              initialData={initialData}
+              onSubmit={handleSubmit}
+              submitLabel="Criar OS"
+            />
+          )}
         </div>
       </div>
     </div>

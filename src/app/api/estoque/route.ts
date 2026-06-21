@@ -127,7 +127,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, description, sku, category, quantity, minStock, costPrice, salePrice } = body;
+  const { name, description, sku, category, quantity, minStock, costPrice, salePrice, registerExpense } = body;
 
   if (!name || !name.trim()) {
     return NextResponse.json(
@@ -149,6 +149,29 @@ export async function POST(request: Request) {
       salePrice: salePrice || 0,
     } as Parameters<typeof tenant.product.create>[0]["data"],
   });
+
+  // Registrar despesa no financeiro se solicitado
+  if (registerExpense && costPrice && quantity) {
+    try {
+      const totalCost = Number(quantity) * Number(costPrice);
+      await tenant.financialTransaction.create({
+        data: {
+          companyId,
+          type: "PAYABLE",
+          description: `Compra de ${quantity} ${name}${quantity > 1 ? "s" : ""} (custo unitário R$ ${Number(costPrice).toFixed(2)})`,
+          category: "ESTOQUE",
+          amount: totalCost,
+          dueDate: new Date(),
+          paidAt: new Date(),
+          status: "PAID",
+          notes: `Registrado automaticamente na criação do produto`,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to register expense:", err);
+      // Não quebra o fluxo principal
+    }
+  }
 
   const userId = (session.user as Record<string, unknown>).id as string;
   const userName = (session.user as Record<string, unknown>).name as string;

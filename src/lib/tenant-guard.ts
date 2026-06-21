@@ -34,11 +34,11 @@ export type EntityName =
 export async function findCustomerInCompany(
   tenant: TenantPrismaClient,
   customerId: string | null | undefined
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; name: string; phone: string | null; whatsapp: string | null; email: string | null } | null> {
   if (!customerId) return null;
   const c = await tenant.customer.findUnique({
     where: { id: customerId },
-    select: { id: true },
+    select: { id: true, name: true, phone: true, whatsapp: true, email: true },
   });
   return c;
 }

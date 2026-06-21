@@ -14,6 +14,7 @@ export interface EstoqueFormData {
   minStock: number;
   costPrice: number;
   salePrice: number;
+  registerExpense?: boolean;
 }
 
 interface EstoqueFormProps {
@@ -28,6 +29,7 @@ export function EstoqueForm({
   submitLabel = "Salvar",
 }: EstoqueFormProps) {
   const [loading, setLoading] = useState(false);
+  const [registerExpense, setRegisterExpense] = useState(false);
   const [formData, setFormData] = useState<EstoqueFormData>({
     name: initialData?.name || "",
     description: initialData?.description || "",
@@ -47,7 +49,7 @@ export function EstoqueForm({
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(formData);
+      await onSubmit({ ...formData, registerExpense });
     } finally {
       setLoading(false);
     }
@@ -150,6 +152,19 @@ export function EstoqueForm({
           rows={3}
           className="flex min-h-[120px] w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-base shadow-sm outline-none placeholder:text-muted-foreground/60 focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
         />
+      </div>
+
+      <div className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-amber-50/30">
+        <input
+          type="checkbox"
+          id="registerExpense"
+          checked={registerExpense}
+          onChange={(e) => setRegisterExpense(e.target.checked)}
+          className="h-4 w-4 rounded border-border text-amber-600 focus:ring-amber-500"
+        />
+        <Label htmlFor="registerExpense" className="text-sm cursor-pointer">
+          Registrar despesa no financeiro (R$ {Number(formData.quantity * formData.costPrice).toFixed(2)})
+        </Label>
       </div>
 
       <div className="flex justify-end">

@@ -6,11 +6,12 @@ import { QuoteForm, type QuoteFormData } from "@/components/modules/quote-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { buildWhatsAppLink, quoteWhatsAppMessage } from "@/lib/whatsapp";
-import { MessageCircle, FileDown, ChevronLeft, Trash2, Send, CheckSquare, XCircle, Wrench, Edit } from "lucide-react";
+import { MessageCircle, FileDown, ChevronLeft, Trash2, Send, CheckSquare, XCircle, Wrench, Edit, Copy, Link } from "lucide-react";
 import { DetailSkeleton } from "@/components/ui/detail-skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { ActionBar } from "@/components/layout/action-bar";
+import { SendDialog } from "@/components/quote/send-dialog";
+import { ApprovePhysicalDialog } from "@/components/quote/approve-physical-dialog";
 
 
 interface QuoteItem {
@@ -40,6 +41,13 @@ interface QuoteDetail {
   validUntil: string | null;
   notes: string | null;
   customerId: string;
+  publicToken: string | null;
+  sentAt: string | null;
+  sentVia: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  approvalSource: string | null;
+  rejectionReason: string | null;
   customer: CustomerDetail;
   items: QuoteItem[];
   createdAt: string;
@@ -49,6 +57,13 @@ interface QuoteDetail {
 interface CustomerOption {
   id: string;
   name: string;
+}
+
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
 }
 
 function getStatusLabel(status: string): string {
@@ -72,6 +87,8 @@ export default function OrcamentoDetailContent() {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [inventoryActive, setInventoryActive] = useState(false);
 
   useEffect(() => {
     async function loadQuote() {
@@ -112,9 +129,43 @@ export default function OrcamentoDetailContent() {
     loadCustomers();
   }, []);
 
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const invRes = await fetch("/api/estoque?limit=1");
+        if (invRes.ok) {
+          setInventoryActive(true);
+          const prodRes = await fetch("/api/estoque?limit=500&active=true");
+          if (prodRes.ok) {
+            const prodData = await prodRes.json();
+            setProducts(
+              (prodData.products || []).map(
+                (p: { id: string; name: string; salePrice: number; quantity: number }) => ({
+                  id: p.id,
+                  name: p.name,
+                  salePrice: p.salePrice,
+                  quantity: p.quantity,
+                })
+              )
+            );
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }
+    loadProducts();
+  }, []);
+
   async function handleStatusChange(newStatus: string) {
     if (!quote) return;
     setError(null);
+
+    // Only allow EXPIRED via PUT (SENT/APPROVED/REJECTED use dedicated endpoints)
+    if (newStatus !== "EXPIRED" && newStatus !== "DRAFT") {
+      setError(`Status "${newStatus}" deve ser alterado via endpoint dedicado`);
+      return;
+    }
 
     const res = await fetch(`/api/orcamentos/${id}`, {
       method: "PUT",
@@ -188,15 +239,22 @@ export default function OrcamentoDetailContent() {
     if (!quote) return null;
     const phone = quote.customer.whatsapp || quote.customer.phone;
     if (!phone) return null;
-    return buildWhatsAppLink(
-      phone,
-      quoteWhatsAppMessage(
-        quote.customer.name,
-        quote.number,
-        Number(quote.total),
-        ""
-      )
-    );
+    const portalUrl = quote.publicToken
+      ? `${window.location.origin}/portal/orcamento/${quote.publicToken}`
+      : null;
+    if (!portalUrl) return null;
+
+    const message = `Ola ${quote.customer.name}! Segue o orcamento nº ${quote.number} no valor de ${formatCurrency(Number(quote.total))}. Visualize e aprove pelo link: ${portalUrl}`;
+    const cleanPhone = phone.replace(/\D/g, "");
+    const fullPhone = cleanPhone.length <= 11 ? "55" + cleanPhone : cleanPhone;
+    return `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
+  }
+
+  async function handleCopyPublicLink() {
+    if (!quote?.publicToken) return;
+    const url = `${window.location.origin}/portal/orcamento/${quote.publicToken}`;
+    await navigator.clipboard.writeText(url);
+    setError(null);
   }
 
   if (loading) {
@@ -236,40 +294,77 @@ export default function OrcamentoDetailContent() {
           Voltar
         </Button>
 
-        <ActionBar
-          primaryActions={[
-            ...(quote.status === "DRAFT" && !editing
-              ? [{ key: "send", label: "Enviar", icon: Send, variant: "default" as const, onClick: () => handleStatusChange("SENT") }]
-              : []),
-            ...(quote.status === "SENT"
-              ? [
-                  { key: "approve", label: "Aprovar", icon: CheckSquare, variant: "default" as const, onClick: () => handleStatusChange("APPROVED") },
-                  { key: "reject", label: "Rejeitar", icon: XCircle, variant: "outline" as const, onClick: () => handleStatusChange("REJECTED") },
-                ]
-              : []),
-            ...(quote.status === "APPROVED"
-              ? [{ key: "convert", label: "Converter em OS", icon: Wrench, variant: "default" as const, onClick: handleConvertToServiceOrder }]
-              : []),
-          ]}
-          secondaryActions={[
-            ...(quote.status === "DRAFT" && !editing
-              ? [{ key: "edit", label: "Editar", icon: Edit, variant: "outline" as const, onClick: () => setEditing(true) }]
-              : []),
-            ...(quote.status === "DRAFT" && editing
-              ? [{ key: "cancel", label: "Cancelar", variant: "outline" as const, onClick: () => setEditing(false) }]
-              : []),
-            { key: "pdf", label: "Baixar PDF", icon: FileDown, variant: "outline" as const, href: `/api/pdf/orcamento/${id}`, external: true },
-            ...(getWhatsAppLink()
-              ? [{ key: "whatsapp", label: "WhatsApp", icon: MessageCircle, variant: "outline" as const, href: getWhatsAppLink()!, external: true }]
-              : []),
-            ...(quote.status === "DRAFT"
-              ? [
-                  { divider: true } as { key: string; label: string; divider: true },
-                  { key: "delete", label: "Excluir", icon: Trash2, variant: "destructive" as const, onClick: handleDelete },
-                ]
-              : []),
-          ]}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Primary actions */}
+          {(quote.status === "DRAFT" || quote.status === "SENT") && !editing && (
+            <SendDialog
+              quoteId={id}
+              customerName={quote.customer.name}
+              customerPhone={quote.customer.phone}
+              customerWhatsapp={quote.customer.whatsapp}
+              customerEmail={quote.customer.email}
+              isSent={quote.status === "SENT"}
+              onSent={() => {
+                fetch(`/api/orcamentos/${id}`).then(r => r.json()).then(setQuote);
+              }}
+            />
+          )}
+
+          {quote.status === "SENT" && (
+            <ApprovePhysicalDialog
+              quoteId={id}
+              onApproved={() => {
+                fetch(`/api/orcamentos/${id}`).then(r => r.json()).then(setQuote);
+              }}
+            />
+          )}
+
+          {quote.status === "APPROVED" && (
+            <Button onClick={() => router.push(`/ordens-servico/novo?quoteId=${id}`)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Wrench className="h-4 w-4 mr-1.5" />
+              Gerar OS
+            </Button>
+          )}
+
+          {/* Secondary actions */}
+          {quote.status === "DRAFT" && !editing && (
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Edit className="h-4 w-4 mr-1.5" />
+              Editar
+            </Button>
+          )}
+          {quote.status === "DRAFT" && editing && (
+            <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
+              Cancelar
+            </Button>
+          )}
+
+          <Button variant="outline" size="sm" onClick={() => window.open(`/api/pdf/orcamento/${id}`, "_blank")}>
+            <FileDown className="h-4 w-4 mr-1.5" />
+            Baixar PDF
+          </Button>
+
+          {quote.publicToken && (
+            <Button variant="outline" size="sm" onClick={handleCopyPublicLink}>
+              <Copy className="h-4 w-4 mr-1.5" />
+              Copiar link
+            </Button>
+          )}
+
+          {getWhatsAppLink() && (
+            <Button variant="outline" size="sm" onClick={() => window.open(getWhatsAppLink()!, "_blank")}>
+              <MessageCircle className="h-4 w-4 mr-1.5" />
+              WhatsApp
+            </Button>
+          )}
+
+          {(quote.status === "DRAFT" || quote.status === "APPROVED" || quote.status === "REJECTED" || quote.status === "EXPIRED" || quote.status === "SENT") && (
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Excluir
+            </Button>
+          )}
+        </div>
       </div>
 
         {editing ? (
@@ -289,6 +384,8 @@ export default function OrcamentoDetailContent() {
               >
                 <QuoteForm
                   customers={customers}
+                  products={products}
+                  inventoryActive={inventoryActive}
                   initialData={{
                     customerId: quote.customerId,
                     description: quote.description || "",
@@ -372,6 +469,11 @@ export default function OrcamentoDetailContent() {
                     { label: "E-mail", value: quote.customer.email || "—" },
                     { label: "Validade", value: quote.validUntil ? formatDate(quote.validUntil) : "—" },
                     { label: "Descricao", value: quote.description || "—" },
+                    ...(quote.sentAt ? [{ label: "Enviado em", value: formatDate(quote.sentAt) }] : []),
+                    ...(quote.sentVia ? [{ label: "Canal de envio", value: quote.sentVia === "EMAIL" ? "E-mail" : quote.sentVia === "WHATSAPP" ? "WhatsApp" : "Manual" }] : []),
+                    ...(quote.approvedAt ? [{ label: "Aprovado em", value: `${formatDate(quote.approvedAt)} (${quote.approvalSource === "ONLINE" ? "online" : "presencial"})` }] : []),
+                    ...(quote.rejectedAt ? [{ label: "Rejeitado em", value: formatDate(quote.rejectedAt) }] : []),
+                    ...(quote.rejectionReason ? [{ label: "Motivo da recusa", value: quote.rejectionReason }] : []),
                   ].map((info, idx) => (
                     <div key={idx} className="space-y-1"
                     >

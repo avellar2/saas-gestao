@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { customerId, items, discount, notes, validUntil } = result.data;
+  const { customerId, description, items, discount, notes, validUntil } = result.data;
 
   // P23 fix: validar customerId pertence à empresa (e buscar nome para log)
   const customer = await tenant.customer.findUnique({ where: { id: customerId } });
@@ -120,6 +120,7 @@ export async function POST(request: Request) {
       customerId,
       number: nextNumber,
       status: "DRAFT",
+      description: description?.trim() || null,
       subtotal,
       discount: discount || 0,
       total,

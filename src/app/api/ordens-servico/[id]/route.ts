@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
-import { PaymentStatus } from "@/generated/prisma/client";
-import { sendOSCompletedEmail } from "@/lib/email";
+import { PaymentStatus, QuoteStatus } from "@/generated/prisma/client";
+import { sendOSStatusEmail, sendOSCompletedEmail } from "@/lib/email";
+import { buildWhatsAppLink, serviceOrderStatusMessage } from "@/lib/whatsapp";
 import {
   findCustomerInCompany,
   findProductsInCompany,
@@ -194,6 +195,75 @@ export async function PUT(
     // Update paymentStatus to CANCELLED when cancelling
     if (body.status === "CANCELLED") {
       updateData.paymentStatus = PaymentStatus.CANCELLED;
+
+      // Devolver produtos ao estoque
+      try {
+        const inventoryActive = await checkModuleAccess(companyId, "inventory");
+        if (inventoryActive && existing.items?.length) {
+          for (const item of existing.items) {
+            if (item.productId) {
+              const product = await tenant.product.findUnique({
+                where: { id: item.productId },
+                select: { id: true, quantity: true, name: true },
+              });
+              if (product) {
+                const qty = Number(item.quantity);
+                const prevQty = Number(product.quantity);
+                const newQty = prevQty + qty;
+
+                await tenant.product.update({
+                  where: { id: product.id },
+                  data: { quantity: newQty },
+                });
+
+                await tenant.stockMovement.create({
+                  data: {
+                    companyId,
+                    productId: product.id,
+                    serviceOrderId: id,
+                    type: "IN",
+                    reason: "RETURN",
+                    quantity: qty,
+                    previousQuantity: prevQty,
+                    newQuantity: newQty,
+                    description: `Cancelamento OS Nº ${existing.number} - ${product.name}`,
+                  },
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to return stock on cancel:", err);
+      }
+    }
+
+    // Fechar orcamento vinculado e criar transacao financeira ao finalizar
+    if ((body.status === "READY" || body.status === "DELIVERED" || body.status === "COMPLETED") && existing.quoteId) {
+      try {
+        // Marcar orcamento como CONVERTED
+        await tenant.quote.update({
+          where: { id: existing.quoteId },
+          data: { status: "CONVERTED" as QuoteStatus },
+        });
+
+        // Atualizar transacao financeira do orcamento para PAID (se existir)
+        const financeActive = await checkModuleAccess(companyId, "finance");
+        if (financeActive) {
+          const existingTx = await tenant.financialTransaction.findFirst({
+            where: { quoteId: existing.quoteId },
+          });
+          if (existingTx) {
+            await tenant.financialTransaction.update({
+              where: { id: existingTx.id },
+              data: { status: "PAID", paidAt: new Date() },
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to close quote / create transaction:", err);
+        // Nao quebra o fluxo principal
+      }
     }
 
     const updated = await tenant.serviceOrder.update({
@@ -210,13 +280,61 @@ export async function PUT(
       },
     });
 
-    // Send email notification when OS is finished or delivered
-    if ((body.status === "READY" || body.status === "DELIVERED") && updated.customer?.email) {
-      sendOSCompletedEmail(
-        updated.customer.email,
-        updated.customer.name,
-        updated.code || `Nº ${updated.number}`
-      ).catch((err) => console.error("Failed to send OS completed email:", err));
+    // Notificar cliente sobre mudanca de status
+    if (body.status && body.status !== existing.status) {
+      const statusLabels: Record<string, string> = {
+        RECEIVED: "Recebida",
+        DIAGNOSIS: "Em Diagnostico",
+        WAITING_APPROVAL: "Aguardando Aprovacao",
+        WAITING_PARTS: "Aguardando Peca",
+        IN_PROGRESS: "Em Andamento",
+        READY: "Concluida",
+        DELIVERED: "Entregue",
+        CANCELLED: "Cancelada",
+      };
+      const statusLabel = statusLabels[body.status] || body.status;
+      const portalUrl = updated.publicToken
+        ? `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/portal/os/${updated.publicToken}`
+        : null;
+
+      // Buscar dados da empresa
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { name: true, tradeName: true },
+      });
+      const companyName = company?.tradeName || company?.name || "";
+
+      // WhatsApp
+      if (portalUrl) {
+        const phone = updated.customer?.whatsapp || updated.customer?.phone;
+        if (phone) {
+          const msg = serviceOrderStatusMessage(updated.customer.name, updated.number, statusLabel, companyName, portalUrl);
+          const link = buildWhatsAppLink(phone, msg);
+          if (link) {
+            console.log(`[NOTIFICATION] WhatsApp link for OS #${updated.number}: ${link}`);
+          }
+        }
+      }
+
+      // E-mail
+      if (updated.customer?.email && portalUrl) {
+        if (body.status === "READY" || body.status === "DELIVERED") {
+          sendOSCompletedEmail(
+            updated.customer.email,
+            updated.customer.name,
+            updated.code || `Nº ${updated.number}`
+          ).catch((err) => console.error("Failed to send OS completed email:", err));
+        } else {
+          sendOSStatusEmail(
+            updated.customer.email,
+            updated.customer.name,
+            updated.number,
+            statusLabel,
+            companyName,
+            portalUrl
+          ).catch((err) => console.error("Failed to send OS status email:", err));
+        }
+      }
     }
 
     const userId = (session.user as Record<string, unknown>).id as string;
@@ -467,6 +585,13 @@ export async function DELETE(
       { error: "Apenas OS recebidas podem ser excluidas" },
       { status: 400 }
     );
+  }
+
+  // Remover transacoes financeiras vinculadas
+  try {
+    await tenant.financialTransaction.deleteMany({ where: { serviceOrderId: id } });
+  } catch (err) {
+    console.error("Failed to delete financial transactions:", err);
   }
 
   await tenant.serviceOrder.delete({ where: { id } });

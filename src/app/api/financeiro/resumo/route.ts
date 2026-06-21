@@ -69,10 +69,12 @@ export async function GET(request: Request) {
     const isCancelled = tx.status === "CANCELLED";
     const overdue = isOverdue(tx.status, tx.dueDate);
 
-    // Origem
-    if (tx.serviceOrderId) byOrigin.os += amount;
-    else if (tx.menuOrderId) byOrigin.menu += amount;
-    else byOrigin.manual += amount;
+    // Origem (apenas receitas)
+    if (tx.type === "RECEIVABLE") {
+      if (tx.serviceOrderId || tx.quoteId) byOrigin.os += amount;
+      else if (tx.menuOrderId) byOrigin.menu += amount;
+      else byOrigin.manual += amount;
+    }
 
     // Categoria
     const catKey = tx.category || "Sem categoria";
@@ -125,6 +127,13 @@ export async function GET(request: Request) {
   const daily = Object.entries(dailyMap)
     .map(([date, values]) => ({ date, ...values }))
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Calcular saldo acumulado por dia
+  let accumulatedBalance = 0;
+  for (const day of daily) {
+    accumulatedBalance += day.receivable - day.payable;
+    (day as Record<string, unknown>).balance = accumulatedBalance;
+  }
 
   // BUG-001 fix: saldo realizado = receitas pagas - despesas pagas
   const balance = receivablePaid - payablePaid;

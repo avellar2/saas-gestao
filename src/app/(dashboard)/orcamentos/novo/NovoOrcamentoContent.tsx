@@ -11,10 +11,19 @@ interface CustomerOption {
   name: string;
 }
 
+interface ProductOption {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+}
+
 export default function NovoOrcamentoContent() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [inventoryActive, setInventoryActive] = useState(false);
 
   useEffect(() => {
     async function loadCustomers() {
@@ -34,6 +43,35 @@ export default function NovoOrcamentoContent() {
       }
     }
     loadCustomers();
+  }, []);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        // Check if inventory module is active
+        const invRes = await fetch("/api/estoque?limit=1");
+        if (invRes.ok) {
+          setInventoryActive(true);
+          const prodRes = await fetch("/api/estoque?limit=500&active=true");
+          if (prodRes.ok) {
+            const prodData = await prodRes.json();
+            setProducts(
+              (prodData.products || []).map(
+                (p: { id: string; name: string; salePrice: number; quantity: number }) => ({
+                  id: p.id,
+                  name: p.name,
+                  salePrice: p.salePrice,
+                  quantity: p.quantity,
+                })
+              )
+            );
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }
+    loadProducts();
   }, []);
 
   async function handleSubmit(data: QuoteFormData) {
@@ -94,6 +132,8 @@ export default function NovoOrcamentoContent() {
 
           <QuoteForm
             customers={customers}
+            products={products}
+            inventoryActive={inventoryActive}
             onSubmit={handleSubmit}
             submitLabel="Criar Orcamento"
           />

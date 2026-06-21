@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { prisma, tenantPrisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { ModuleCard } from "@/components/layout/module-card";
@@ -13,6 +14,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -37,11 +39,30 @@ export default async function DashboardPage() {
 
   const activeModuleMap = new Map(companyModules.map((m) => [m.moduleKey, m.active]));
 
-  const [customerCount, pendingQuotes, openServiceOrders] = await Promise.all([
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [customerCount, pendingQuotes, openServiceOrders, newCustomersThisMonth, newQuotesThisMonth, urgentServiceOrders, approvedQuotesThisMonth] = await Promise.all([
     tenant.customer.count(),
     tenant.quote.count({ where: { status: "DRAFT" } }),
     tenant.serviceOrder.count({
       where: { status: { in: ["RECEIVED", "DIAGNOSIS", "IN_PROGRESS", "WAITING_APPROVAL", "WAITING_PARTS"] } },
+    }),
+    tenant.customer.count({
+      where: { createdAt: { gte: startOfMonth } },
+    }),
+    tenant.quote.count({
+      where: { createdAt: { gte: startOfMonth } },
+    }),
+    tenant.serviceOrder.count({
+      where: {
+        status: { in: ["RECEIVED", "DIAGNOSIS", "IN_PROGRESS", "WAITING_APPROVAL", "WAITING_PARTS"] },
+        priority: "HIGH",
+      },
+    }),
+    tenant.quote.count({
+      where: { status: "APPROVED", approvedAt: { gte: startOfMonth } },
     }),
   ]);
 
@@ -94,30 +115,42 @@ export default async function DashboardPage() {
       )}
 
       {/* Metrics - Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Total Clientes"
           value={customerCount}
           icon={Users}
-          trend="+12%"
-          trendUp={true}
+          trend={newCustomersThisMonth > 0 ? `${newCustomersThisMonth} novos` : "Sem novos"}
+          trendUp={newCustomersThisMonth > 0}
           color="emerald"
+          href="/clientes"
         />
         <MetricCard
           title="Orcamentos Pendentes"
           value={pendingQuotes}
           icon={FileText}
-          trend="3 novos"
-          trendUp={true}
+          trend={newQuotesThisMonth > 0 ? `${newQuotesThisMonth} novos` : "Sem novos"}
+          trendUp={newQuotesThisMonth > 0}
           color="cyan"
+          href="/orcamentos"
+        />
+        <MetricCard
+          title="Orcamentos Aprovados"
+          value={approvedQuotesThisMonth}
+          icon={CheckCircle2}
+          trend={approvedQuotesThisMonth > 0 ? `${approvedQuotesThisMonth} este mes` : "Nenhum este mes"}
+          trendUp={approvedQuotesThisMonth > 0}
+          color="violet"
+          href="/orcamentos"
         />
         <MetricCard
           title="OS Abertas"
           value={openServiceOrders}
           icon={ClipboardList}
-          trend="2 urgentes"
+          trend={urgentServiceOrders > 0 ? `${urgentServiceOrders} urgentes` : "Sem urgentes"}
           trendUp={false}
           color="amber"
+          href="/ordens-servico"
         />
       </div>
 
@@ -154,18 +187,21 @@ function MetricCard({
   trend,
   trendUp,
   color,
+  href,
 }: {
   title: string;
   value: number;
   icon: React.ElementType;
   trend: string;
   trendUp: boolean;
-  color: "emerald" | "cyan" | "amber";
+  color: "emerald" | "cyan" | "amber" | "violet";
+  href: string;
 }) {
   const colorMap = {
     emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     cyan: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
     amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   };
 
   const TrendIcon = trendUp ? ArrowUpRight : ArrowDownRight;
@@ -174,7 +210,10 @@ function MetricCard({
     : "text-amber-600 dark:text-amber-400";
 
   return (
-    <div className="rounded-[1.5rem] bg-card border border-border/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-shadow duration-300 p-5 group">
+    <Link
+      href={href}
+      className="rounded-[1.5rem] bg-card border border-border/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:border-primary/20 transition-all duration-300 p-5 group block cursor-pointer"
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
@@ -191,6 +230,6 @@ function MetricCard({
         <span className={`text-xs font-semibold ${trendColor}`}>{trend}</span>
         <span className="text-xs text-muted-foreground/60 ml-1">este mes</span>
       </div>
-    </div>
+    </Link>
   );
 }

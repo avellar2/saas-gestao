@@ -5,6 +5,8 @@ import { isTrialLimitReached } from "@/lib/company-limits";
 import { logActivity } from "@/lib/activity-log";
 import { CompanyStatus, ServiceOrderStatus } from "@/generated/prisma/client";
 import { generateOSCode } from "@/lib/os-status";
+import { buildWhatsAppLink, serviceOrderCreatedMessage } from "@/lib/whatsapp";
+import { sendOSCreatedEmail } from "@/lib/email";
 import crypto from "crypto";
 import {
   findCustomerInCompany,
@@ -204,8 +206,79 @@ export async function POST(request: Request) {
     },
   });
 
+  // Dar baixa no estoque para itens com productId
+  try {
+    const inventoryActive = await checkModuleAccess(companyId, "inventory");
+    if (inventoryActive) {
+      for (const item of items) {
+        if (item.productId) {
+          const product = await tenant.product.findUnique({
+            where: { id: item.productId },
+            select: { id: true, quantity: true, name: true },
+          });
+          if (product) {
+            const qty = Number(item.quantity);
+            const prevQty = Number(product.quantity);
+            const newQty = Math.max(0, prevQty - qty);
+
+            await tenant.product.update({
+              where: { id: product.id },
+              data: { quantity: newQty },
+            });
+
+            await tenant.stockMovement.create({
+              data: {
+                companyId,
+                productId: product.id,
+                serviceOrderId: serviceOrder.id,
+                type: "OUT",
+                reason: "SALE",
+                quantity: qty,
+                previousQuantity: prevQty,
+                newQuantity: newQty,
+                description: `OS Nº ${serviceOrder.number} - ${product.name}`,
+              },
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to update stock:", err);
+    // Nao quebra o fluxo principal
+  }
+
   const userId = (session.user as Record<string, unknown>).id as string;
   const userName = (session.user as Record<string, unknown>).name as string;
+
+  // Notificar cliente sobre a OS aberta
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { name: true, tradeName: true },
+    });
+    const companyName = company?.tradeName || company?.name || "";
+    const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/portal/os/${serviceOrder.publicToken}`;
+
+    // WhatsApp
+    const phone = customer.whatsapp || customer.phone;
+    if (phone) {
+      const msg = serviceOrderCreatedMessage(customer.name, serviceOrder.number, companyName, portalUrl);
+      const link = buildWhatsAppLink(phone, msg);
+      if (link) {
+        console.log(`[NOTIFICATION] WhatsApp link for OS #${serviceOrder.number}: ${link}`);
+      }
+    }
+
+    // E-mail
+    if (customer.email) {
+      sendOSCreatedEmail(customer.email, customer.name, serviceOrder.number, companyName, portalUrl);
+    }
+  } catch (err) {
+    console.error("Failed to send OS notification:", err);
+    // Não quebra o fluxo se a notificação falhar
+  }
+
   await logActivity({
     tenant,
     userId,
@@ -216,5 +289,24 @@ export async function POST(request: Request) {
     details: `Nº ${serviceOrder.number} - Cliente: ${serviceOrder.customer?.name || "N/A"} - Total: R$ ${Number(serviceOrder.total).toFixed(2)}`,
   });
 
-  return NextResponse.json(serviceOrder, { status: 201 });
+  // Incluir whatsappLink na resposta se disponivel
+  const responseData = { ...serviceOrder } as Record<string, unknown>;
+  try {
+    const phone = customer.whatsapp || customer.phone;
+    if (phone) {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { name: true, tradeName: true },
+      });
+      const companyName = company?.tradeName || company?.name || "";
+      const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/portal/os/${serviceOrder.publicToken}`;
+      const msg = serviceOrderCreatedMessage(customer.name, serviceOrder.number, companyName, portalUrl);
+      const link = buildWhatsAppLink(phone, msg);
+      if (link) responseData.whatsappLink = link;
+    }
+  } catch {
+    // Silencia erro
+  }
+
+  return NextResponse.json(responseData, { status: 201 });
 }

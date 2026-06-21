@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "db:backup": "docker exec gestor_postgres pg_dump -U gestor -d gestor_local --data-only --column-inserts -f /tmp/backup.sql && docker cp gestor_postgres:/tmp/backup.sql prisma/backups/backup-$(date +%Y-%m-%d).sql",
+    "db:restore": "pwsh -File prisma/restore.ps1"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

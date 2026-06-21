@@ -34,12 +34,12 @@ export async function GET(request: Request) {
   for (const p of products) {
     const qty = Number(p.quantity);
     const min = Number(p.minStock);
-    const cost = p.costPrice ? Number(p.costPrice) : 0;
+    const salePrice = Number(p.salePrice);
 
     totalAtivos++;
     if (qty <= 0) totalZerados++;
     else if (qty <= min) totalBaixo++;
-    valorTotalEstoque += qty * cost;
+    valorTotalEstoque += qty * salePrice;
   }
 
   // Últimas 10 movimentações

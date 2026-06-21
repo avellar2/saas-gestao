@@ -4,7 +4,6 @@ import { tenantPrisma, prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { QuoteStatus } from "@/generated/prisma/client";
 import { quoteUpdateSchema } from "@/lib/validations";
-import { sendBudgetApprovedEmail } from "@/lib/email";
 import { findCustomerInCompany, notFoundResponse } from "@/lib/tenant-guard";
 
 async function checkModuleAccess(companyId: string, moduleKey: string): Promise<boolean> {
@@ -81,7 +80,16 @@ export async function PUT(
 
   // Status-only update
   if (body.status && !body.items) {
-    const allowedStatuses: QuoteStatus[] = ["DRAFT", "SENT", "APPROVED", "REJECTED", "EXPIRED"];
+    // Block status changes that must go through dedicated endpoints
+    const blockedStatuses = ["SENT", "APPROVED", "REJECTED"];
+    if (blockedStatuses.includes(body.status)) {
+      return NextResponse.json(
+        { error: `Status "${body.status}" deve ser alterado via endpoint dedicado` },
+        { status: 400 }
+      );
+    }
+
+    const allowedStatuses: QuoteStatus[] = ["DRAFT", "EXPIRED"];
     if (!allowedStatuses.includes(body.status)) {
       return NextResponse.json({ error: "Status invalido" }, { status: 400 });
     }
@@ -91,17 +99,6 @@ export async function PUT(
       data: { status: body.status },
       include: { customer: { select: { id: true, name: true, phone: true, whatsapp: true, email: true } }, items: true },
     });
-
-    // Send email notification when quote is approved
-    if (body.status === "APPROVED" && updated.customer?.email) {
-      const company = await prisma.company.findUnique({ where: { id: companyId } });
-      sendBudgetApprovedEmail(
-        updated.customer.email,
-        updated.customer.name,
-        `Nº ${updated.number}`,
-        Number(updated.total)
-      ).catch((err) => console.error("Failed to send budget approved email:", err));
-    }
 
     const userId = (session.user as Record<string, unknown>).id as string;
     const userName = (session.user as Record<string, unknown>).name as string;
@@ -186,15 +183,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Orcamento nao encontrado" }, { status: 404 });
   }
 
-  if (existing.status !== "DRAFT" && existing.status !== "EXPIRED") {
-    return NextResponse.json({ error: "Apenas orcamentos em rascunho ou expirados podem ser excluidos" }, { status: 400 });
+  // Remover transacoes financeiras vinculadas
+  try {
+    await tenant.financialTransaction.deleteMany({ where: { quoteId: id } });
+  } catch (err) {
+    console.error("Failed to delete financial transactions:", err);
   }
 
   await tenant.quote.delete({ where: { id } });
 
   const userId = (session.user as Record<string, unknown>).id as string;
   const userName = (session.user as Record<string, unknown>).name as string;
-  await logActivity({ tenant, userId, userName, action: "DELETE", entity: "quote", entityId: id, details: `Nº ${existing.number}` });
+  await logActivity({ tenant, userId, userName, action: "DELETE", entity: "quote", entityId: id, details: `Nº ${existing.number} - Status: ${existing.status}` });
 
   return NextResponse.json({ success: true });
 }

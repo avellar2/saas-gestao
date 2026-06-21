@@ -28,6 +28,7 @@ model User {
   passwordResetTokens   PasswordResetToken[]
   assignedServiceOrders ServiceOrder[]     @relation("ServiceOrderTechnician")
   stockMovementsCreated StockMovement[]    @relation("StockMovementCreator")
+  approvedQuotes        Quote[]            @relation("QuoteApprovedBy")
 
   @@index([companyId])
   @@map("users")
@@ -254,6 +255,7 @@ model FinancialTransaction {
   notes           String?
   serviceOrderId  String?
   menuOrderId     String?
+  quoteId         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -261,12 +263,14 @@ model FinancialTransaction {
   customer    Customer?     @relation(fields: [customerId], references: [id])
   serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
   menuOrder    MenuOrder?    @relation(fields: [menuOrderId], references: [id], onDelete: SetNull)
+  quote        Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([type])
   @@index([status])
   @@index([serviceOrderId])
   @@index([menuOrderId])
+  @@index([quoteId])
   @@map("financial_transactions")
 }
 
@@ -411,6 +415,18 @@ enum QuoteStatus {
   APPROVED
   REJECTED
   EXPIRED
+  CONVERTED
+}
+
+enum QuoteSendChannel {
+  EMAIL
+  WHATSAPP
+  MANUAL
+}
+
+enum QuoteApprovalSource {
+  ONLINE
+  PHYSICAL
 }
 
 model Quote {
@@ -426,18 +442,34 @@ model Quote {
   total       Decimal     @db.Decimal(10, 2) @default(0)
   validUntil  DateTime?
   notes       String?
+
+  // Envio
+  sentAt      DateTime?
+  sentVia     QuoteSendChannel?
+
+  // Aprovação
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  approvalSource    QuoteApprovalSource?
+  approvedByUserId  String?
+  approvedByName    String?
+  rejectionReason   String?
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer      Customer        @relation(fields: [customerId], references: [id])
+  approvedByUser User?          @relation("QuoteApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   items         QuoteItem[]
   serviceOrders ServiceOrder[]
+  financialTransactions FinancialTransaction[]
 
   @@unique([companyId, number])
   @@index([companyId])
   @@index([customerId])
   @@index([status])
+  @@index([publicToken])
   @@map("quotes")
 }
 

@@ -22,6 +22,8 @@ services:
       - backups_prod:/backups
     networks:
       - gestor-net
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestor} -d ${POSTGRES_DB:-gestor_local}"]
       interval: 10s
@@ -38,6 +40,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      DATABASE_URL: "postgresql://gestor:gestor123@gestor_postgres:5432/gestor_local?schema=public"
       # Next.js 16 standalone: bind em 0.0.0.0 (aceita conexao de 127.0.0.1)
       HOSTNAME: "0.0.0.0"
       PORT: "3000"
@@ -52,7 +55,7 @@ services:
     networks:
       - gestor-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://$(hostname):3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

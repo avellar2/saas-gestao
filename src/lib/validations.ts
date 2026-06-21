@@ -20,6 +20,7 @@ export const quoteItemSchema = z.object({
 
 export const quoteSchema = z.object({
   customerId: z.string().min(1, "Cliente é obrigatório"),
+  description: z.string().optional().or(z.literal("")),
   items: z.array(quoteItemSchema).min(1, "Adicione pelo menos um item"),
   discount: z.coerce.number().nonnegative("Desconto não pode ser negativo").optional().default(0),
   notes: z.string().optional().or(z.literal("")),

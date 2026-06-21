@@ -27,6 +27,8 @@ interface FormFields {
   whatsapp: string;
   email: string;
   address: string;
+  adminName: string;
+  adminEmail: string;
 }
 
 export default function NovaEmpresaPage() {
@@ -43,6 +45,8 @@ export default function NovaEmpresaPage() {
     whatsapp: "",
     email: "",
     address: "",
+    adminName: "",
+    adminEmail: "",
   });
 
   function handleChange(field: keyof FormFields, value: string) {
@@ -98,6 +102,34 @@ export default function NovaEmpresaPage() {
                 {error}
               </div>
             )}
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">Dados do Administrador</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Nome do Administrador *</Label>
+                  <Input
+                    id="adminName"
+                    value={form.adminName}
+                    onChange={(e) => handleChange("adminName", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">E-mail do Administrador *</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    value={form.adminEmail}
+                    onChange={(e) => handleChange("adminEmail", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">Dados da Empresa</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -186,6 +218,7 @@ export default function NovaEmpresaPage() {
                   />
                 </div>
               )}
+            </div>
             </div>
 
             <div className="flex gap-3 pt-4">

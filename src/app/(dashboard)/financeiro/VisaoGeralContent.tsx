@@ -12,7 +12,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { DollarSign, ArrowUpFromLine, ArrowDownFromLine, AlertTriangle, TrendingUp, TrendingDown, BarChart3, PieChart as PieChartIcon, Pencil } from "lucide-react";
+import { DollarSign, ArrowUpFromLine, ArrowDownFromLine, AlertTriangle, TrendingUp, TrendingDown, BarChart3, PieChart as PieChartIcon, Pencil, ShoppingCart } from "lucide-react";
 
 interface ResumoData {
   month: string;
@@ -119,17 +119,17 @@ export function VisaoGeralContent() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
-          <div className="px-5 py-4 bg-emerald-50/40 border-b border-border/40">
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-red-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-red-50/40 border-b border-border/40">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <ArrowDownFromLine className="h-4 w-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                <ArrowDownFromLine className="h-4 w-4 text-red-600" />
               </div>
               <span className="text-sm font-semibold text-foreground">Despesa Realizada</span>
             </div>
           </div>
           <div className="p-5">
-            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(data.payable.paid)}</p>
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-red-600">{formatCurrency(data.payable.paid)}</p>
             <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.payable.total)} previsto</p>
           </div>
         </div>
@@ -149,17 +149,17 @@ export function VisaoGeralContent() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px(rgba(0,0,0,0.04),0_1px_2px(rgba(0,0,0,0.02)]">
-          <div className="px-5 py-4 bg-emerald-50/40 border-b border-border/40">
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px(rgba(0,0,0,0.04),0_1px_2px(rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <AlertTriangle className="h-4 w-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
               </div>
               <span className="text-sm font-semibold text-foreground">Contas Vencidas</span>
             </div>
           </div>
           <div className="p-5">
-            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{data.receivable.overdue + data.payable.overdue}</p>
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-amber-600">{data.receivable.overdue + data.payable.overdue}</p>
             <p className="text-xs text-muted-foreground mt-1">{formatCurrency(data.receivable.overdue)} a receber vencido</p>
           </div>
         </div>
@@ -182,17 +182,17 @@ export function VisaoGeralContent() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 border-t-2 border-t-emerald-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
-          <div className="px-5 py-4 bg-emerald-50/40 border-b border-border/40">
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-amber-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-amber-50/40 border-b border-border/40">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <TrendingDown className="h-4 w-4 text-emerald-600" />
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <TrendingDown className="h-4 w-4 text-amber-600" />
               </div>
               <span className="text-sm font-semibold text-foreground">A Pagar em Aberto</span>
             </div>
           </div>
           <div className="p-5">
-            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-foreground">{formatCurrency(totalOpenPayable)}</p>
+            <p className="text-3xl font-extrabold tracking-tight tabular-nums text-amber-600">{formatCurrency(totalOpenPayable)}</p>
             <p className="text-xs text-muted-foreground mt-1">{data.payable.pending} pendente · {data.payable.overdue} vencido</p>
           </div>
         </div>
@@ -221,6 +221,35 @@ export function VisaoGeralContent() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+
+        {/* Despesas por Categoria */}
+        <div className="rounded-2xl border border-border/60 border-t-2 border-t-rose-500/30 bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="px-5 py-4 bg-rose-50/40 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
+                <ShoppingCart className="h-4 w-4 text-rose-600" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">Despesas por Categoria</span>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {data.byCategory.filter((c: { type: string }) => c.type === "PAYABLE").length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma despesa registrada</p>
+              ) : (
+                data.byCategory
+                  .filter((c: { type: string }) => c.type === "PAYABLE")
+                  .sort((a: { amount: number }, b: { amount: number }) => b.amount - a.amount)
+                  .map((cat: { category: string; amount: number }) => (
+                    <div key={cat.category} className="flex items-center justify-between text-sm">
+                      <span>{cat.category}</span>
+                      <span className="font-medium tabular-nums text-rose-600">{formatCurrency(cat.amount)}</span>
+                    </div>
+                  ))
+              )}
             </div>
           </div>
         </div>
@@ -256,15 +285,15 @@ export function VisaoGeralContent() {
                       tick={{ fontSize: 11 }}
                       tickFormatter={(v) => v.slice(5)}
                     />
-                    <YAxis tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                     <Tooltip
                       formatter={(value: unknown) => formatCurrency(value as number)}
                       labelFormatter={(label: unknown) =>
                         new Date(label as string).toLocaleDateString("pt-BR")
                       }
                     />
-                    <Bar dataKey="receivable" name="Receitas" fill={CHART_SERIES.receita} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="payable" name="Despesas" fill={CHART_SERIES.despesa} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="receivable" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                    <Bar dataKey="payable" name="Saídas" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

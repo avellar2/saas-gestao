@@ -6,7 +6,7 @@ export interface LogActivityParams {
   tenant: TenantPrismaClient;
   userId?: string;
   userName?: string;
-  action: "CREATE" | "UPDATE" | "DELETE";
+  action: "CREATE" | "UPDATE" | "DELETE" | "SEND" | "APPROVE" | "REJECT";
   entity:
     | "customer"
     | "quote"

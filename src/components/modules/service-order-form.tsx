@@ -125,6 +125,17 @@ export function ServiceOrderForm({
     ],
   });
 
+  // Validate customerId when customers list loads
+  useEffect(() => {
+    if (formData.customerId && customers.length > 0) {
+      const isValid = customers.find(c => c.id === formData.customerId);
+      if (!isValid) {
+        // Customer ID doesn't match any customer in the list, clear it
+        setFormData(prev => ({ ...prev, customerId: "" }));
+      }
+    }
+  }, [customers, formData.customerId]);
+
   function handleChange(
     field: keyof ServiceOrderFormData,
     value: string | number | boolean | ServiceOrderItemData[]
@@ -234,7 +245,11 @@ export function ServiceOrderForm({
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o cliente" />
+                    <SelectValue>
+                      {formData.customerId
+                        ? customers.find((c) => c.id === formData.customerId)?.name || "Selecione o cliente"
+                        : "Selecione o cliente"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((customer) => (
