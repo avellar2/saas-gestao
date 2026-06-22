@@ -36,7 +36,8 @@ export default function NovaEmpresaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("TRIAL");
-  const [trialDays, setTrialDays] = useState("15");
+  const [trialPreset, setTrialPreset] = useState("15");
+  const [trialDays, setTrialDays] = useState("");
   const [form, setForm] = useState<FormFields>({
     name: "",
     tradeName: "",
@@ -70,7 +71,7 @@ export default function NovaEmpresaPage() {
         body: JSON.stringify({
           ...form,
           status,
-          trialDays: status === "TRIAL" ? parseInt(trialDays) : undefined,
+          trialDays: status === "TRIAL" ? (trialPreset === "custom" ? parseInt(trialDays) || 15 : parseInt(trialPreset)) : undefined,
         }),
       });
 
@@ -208,14 +209,30 @@ export default function NovaEmpresaPage() {
               </div>
               {status === "TRIAL" && (
                 <div className="space-y-2">
-                  <Label htmlFor="trialDays">Dias de Teste</Label>
-                  <Input
-                    id="trialDays"
-                    type="number"
-                    min="1"
-                    value={trialDays}
-                    onChange={(e) => setTrialDays(e.target.value)}
-                  />
+                  <Label>Dias de Teste</Label>
+                  <Select value={trialPreset} onValueChange={(value: string | null) => { if (value !== null) setTrialPreset(value); }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 dias</SelectItem>
+                      <SelectItem value="15">15 dias</SelectItem>
+                      <SelectItem value="30">30 dias</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {trialPreset === "custom" && (
+                    <Input
+                      id="trialDays"
+                      type="number"
+                      min="1"
+                      max="365"
+                      placeholder="Ex: 45"
+                      value={trialDays}
+                      onChange={(e) => setTrialDays(e.target.value)}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               )}
             </div>

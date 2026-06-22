@@ -105,6 +105,10 @@ export default function EmpresaDetalhePage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [trialEndDate, setTrialEndDate] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
+  const [trialStart, setTrialStart] = useState("");
+  const [trialEnd, setTrialEnd] = useState("");
+  const [savingTrial, setSavingTrial] = useState(false);
+  const [errorTrial, setErrorTrial] = useState<string | null>(null);
 
   const id = params.id as string;
 
@@ -115,6 +119,8 @@ export default function EmpresaDetalhePage() {
         const data = await res.json();
         setCompany(data);
         setSelectedStatus(data.status);
+        setTrialStart(data.trialStartsAt ? data.trialStartsAt.slice(0, 10) : "");
+        setTrialEnd(data.trialEndsAt ? data.trialEndsAt.slice(0, 10) : "");
         setError(null);
       } else {
         const data = await res.json();
@@ -182,6 +188,33 @@ export default function EmpresaDetalhePage() {
     }
   }
 
+  async function handleTrialSave() {
+    if (!company) return;
+    setSavingTrial(true);
+    setErrorTrial(null);
+    try {
+      const res = await fetch(`/api/empresas/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trialStartsAt: trialStart || null,
+          trialEndsAt: trialEnd || null,
+        }),
+      });
+
+      if (res.ok) {
+        await loadCompany();
+      } else {
+        const data = await res.json();
+        setErrorTrial(data.error || "Erro ao salvar datas do trial");
+      }
+    } catch {
+      setErrorTrial("Erro ao salvar datas do trial");
+    } finally {
+      setSavingTrial(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -199,6 +232,10 @@ export default function EmpresaDetalhePage() {
   }
 
   const activeModules = company.companyModules.filter((cm) => cm.active);
+
+  const trialDatesChanged =
+    trialStart !== (company.trialStartsAt ? company.trialStartsAt.slice(0, 10) : "") ||
+    trialEnd !== (company.trialEndsAt ? company.trialEndsAt.slice(0, 10) : "");
 
   return (
     <div className="space-y-6">
@@ -227,6 +264,12 @@ export default function EmpresaDetalhePage() {
       {errorStatus && (
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
           {errorStatus}
+        </div>
+      )}
+
+      {errorTrial && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
+          {errorTrial}
         </div>
       )}
 
@@ -296,7 +339,7 @@ export default function EmpresaDetalhePage() {
         <CardHeader>
           <CardTitle>Status e Preco</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="flex flex-wrap items-end gap-6">
             <div className="space-y-2">
               <label className="text-sm text-gray-500">Status da Empresa</label>
@@ -340,6 +383,37 @@ export default function EmpresaDetalhePage() {
                 {company.subscription?.planName &&
                   ` - Plano ${company.subscription.planName}`}
               </p>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Periodo de Teste</h4>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-500">Inicio do Teste</label>
+                <input
+                  type="date"
+                  value={trialStart}
+                  onChange={(e) => setTrialStart(e.target.value)}
+                  className="flex h-9 w-44 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-500">Fim do Teste</label>
+                <input
+                  type="date"
+                  value={trialEnd}
+                  onChange={(e) => setTrialEnd(e.target.value)}
+                  className="flex h-9 w-44 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <Button
+                onClick={handleTrialSave}
+                disabled={savingTrial || !trialDatesChanged}
+                size="sm"
+              >
+                {savingTrial ? "Salvando..." : "Salvar Datas"}
+              </Button>
             </div>
           </div>
         </CardContent>

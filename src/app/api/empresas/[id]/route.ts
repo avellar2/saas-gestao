@@ -145,12 +145,19 @@ export async function PUT(
     "email",
     "address",
     "status",
+    "trialStartsAt",
+    "trialEndsAt",
   ] as const;
 
   const data: Record<string, unknown> = {};
   for (const key of allowedFields) {
     if (key in updateData && updateData[key as keyof typeof updateData] !== undefined) {
-      data[key] = updateData[key as keyof typeof updateData];
+      const val = updateData[key as keyof typeof updateData];
+      if (key === "trialStartsAt" || key === "trialEndsAt") {
+        data[key] = val ? new Date(val as string) : null;
+      } else {
+        data[key] = val;
+      }
     }
   }
 
@@ -176,8 +183,19 @@ export async function PUT(
         });
       }
     } catch {
-      // If subscription update fails, log but don't block company update
       console.error(`Failed to update subscription for company ${id}`);
+    }
+  }
+
+  // If trialEndsAt changed, also update subscription trialEndsAt
+  if (data.trialEndsAt !== undefined) {
+    try {
+      await prisma.subscription.update({
+        where: { companyId: id },
+        data: { trialEndsAt: data.trialEndsAt as Date | null },
+      });
+    } catch {
+      console.error(`Failed to update subscription trialEndsAt for company ${id}`);
     }
   }
 
