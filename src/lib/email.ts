@@ -67,6 +67,7 @@ export async function sendTrialExpiringEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -132,6 +133,7 @@ export async function sendBudgetApprovedEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -197,6 +199,7 @@ export async function sendOSCompletedEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -262,6 +265,7 @@ export async function sendOSCreatedEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -329,6 +333,7 @@ export async function sendOSStatusEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -397,6 +402,7 @@ export async function sendPasswordResetEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -475,6 +481,7 @@ export async function sendCompanyInviteEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -579,6 +586,7 @@ export async function sendQuoteEmail(
   }
 
   try {
+    if (!resend) throw new Error("Resend not configured");
     await resend.emails.send({
       from: fromEmail,
       to: email,
