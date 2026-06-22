@@ -153,11 +153,11 @@ export default function LoginPage() {
           className="relative z-10 flex flex-col justify-between h-full px-12 xl:px-16 py-10"
         >
           <div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-white/15 flex items-center justify-center shadow-lg">
-                <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-lg bg-white/10 p-2 shadow-lg">
+                <img src="/logo.svg" alt="AVGestão" className="h-full w-full brightness-0 invert object-contain object-center" />
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">Gestor Local</span>
+              <span className="text-3xl font-bold text-white tracking-tight">AVGestão</span>
             </div>
           </div>
 
@@ -210,7 +210,7 @@ export default function LoginPage() {
               ))}
             </div>
             <p className="text-sm text-emerald-200/50">
-              <span className="font-semibold text-emerald-200/70">500+</span> empresas já confiam
+              <span className="font-semibold text-emerald-200/70">Gestão</span> simplificada para sua empresa
             </p>
           </div>
         </div>
@@ -226,10 +226,10 @@ export default function LoginPage() {
         >
           {/* Mobile header */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-600 mb-3">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-lg bg-emerald-600 p-2 shadow-lg mx-auto mb-3">
+              <img src="/logo.svg" alt="AVGestão" className="h-full w-full brightness-0 invert object-contain object-center" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Gestor Local</h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">AVGestão</h1>
             <p className="text-muted-foreground text-sm mt-0.5">Sistema de gestão empresarial</p>
           </div>
 

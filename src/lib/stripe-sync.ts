@@ -138,12 +138,13 @@ export async function syncStripeSubscription(
   const planName = getPlanName(activeKeysArray.filter((k) => !isCoreModule(k)));
 
   // 9. Upsert Subscription
-  const subAny = stripeSubscription as unknown as Record<string, unknown>;
-  const periodStart = typeof subAny.current_period_start === 'number'
-    ? new Date((subAny.current_period_start as number) * 1000)
+  // Stripe SDK v22+: current_period_start/end is in items.data[0], not at subscription level
+  const firstItem = stripeSubscription.items.data[0] as unknown as Record<string, unknown> | undefined;
+  const periodStart = firstItem && typeof firstItem.current_period_start === 'number'
+    ? new Date((firstItem.current_period_start as number) * 1000)
     : new Date();
-  const periodEnd = typeof subAny.current_period_end === 'number'
-    ? new Date((subAny.current_period_end as number) * 1000)
+  const periodEnd = firstItem && typeof firstItem.current_period_end === 'number'
+    ? new Date((firstItem.current_period_end as number) * 1000)
     : new Date();
 
   await prisma.subscription.upsert({

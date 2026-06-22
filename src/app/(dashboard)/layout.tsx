@@ -39,7 +39,10 @@ export default async function DashboardLayout({
       <div className="flex-1 min-w-0 flex flex-col lg:ml-64">
         {/* Header mobile + theme toggle */}
         <header className="lg:hidden h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
-          <span className="font-semibold text-sm tracking-tight">Gestor Local</span>
+          <div className="flex items-center gap-2 pl-10">
+            <img src="/logo.svg" alt="AVGestão" className="w-5 h-5" />
+            <span className="font-semibold text-sm tracking-tight">AVGestão</span>
+          </div>
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-auto w-full">

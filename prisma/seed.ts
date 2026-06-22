@@ -57,8 +57,10 @@ async function main() {
 
   const adminPasswordHash = await bcryptjs.hash(adminPassword, 12);
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash: adminPasswordHash, active: true },
+    create: {
       email: adminEmail,
       name: adminName,
       passwordHash: adminPasswordHash,
@@ -94,8 +96,10 @@ async function main() {
 
   const silvaPasswordHash = await bcryptjs.hash("silva123", 10);
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "silva@esilva.com" },
+    update: { passwordHash: silvaPasswordHash, active: true },
+    create: {
       email: "silva@esilva.com",
       name: "Sr. Silva",
       passwordHash: silvaPasswordHash,
@@ -160,8 +164,10 @@ async function main() {
   const marcosPasswordHash = await bcryptjs.hash("marcos123", 10);
   const anaPasswordHash = await bcryptjs.hash("ana123", 10);
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "marcos@mecanicacentral.com" },
+    update: { passwordHash: marcosPasswordHash, active: true },
+    create: {
       email: "marcos@mecanicacentral.com",
       name: "Marcos Oliveira",
       passwordHash: marcosPasswordHash,
@@ -171,8 +177,10 @@ async function main() {
     },
   });
 
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "ana@mecanicacentral.com" },
+    update: { passwordHash: anaPasswordHash, active: true },
+    create: {
       email: "ana@mecanicacentral.com",
       name: "Ana Costa",
       passwordHash: anaPasswordHash,
@@ -218,7 +226,48 @@ async function main() {
 
   console.log("Active company created: marcos@mecanicacentral.com / marcos123, ana@mecanicacentral.com / ana123");
 
-  // ── 5. Sample Customers for Active Company ────────────────────────────
+  // ── 5. Vandim Company ──────────────────────────────────────────────────
+  console.log("Creating Vandim company...");
+
+  const vandimCompany = await prisma.company.upsert({
+    where: { id: "company-vandim" },
+    update: {},
+    create: {
+      id: "company-vandim",
+      name: "Empresa do Vandim",
+      status: "TRIAL",
+      trialStartsAt: now,
+      trialEndsAt: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  const vandimPasswordHash = await bcryptjs.hash("123456", 12);
+
+  await prisma.user.upsert({
+    where: { email: "vandimavellar1997@gmail.com" },
+    update: { passwordHash: vandimPasswordHash, active: true },
+    create: {
+      email: "vandimavellar1997@gmail.com",
+      name: "Vandim",
+      passwordHash: vandimPasswordHash,
+      role: "COMPANY_ADMIN",
+      companyId: vandimCompany.id,
+      active: true,
+    },
+  });
+
+  // Ativa todos os módulos para a Vandim Company
+  for (const mod of MODULES) {
+    await prisma.companyModule.upsert({
+      where: { companyId_moduleKey: { companyId: vandimCompany.id, moduleKey: mod.key } },
+      update: { active: true, price: 20, activatedAt: now },
+      create: { companyId: vandimCompany.id, moduleKey: mod.key, active: true, price: 20, activatedAt: now },
+    });
+  }
+
+  console.log("Vandim company created: vandimavellar1997@gmail.com / 123456");
+
+  // ── 6. Sample Customers for Active Company ────────────────────────────
   console.log("Creating sample customers...");
 
   const customersData = [
@@ -243,7 +292,7 @@ async function main() {
     customers.push(customer);
   }
 
-  // ── 6. Sample Quotes for Active Company ───────────────────────────────
+  // ── 7. Sample Quotes for Active Company ───────────────────────────────
   console.log("Creating sample quotes...");
 
   const quote1 = await prisma.quote.create({
@@ -284,7 +333,7 @@ async function main() {
 
   console.log("Sample quotes created.");
 
-  // ── 7. Sample Service Orders for Active Company ───────────────────────
+  // ── 8. Sample Service Orders for Active Company ───────────────────────
   console.log("Creating sample service orders...");
 
   await prisma.serviceOrder.create({
@@ -317,7 +366,7 @@ async function main() {
 
   console.log("Sample service orders created.");
 
-  // ── 8. Sample Products for Active Company ─────────────────────────────
+  // ── 9. Sample Products for Active Company ─────────────────────────────
   console.log("Creating sample products...");
 
   const productsData = [
@@ -346,7 +395,7 @@ async function main() {
 
   console.log("Sample products created.");
 
-  // ── 9. Sample Financial Transactions for Active Company ──────────────
+  // ── 10. Sample Financial Transactions for Active Company ─────────────
   console.log("Creating sample financial transactions...");
 
   const financialData = [
@@ -375,7 +424,7 @@ async function main() {
 
   console.log("Sample financial transactions created.");
 
-  // ── 10. Sample Appointments for Active Company ──────────────────────
+  // ── 11. Sample Appointments for Active Company ──────────────────────
   console.log("Creating sample appointments...");
 
   const tomorrow9am = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
@@ -410,7 +459,7 @@ async function main() {
 
   console.log("Sample appointments created.");
 
-  // ── 11. Sample Catalog Items for Active Company ────────────────────
+  // ── 12. Sample Catalog Items for Active Company ────────────────────
   console.log("Creating sample catalog items...");
 
   const catalogData = [
@@ -433,7 +482,7 @@ async function main() {
 
   console.log("Sample catalog items created.");
 
-  // ── 12. Sample Menu Items for Active Company ───────────────────────
+  // ── 13. Sample Menu Items for Active Company ───────────────────────
   console.log("Creating sample menu items...");
 
   await prisma.menuItem.create({
@@ -479,6 +528,7 @@ async function main() {
   console.log("  Trial:        silva@esilva.com / silva123");
   console.log("  Active Admin: marcos@mecanicacentral.com / marcos123");
   console.log("  Active Staff: ana@mecanicacentral.com / ana123");
+  console.log("  Vandim:       vandimavellar1997@gmail.com / 123456");
   console.log("─────────────────────────────────────────────────────");
 }
 

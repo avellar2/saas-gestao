@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import LandingPageClient from "./landing-page-client";
 
 export default async function Home() {
   const session = await auth();
@@ -13,5 +12,5 @@ export default async function Home() {
     redirect("/dashboard");
   }
 
-  return <LandingPageClient />;
+  redirect("/login");
 }

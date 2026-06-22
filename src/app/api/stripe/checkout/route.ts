@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStripe, getAppUrl, getBasePriceId, LEGACY_PLANS, type LegacyPlanKey } from "@/lib/stripe";
+import { getStripe, getAppUrl, getBasePriceId, getModulePriceId, LEGACY_PLANS, type LegacyPlanKey } from "@/lib/stripe";
 import { isPurchasable, getModuleConfig } from "@/lib/modules";
 
 /**
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { includedModuleKey } = body;
+    const { includedModuleKey, extraModuleKey } = body;
 
     // ── Modular checkout: first module purchase ──
     // The user selects their first module (included in the base price).
@@ -66,7 +66,13 @@ export async function POST(request: Request) {
       // Check if company already has an active Stripe subscription
       const company = await prisma.company.findUnique({
         where: { id: companyId },
-        include: { subscription: true },
+        include: {
+          subscription: true,
+          companyModules: {
+            where: { active: true },
+            select: { moduleKey: true },
+          },
+        },
       });
 
       if (!company) {
@@ -85,11 +91,12 @@ export async function POST(request: Request) {
       }
 
       // Check that the module is not already active
+      // (skip this check if company is in trial — the included module may already be active)
       const existingModule = await prisma.companyModule.findUnique({
         where: { companyId_moduleKey: { companyId, moduleKey: includedModuleKey } },
       });
 
-      if (existingModule?.active) {
+      if (existingModule?.active && company.subscription?.stripeSubscriptionId) {
         return NextResponse.json(
           { error: "Este modulo ja esta ativo" },
           { status: 400 }
@@ -128,17 +135,24 @@ export async function POST(request: Request) {
         );
       }
 
-      // Create Checkout Session with only the base price
-      // The included module is tracked via metadata, not as a separate item
+      // Build line items: base price + extra module (if any)
+      const lineItems: Array<{ price: string; quantity: number }> = [
+        { price: basePriceId, quantity: 1 },
+      ];
+
+      // Add the extra module price (the new module being purchased)
+      if (extraModuleKey) {
+        const extraPriceId = getModulePriceId(extraModuleKey);
+        if (extraPriceId) {
+          lineItems.push({ price: extraPriceId, quantity: 1 });
+        }
+      }
+
+      // Create Checkout Session with base price + extra modules
       const checkout = await getStripe().checkout.sessions.create({
         customer: stripeCustomerId,
         mode: "subscription",
-        line_items: [
-          {
-            price: basePriceId,
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         metadata: {
           companyId,
           includedModuleKey,

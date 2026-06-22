@@ -20,6 +20,8 @@ import {
   Building2,
   PanelLeftClose,
   PanelLeftOpen,
+  Menu,
+  X,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
@@ -94,13 +96,13 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
           <div
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0"
           >
-            <Building2 className="w-5 h-5 text-primary-foreground" />
+            <img src="/logo.svg" alt="AVGestão" className="w-6 h-6 brightness-0 invert" />
           </div>
 {!collapsed && (
               <div
                 className="overflow-hidden whitespace-nowrap"
               >
-                <h1 className="text-sm font-bold text-sidebar-foreground leading-tight tracking-tight">Gestor Local</h1>
+                <h1 className="text-sm font-bold text-sidebar-foreground leading-tight tracking-tight">AVGestão</h1>
               </div>
             )}
 </Link>
@@ -152,6 +154,27 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
           );
         })}
       </nav>
+
+      {/* Upgrade button */}
+      <div className="px-3 pb-2">
+        <Link
+          href="/upgrade"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+            bg-gradient-to-r from-emerald-500 to-emerald-600
+            hover:from-emerald-400 hover:to-emerald-500
+            text-white shadow-lg shadow-emerald-500/20
+            hover:shadow-emerald-400/30
+            ${collapsed ? "justify-center" : ""}
+          `}
+        >
+          <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          {!collapsed && (
+            <span className="overflow-hidden whitespace-nowrap">Upgrade do Plano</span>
+          )}
+        </Link>
+      </div>
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
@@ -205,9 +228,9 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
 {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-3.5 left-4 z-50 lg:hidden w-9 h-9 rounded-xl bg-sidebar text-sidebar-foreground flex items-center justify-center shadow-lg"
+        className="fixed top-3.5 left-4 z-50 lg:hidden w-10 h-10 rounded-xl bg-sidebar text-sidebar-foreground flex items-center justify-center shadow-lg hover:bg-sidebar-accent transition-colors"
       >
-        <PanelLeftOpen className="w-4 h-4" />
+        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Sidebar */}
@@ -215,6 +238,9 @@ export function DashboardSidebar({ user, activeModules }: DashboardSidebarProps)
         className={`
           fixed lg:sticky top-0 left-0 z-40 h-[100dvh] bg-sidebar text-sidebar-foreground flex flex-col shrink-0
           border-r border-sidebar-border
+          transition-transform duration-200 ease-out
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0
           ${collapsed ? "w-20" : "w-64"}
         `}
         style={{

@@ -18,8 +18,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gestor Local - Sistema de Gestão para Pequenas Empresas",
+  title: "AVGestão - Sistema de Gestão para Pequenas Empresas",
   description: "Gerencie clientes, orçamentos, ordens de serviço, estoque, financeiro e mais em uma plataforma completa.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

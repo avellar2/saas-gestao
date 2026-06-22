@@ -26,7 +26,7 @@ export async function GET() {
         select: { moduleKey: true, module: { select: { name: true } } },
       },
       subscription: {
-        select: { stripeSubscriptionId: true },
+        select: { stripeSubscriptionId: true, status: true },
       },
     },
   });
@@ -43,10 +43,14 @@ export async function GET() {
     name: cm.module.name,
   }));
 
+  const hasSubscription = !!company.subscription;
   const hasStripeSubscription = !!company.subscription?.stripeSubscriptionId;
+  const isTrial = company.status === "TRIAL" || company.subscription?.status === "TRIAL";
 
   return NextResponse.json({
     activeModules,
     hasStripeSubscription,
+    hasSubscription,
+    isTrial,
   });
 }

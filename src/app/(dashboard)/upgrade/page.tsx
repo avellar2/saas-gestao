@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock, ArrowLeft, Check, Loader2, Clock } from "lucide-react";
+import { Lock, ArrowLeft, Check, Loader2, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,22 @@ interface ActiveModule {
   name: string;
 }
 
+interface ConfirmModal {
+  open: boolean;
+  moduleKey: string;
+  moduleName: string;
+  modulePrice: number;
+  extraModules: { name: string; price: number }[];
+  total: number;
+}
+
+interface RemoveModal {
+  open: boolean;
+  moduleKey: string;
+  moduleName: string;
+  modulePrice: number;
+}
+
 export default function UpgradePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,7 +38,22 @@ export default function UpgradePage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [activeModules, setActiveModules] = useState<ActiveModule[]>([]);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
+  const [isTrial, setIsTrial] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal>({
+    open: false,
+    moduleKey: "",
+    moduleName: "",
+    modulePrice: 0,
+    extraModules: [],
+    total: 0,
+  });
+  const [removeModal, setRemoveModal] = useState<RemoveModal>({
+    open: false,
+    moduleKey: "",
+    moduleName: "",
+    modulePrice: 0,
+  });
 
   const moduleInfo = moduleKey ? getModuleConfig(moduleKey) : null;
 
@@ -34,7 +65,8 @@ export default function UpgradePage() {
         if (res.ok) {
           const data = await res.json();
           setActiveModules(data.activeModules || []);
-          setHasSubscription(data.hasStripeSubscription || false);
+          setHasStripeSubscription(data.hasStripeSubscription || false);
+          setIsTrial(data.isTrial || false);
         }
       } catch {
         // Ignore - modules will just show as not active
@@ -46,17 +78,59 @@ export default function UpgradePage() {
   // Filter purchasable modules that are active (not coming_soon for purchase)
   const purchasableModules = PURCHASABLE_MODULES.filter((m) => m.status === "active");
 
-  async function handleCheckout(selectedModuleKey: string) {
+  function openConfirmModal(selectedModuleKey: string) {
+    const config = getModuleConfig(selectedModuleKey);
+    if (!config) return;
+
+    // Calculate what will be charged
+    const extraModules: { name: string; price: number }[] = [];
+
+    if (isTrial && !hasStripeSubscription) {
+      // First purchase: new module is extra, base plan covers the rest
+      if (config.monthlyPrice > 0) {
+        extraModules.push({ name: config.name, price: config.monthlyPrice });
+      }
+    } else if (hasStripeSubscription) {
+      // Already has subscription: just the new module price
+      if (config.monthlyPrice > 0) {
+        extraModules.push({ name: config.name, price: config.monthlyPrice });
+      }
+    }
+
+    const extraTotal = extraModules.reduce((sum, m) => sum + m.price, 0);
+    const total = hasStripeSubscription ? extraTotal : BASE_PRICE + extraTotal;
+
+    setConfirmModal({
+      open: true,
+      moduleKey: selectedModuleKey,
+      moduleName: config.name,
+      modulePrice: config.monthlyPrice,
+      extraModules,
+      total,
+    });
+  }
+
+  async function handleConfirmCheckout() {
+    const selectedModuleKey = confirmModal.moduleKey;
+    setConfirmModal({ ...confirmModal, open: false });
     setLoading(selectedModuleKey);
     setError("");
 
     try {
-      // First checkout: create a new subscription with the base price
-      if (!hasSubscription) {
+      if (!hasStripeSubscription) {
+        // In trial: includedModuleKey = first non-core active module, extraModuleKey = new module
+        const firstNonCore = activeModules.find((m) => {
+          const cfg = getModuleConfig(m.key);
+          return cfg && cfg.type !== "core";
+        });
+        const firstActive = firstNonCore?.key || selectedModuleKey;
         const res = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ includedModuleKey: selectedModuleKey }),
+          body: JSON.stringify({
+            includedModuleKey: firstActive,
+            extraModuleKey: isTrial ? selectedModuleKey : undefined,
+          }),
         });
 
         const data = await res.json();
@@ -69,7 +143,6 @@ export default function UpgradePage() {
           window.location.href = data.url;
         }
       } else {
-        // Adding module to existing subscription
         const res = await fetch("/api/stripe/modules/add", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -82,12 +155,41 @@ export default function UpgradePage() {
           return;
         }
 
-        // Refresh module list to show the new module status
-        // (it will be fully activated after payment confirmation)
         setActiveModules((prev) => [...prev, { key: selectedModuleKey, name: data.moduleKey || selectedModuleKey }]);
       }
     } catch {
       setError("Erro de conexão. Tente novamente.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  function openRemoveModal(moduleKey: string, moduleName: string, modulePrice: number) {
+    setRemoveModal({ open: true, moduleKey, moduleName, modulePrice });
+  }
+
+  async function handleConfirmRemove() {
+    const { moduleKey, moduleName } = removeModal;
+    setRemoveModal({ ...removeModal, open: false });
+    setLoading(moduleKey);
+    setError("");
+
+    try {
+      const res = await fetch("/api/stripe/modules/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleKey }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erro ao remover modulo");
+        return;
+      }
+
+      setActiveModules((prev) => prev.filter((m) => m.key !== moduleKey));
+    } catch {
+      setError("Erro de conexao. Tente novamente.");
     } finally {
       setLoading(null);
     }
@@ -173,9 +275,24 @@ export default function UpgradePage() {
                   </Badge>
                 )}
                 {isAlreadyActive && (
-                  <Badge className="absolute -top-2.5 right-4 bg-green-100 text-green-800 border-green-200 text-[10px]">
-                    Ativo
-                  </Badge>
+                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 text-[10px]">
+                      Ativo
+                    </Badge>
+                    {(hasStripeSubscription || isTrial) && mod.key !== "customers" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRemoveModal(mod.key, mod.name, mod.monthlyPrice);
+                        }}
+                        disabled={loading !== null}
+                        className="w-5 h-5 rounded-full bg-red-100 text-red-600 border border-red-200 flex items-center justify-center hover:bg-red-200 transition-colors text-[10px] font-bold"
+                        title="Remover modulo"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 )}
                 <CardContent className="p-5 space-y-4">
                   <div>
@@ -207,7 +324,7 @@ export default function UpgradePage() {
                     className="w-full"
                     variant={mod.key === moduleKey ? "default" : "outline"}
                     disabled={!isActive || loading !== null || isAlreadyActive}
-                    onClick={() => isActive && !isAlreadyActive && handleCheckout(mod.key)}
+                    onClick={() => isActive && !isAlreadyActive && openConfirmModal(mod.key)}
                   >
                     {isAlreadyActive ? (
                       "Ativo"
@@ -231,6 +348,157 @@ export default function UpgradePage() {
           })}
         </div>
       </div>
+
+      {/* Remove Module Modal */}
+      {removeModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 rounded-2xl bg-card border border-border shadow-2xl">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
+              <h2 className="text-lg font-bold">Remover Módulo</h2>
+              <button
+                onClick={() => setRemoveModal({ ...removeModal, open: false })}
+                className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Tem certeza que deseja remover <strong>{removeModal.moduleName}</strong>?
+              </p>
+
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-700 dark:text-amber-400">
+                <p className="font-semibold">💡 Crédito proporcional</p>
+                <p className="mt-1 opacity-80">
+                  O Stripe calcula automaticamente o valor proporcional aos dias restantes do ciclo e
+                  <strong> abate como crédito na próxima fatura</strong>. Você só paga pelo tempo que usou.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium">{removeModal.moduleName}</span>
+                <span className="text-sm font-medium text-muted-foreground line-through">R$ {removeModal.modulePrice}</span>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 pt-4 border-t border-border flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setRemoveModal({ ...removeModal, open: false })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleConfirmRemove}
+              >
+                Remover
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 rounded-2xl bg-card border border-border shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
+              <h2 className="text-lg font-bold">Confirmar Assinatura</h2>
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, open: false })}
+                className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Revise os valores antes de ir para o pagamento:
+              </p>
+
+              {!hasStripeSubscription ? (
+                <>
+                  {/* Base plan (first purchase) */}
+                  <div className="flex items-center justify-between py-2">
+                    <div>
+                      <span className="text-sm font-medium">Plano Base</span>
+                      <p className="text-xs text-muted-foreground">Clientes + 1 módulo incluso</p>
+                    </div>
+                    <span className="text-sm font-semibold">R$ {BASE_PRICE}</span>
+                  </div>
+
+                  {/* Included module */}
+                  <div className="flex items-center justify-between py-2 bg-primary/5 rounded-lg px-3">
+                    <div className="flex items-center gap-2">
+                      <Check className="size-4 text-primary" />
+                      <span className="text-sm font-medium">{confirmModal.moduleName}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Incluso</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Already has subscription */}
+                  <div className="flex items-center justify-between py-2 bg-primary/5 rounded-lg px-3">
+                    <div className="flex items-center gap-2">
+                      <Check className="size-4 text-primary" />
+                      <span className="text-sm font-medium">Assinatura ativa</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Já paga</span>
+                  </div>
+                </>
+              )}
+
+              {/* Extra modules */}
+              {confirmModal.extraModules.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {hasStripeSubscription ? "Novo módulo" : "Módulos extras"}
+                  </span>
+                  {confirmModal.extraModules.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5">
+                      <span className="text-sm">{m.name}</span>
+                      <span className="text-sm font-medium">R$ {m.price}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="border-t border-border pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-bold">Total por mês</span>
+                  <span className="text-xl font-bold text-primary">R$ {confirmModal.total}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-4 border-t border-border flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setConfirmModal({ ...confirmModal, open: false })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleConfirmCheckout}
+              >
+                Ir para Pagamento
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
