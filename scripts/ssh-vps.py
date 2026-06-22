@@ -6,7 +6,7 @@ import os, sys, re, paramiko
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-ENV = r"C:\projetos\saas-gestão\.env"
+ENV = r"C:\Users\Vanderson\Documents\saas-gestao\.env"
 
 def load_env(path):
     d = {}

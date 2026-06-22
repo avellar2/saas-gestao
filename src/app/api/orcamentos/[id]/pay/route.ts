@@ -82,7 +82,6 @@ export async function POST(
     data: {
       status: "PAID",
       paidAt: paidAtDate,
-      paymentMethod: paymentMethod || null,
     },
   });
 
