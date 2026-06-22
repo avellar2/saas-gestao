@@ -103,6 +103,7 @@ export default function EmpresaDetalhePage() {
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const [togglingModule, setTogglingModule] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [trialEndDate, setTrialEndDate] = useState<string>("");
   const [savingStatus, setSavingStatus] = useState(false);
 
   const id = params.id as string;
@@ -158,10 +159,14 @@ export default function EmpresaDetalhePage() {
     setSavingStatus(true);
     setErrorStatus(null);
     try {
+      const body: Record<string, unknown> = { status: selectedStatus };
+      if (selectedStatus === "TRIAL" && trialEndDate) {
+        body.trialEndsAt = new Date(trialEndDate + "T23:59:59").toISOString();
+      }
       const res = await fetch(`/api/empresas/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: selectedStatus }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -307,6 +312,17 @@ export default function EmpresaDetalhePage() {
                 </SelectContent>
               </Select>
             </div>
+            {selectedStatus === "TRIAL" && (
+              <div className="space-y-2">
+                <label className="text-sm text-gray-500">Expira em</label>
+                <input
+                  type="date"
+                  value={trialEndDate}
+                  onChange={(e) => setTrialEndDate(e.target.value)}
+                  className="w-48 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm shadow-sm outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20"
+                />
+              </div>
+            )}
             <Button
               onClick={handleStatusChange}
               disabled={savingStatus || selectedStatus === company.status}
