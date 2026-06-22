@@ -86,8 +86,13 @@ export default function UpgradePage() {
     const extraModules: { name: string; price: number }[] = [];
 
     if (isTrial && !hasStripeSubscription) {
-      // First purchase: new module is extra, base plan covers the rest
-      if (config.monthlyPrice > 0) {
+      // First purchase: check if there are already non-core modules active
+      const hasNonCoreActive = activeModules.some((m) => {
+        const cfg = getModuleConfig(m.key);
+        return cfg && cfg.type !== "core";
+      });
+      // Only add as extra if there's already a non-core module active
+      if (hasNonCoreActive && config.monthlyPrice > 0) {
         extraModules.push({ name: config.name, price: config.monthlyPrice });
       }
     } else if (hasStripeSubscription) {
@@ -118,18 +123,20 @@ export default function UpgradePage() {
 
     try {
       if (!hasStripeSubscription) {
-        // In trial: includedModuleKey = first non-core active module, extraModuleKey = new module
+        // In trial: if there are non-core active modules, one is included and the new one is extra
+        // If no non-core active modules, the new module is the included one (no extra)
         const firstNonCore = activeModules.find((m) => {
           const cfg = getModuleConfig(m.key);
           return cfg && cfg.type !== "core";
         });
-        const firstActive = firstNonCore?.key || selectedModuleKey;
+        const hasExtraModules = isTrial && firstNonCore && selectedModuleKey !== firstNonCore.key;
+        const includedModule = hasExtraModules ? firstNonCore.key : selectedModuleKey;
         const res = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            includedModuleKey: firstActive,
-            extraModuleKey: isTrial ? selectedModuleKey : undefined,
+            includedModuleKey: includedModule,
+            extraModuleKey: hasExtraModules ? selectedModuleKey : undefined,
           }),
         });
 
